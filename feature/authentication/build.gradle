@@ -1,0 +1,55 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.compose)
+    alias(libs.plugins.devtools.ksp)
+}
+
+android {
+    namespace 'com.sakuya.authentication'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        compose = true
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation project(":core:common")
+    implementation project(":core:data")
+    implementation project(":core:model")
+    implementation project(":core:ui")
+    implementation libs.bundles.feature.ui
+    implementation libs.core.ktx
+    implementation libs.androidx.compose.ui.test.junit4
+    implementation libs.navigation.testing
+    implementation libs.androidx.navigation.compose
+    ksp libs.hilt.compiler
+
+    // Test dependencies (correctly scoped)
+    testImplementation libs.turbine
+    testImplementation libs.kolinx.coroutines.test
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+}

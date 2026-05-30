@@ -1,0 +1,59 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.compose)
+    alias(libs.plugins.devtools.ksp)
+}
+
+android {
+    namespace 'com.sakuya.profile'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+        // 显式指定 targetSdk 避免测试 APK 被识别为旧版应用
+        targetSdk 35
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    buildFeatures{
+        compose = true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation project(":core:common")
+    implementation project(":feature:conversation")
+    implementation project(":feature:friend")
+    implementation project(":feature:profile-services")
+    implementation libs.bundles.feature.ui
+    implementation libs.core.ktx
+    implementation libs.androidx.compose.ui.test.junit4
+    implementation libs.navigation.testing
+    ksp libs.hilt.compiler
+
+
+
+    // Test dependencies (correctly scoped)
+    testImplementation libs.turbine
+    testImplementation libs.kolinx.coroutines.test
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+    debugImplementation libs.androidx.compose.ui.test.manifest
+}

@@ -1,0 +1,72 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.devtools.ksp)
+    alias(libs.plugins.jetbrains.kotlin.compose)
+}
+
+android {
+    namespace 'com.sakuya.sakuyainandroid'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.sakuya.sakuyainandroid"
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        debug {
+            buildConfigField "boolean", "DEV_SKIP_AUTH", "true"
+        }
+        release {
+            buildConfigField "boolean", "DEV_SKIP_AUTH", "false"
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    buildFeatures{
+        compose = true
+        buildConfig = true
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.material
+    implementation libs.androidx.activity
+    implementation libs.androidx.constraintlayout
+    implementation libs.bundles.feature.ui
+    implementation project(':core:common')
+    implementation project(':core:designsystem')
+    implementation project(':core:di')
+    implementation project(':feature:conversation')
+    implementation project(':feature:friend')
+    implementation project(':feature:profile')
+    implementation project(':feature:authentication')
+
+    implementation libs.androidx.compose.ui.test.junit4
+    testImplementation libs.turbine
+    testImplementation libs.kolinx.coroutines.test
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+    // Hilt
+    implementation libs.hilt.android
+    ksp libs.hilt.compiler
+    implementation libs.androidx.navigation.compose
+
+}

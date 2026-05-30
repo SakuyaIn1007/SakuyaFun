@@ -1,0 +1,61 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.devtools.ksp)
+}
+
+android {
+    namespace 'com.sakuya.model'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = '11'
+    }
+}
+
+dependencies {
+
+
+    api libs.datastore.preferences
+    api libs.retrofit2
+    api libs.retrofit2.converter.gson
+    api libs.okhttp3
+    api libs.hilt.android
+    api libs.logging.interceptor
+    api libs.androidx.core.ktx
+    api libs.androidx.appcompat
+    api libs.material
+
+    implementation libs.androidx.compose.ui.test.junit4
+
+
+    // Hilt Compiler
+    ksp libs.hilt.compiler
+
+    implementation libs.androidx.navigation.compose
+    implementation libs.navigation.testing
+    implementation libs.core.ktx
+    // Test dependencies (correctly scoped)
+    testImplementation libs.turbine
+    testImplementation libs.kolinx.coroutines.test
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+}
