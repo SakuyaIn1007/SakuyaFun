@@ -3,6 +3,7 @@ package com.sakuya.designsystem.icon
 import com.sakuya.designsystem.R
 
 object SakuyaIcons {
+    val Home = R.drawable.ic_home
     val Wallet = R.drawable.ic_wallet
     val Favorites = R.drawable.ic_favourites
     val Pictures = R.drawable.ic_pictures

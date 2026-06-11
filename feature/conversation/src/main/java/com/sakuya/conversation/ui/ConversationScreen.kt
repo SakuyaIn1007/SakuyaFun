@@ -18,12 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,27 +36,33 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.conversation.model.Conversation
-import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.AppPrimaryTopBar
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+
+
 
 @Composable
 fun ConversationScreen(
     conversations: List<Conversation>,
     modifier: Modifier = Modifier,
-    showBackButton: Boolean = true,
-    onBack: () -> Unit = {},
-    onConversationClick: (Conversation) -> Unit = {}
+    onConversationClick: (Conversation) -> Unit = {},
+    onNavigateToNotice: () -> Unit = {},
+    onNavigateToFriend: () -> Unit = {},
+    onNavigateToGroup:  () -> Unit = {}
 ) {
+    val temp1 = listOf(
+        "新通知" to {onNavigateToNotice},
+        "好友" to {onNavigateToFriend},
+        "群聊" to {onNavigateToGroup}
+        )
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        AppSecondaryTopBar(
+        AppPrimaryTopBar(
             title = "消息",
-            onBack = onBack,
-            showNavigationIcon = showBackButton,
             actions = {
                 IconButton(onClick = {}) {
                     Icon(
@@ -64,7 +72,35 @@ fun ConversationScreen(
                 }
             }
         )
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+        ) {
+            Column(modifier = Modifier.padding(top = 24.dp)) {
+                temp1.forEach { (title, action) ->
+                    EntryCard(
+                        title = title,
+                        onClick = { action() }
+                    )
+                    Outline(dp = 76.dp)
+                }
+            }
+        }
+        LazyColumn(modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 32.dp)
+        ) {
+            item{
+                Text(
+                    text = "新消息",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+            }
+
             items(conversations, key = { it.id }) { conversation ->
                 ConversationRow(
                     conversation = conversation,
@@ -73,6 +109,37 @@ fun ConversationScreen(
                 Outline(dp = 76.dp)
             }
         }
+    }
+}
+
+@Composable
+private fun EntryCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    onClick: () -> Unit = {}
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .clickable(onClick = onClick)
+            .padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = "箭头",
+            tint = MaterialTheme.colorScheme.outline
+        )
+
     }
 }
 

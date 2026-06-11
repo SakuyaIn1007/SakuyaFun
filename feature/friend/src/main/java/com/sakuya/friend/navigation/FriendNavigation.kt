@@ -10,9 +10,14 @@ fun NavGraphBuilder.friendNavGraph(navController: NavHostController) {
     composable(FRIEND_ROUTE) {
         FriendScreen(
             friends = sampleFriends(),
-            showBackButton = false,
             onBack = { navController.popBackStack() }
         )
+    }
+    composable(FNOTICE_ROUTE){
+
+    }
+    composable(GROUP_ROUTE){
+
     }
 }
 

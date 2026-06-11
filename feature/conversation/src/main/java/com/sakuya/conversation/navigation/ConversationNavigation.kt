@@ -13,10 +13,17 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
     composable(CONVERSATION_ROUTE) {
         ConversationScreen(
             conversations = conversations,
-            showBackButton = false,
-            onBack = { navController.popBackStack() },
             onConversationClick = { conversation ->
                 navController.navigate(chatRoute(conversation.id))
+            },
+            onNavigateToFriend = {
+                navController.navigate("friend")
+            },
+            onNavigateToGroup = {
+                navController.navigate("group")
+            },
+            onNavigateToNotice = {
+                navController.navigate("fnotice")
             }
         )
     }

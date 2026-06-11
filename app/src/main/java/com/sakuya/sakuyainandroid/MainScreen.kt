@@ -2,6 +2,7 @@ package com.sakuya.sakuyainandroid
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -25,6 +26,8 @@ import com.sakuya.authentication.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.authentication.navigation.authNavGraph
 import com.sakuya.conversation.navigation.conversationNavGraph
 import com.sakuya.friend.navigation.friendNavGraph
+import com.sakuya.home.navigation.homeNavGraph
+import com.sakuya.library.navigation.libraryNavGraph
 import com.sakuya.profile.navigation.PROFILE_ROUTE
 import com.sakuya.profile.navigation.profileNavGraph
 import com.sakuya.sakuyainandroid.navigation.topLevelNavItems
@@ -60,7 +63,8 @@ fun MainScreen(
                 )
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0.dp)
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -115,9 +119,11 @@ private fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
             }
         }
     )
+    homeNavGraph(navController)
     conversationNavGraph(navController)
-    friendNavGraph(navController)
+    libraryNavGraph(navController)
     profileNavGraph(navController)
+    friendNavGraph(navController)
 }
 
 private fun NavDestination?.isTopLevelDestination(route: String): Boolean {
@@ -130,7 +136,6 @@ private fun NavDestination?.isTopLevelDestination(route: String): Boolean {
 @Composable
 fun MainBottomBarPreview() {
     SakuyaInAndroidTheme(darkTheme = true) {
-        // ✨ 塔菲的仿制魔法：直接通过代码实例化一个纯静态的 NavDestination
         val mockDestination = NavDestination("").apply {
             route = topLevelNavItems.firstOrNull()?.route
         }

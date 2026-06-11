@@ -1,6 +1,7 @@
 package com.sakuya.profile.ui
 
 import android.content.ContentUris
+import android.content.ContentValues
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -41,8 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -58,6 +62,15 @@ fun AvatarEditContent(
     uploadState: UploadState = UploadState.Idle
 ) {
     val context = LocalContext.current
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraUri?.let { onImageSelected(it) }
+        }
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -69,6 +82,24 @@ fun AvatarEditContent(
         galleryLauncher.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
         )
+    }
+
+    val openCamera = {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "avatar_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+        }
+        val uri = context.contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            values
+        )
+        if (uri != null) {
+            cameraUri = uri
+            takePictureLauncher.launch(uri)
+        }
     }
 
     val recentPhotos = remember { mutableStateListOf<Uri>() }
@@ -90,46 +121,101 @@ fun AvatarEditContent(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-
-            if (isUploading || uploadState is UploadState.Loading) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
+            Box(
+                modifier = Modifier.size(100.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (currentAvatarUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = currentAvatarUrl,
+                        contentDescription = "当前头像",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        contentScale = ContentScale.Crop
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "正在保存...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "头像",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
             }
 
-            if (uploadState is UploadState.Error) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = uploadState.message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+            when {
+                isUploading || uploadState is UploadState.Loading -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "正在保存...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                uploadState is UploadState.Success -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "头像保存成功",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF4CAF50),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                uploadState is UploadState.Error -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = uploadState.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 
         ActionItem(
             text = "拍照",
-            onClick = { }
+            onClick = openCamera
         )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+        )
+
+        ActionItem(
+            text = "从手机相册选择",
+            onClick = openGallery
+        )
+
         if (recentPhotos.isNotEmpty()) {
+            HorizontalDivider(
+                thickness = 8.dp,
+                color = MaterialTheme.colorScheme.surfaceVariant
+            )
+
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier
@@ -187,6 +273,12 @@ fun AvatarEditContent(
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "点击上方按钮拍照或从相册选择",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
                         }
                     }
                 }
@@ -197,10 +289,7 @@ fun AvatarEditContent(
 
 private fun queryRecentPhotos(context: android.content.Context): List<Uri> {
     val uris = mutableListOf<Uri>()
-    val projection = arrayOf(
-        MediaStore.Images.Media._ID
-    )
-    val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+    val projection = arrayOf(MediaStore.Images.Media._ID)
 
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -234,6 +323,7 @@ private fun queryRecentPhotos(context: android.content.Context): List<Uri> {
                 }
             }
         } else {
+            val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
             context.contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                 projection,
@@ -242,9 +332,8 @@ private fun queryRecentPhotos(context: android.content.Context): List<Uri> {
                 sortOrder
             )?.use { cursor ->
                 val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-                val limit = 30
                 var count = 0
-                while (cursor.moveToNext() && count < limit) {
+                while (cursor.moveToNext() && count < 30) {
                     val id = cursor.getLong(idColumn)
                     uris.add(
                         ContentUris.withAppendedId(
@@ -272,7 +361,7 @@ private fun ActionItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

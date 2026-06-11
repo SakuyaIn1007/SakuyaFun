@@ -60,14 +60,14 @@ fun FriendScreen(
             }
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            item {
-                FriendActionRow(title = "新的朋友", subtitle = "查看好友申请")
-                Outline(dp = 76.dp)
-            }
-            item {
-                FriendActionRow(title = "群聊", subtitle = "进入我的群聊")
-                Outline(dp = 76.dp)
-            }
+//            item {
+//                FriendActionRow(title = "新的朋友", subtitle = "查看好友申请")
+//                Outline(dp = 76.dp)
+//            }
+//            item {
+//                FriendActionRow(title = "群聊", subtitle = "进入我的群聊")
+//                Outline(dp = 76.dp)
+//            }
             item {
                 Text(
                     text = "好友 ${friends.size}",
@@ -84,38 +84,38 @@ fun FriendScreen(
     }
 }
 
-@Composable
-private fun FriendActionRow(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
-            .clickable {}
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        AvatarBox(text = title.first().toString(), online = false)
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
+//@Composable
+//private fun FriendActionRow(
+//    title: String,
+//    subtitle: String,
+//    modifier: Modifier = Modifier
+//) {
+//    Row(
+//        modifier = modifier
+//            .fillMaxWidth()
+//            .background(MaterialTheme.colorScheme.inverseOnSurface)
+//            .clickable {}
+//            .padding(horizontal = 16.dp, vertical = 12.dp),
+//        verticalAlignment = Alignment.CenterVertically
+//    ) {
+//        AvatarBox(text = title.first().toString(), online = false)
+//        Spacer(modifier = Modifier.width(12.dp))
+//        Column(modifier = Modifier.weight(1f)) {
+//            Text(
+//                text = title,
+//                style = MaterialTheme.typography.titleMedium,
+//                color = MaterialTheme.colorScheme.onBackground
+//            )
+//            Text(
+//                text = subtitle,
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.outline,
+//                maxLines = 1,
+//                overflow = TextOverflow.Ellipsis
+//            )
+//        }
+//    }
+//}
 
 @Composable
 private fun FriendRow(

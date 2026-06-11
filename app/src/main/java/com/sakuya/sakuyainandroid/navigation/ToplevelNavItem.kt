@@ -3,7 +3,8 @@ package com.sakuya.sakuyainandroid.navigation
 import androidx.annotation.DrawableRes
 import com.sakuya.conversation.navigation.CONVERSATION_ROUTE
 import com.sakuya.designsystem.icon.SakuyaIcons
-import com.sakuya.friend.navigation.FRIEND_ROUTE
+import com.sakuya.home.navigation.HOME_ROUTE
+import com.sakuya.library.navigation.LIBRARY_ROUTE
 import com.sakuya.profile.navigation.PROFILE_ROUTE
 
 data class ToplevelNavItem(
@@ -14,14 +15,19 @@ data class ToplevelNavItem(
 
 val topLevelNavItems = listOf(
     ToplevelNavItem(
+        route = HOME_ROUTE,
+        label = "首页",
+        iconRes = SakuyaIcons.Home
+    ),
+    ToplevelNavItem(
+        route = LIBRARY_ROUTE,
+        label = "收藏",
+        iconRes = SakuyaIcons.Favorites
+    ),
+    ToplevelNavItem(
         route = CONVERSATION_ROUTE,
         label = "消息",
         iconRes = SakuyaIcons.Conversation
-    ),
-    ToplevelNavItem(
-        route = FRIEND_ROUTE,
-        label = "好友",
-        iconRes = SakuyaIcons.Friends
     ),
     ToplevelNavItem(
         route = PROFILE_ROUTE,
