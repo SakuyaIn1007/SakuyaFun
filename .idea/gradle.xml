@@ -27,6 +27,7 @@
             <option value="$PROJECT_DIR$/feature/library" />
             <option value="$PROJECT_DIR$/feature/profile" />
             <option value="$PROJECT_DIR$/feature/profile-services" />
+            <option value="$PROJECT_DIR$/feature/reader" />
             <option value="$PROJECT_DIR$/feature/settings" />
           </set>
         </option>

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.compose)
     alias(libs.plugins.devtools.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -44,6 +45,7 @@ dependencies {
     implementation libs.core.ktx
     implementation libs.androidx.compose.ui.test.junit4
     implementation libs.navigation.testing
+    implementation libs.hilt.android
     ksp libs.hilt.compiler
 
 

@@ -43,23 +43,23 @@ class ProfileViewModel @Inject constructor(
     fun onAction(action: ProfileAction) {
         when (action) {
 //
-            ProfileAction.OnMeClick -> emitEffect(ProfileEffect.GoMe)
+            ProfileAction.OnMeClick -> emitEffect(ProfileEffect.NavigateToMe)
 
-            ProfileAction.OnConversationClick -> emitEffect(ProfileEffect.GoConversation)
+            ProfileAction.OnConversationClick -> emitEffect(ProfileEffect.NavigateToConversation)
 
-            ProfileAction.OnFriendsClick -> emitEffect(ProfileEffect.GoFriends)
+            ProfileAction.OnFriendsClick -> emitEffect(ProfileEffect.NavigateToFriends)
 //
-            ProfileAction.OnAlbumsClick -> emitEffect(ProfileEffect.GoAlbums)
+            ProfileAction.OnAlbumsClick -> emitEffect(ProfileEffect.NavigateToAlbums)
 //
-            ProfileAction.OnSettingsClick -> emitEffect(ProfileEffect.GoSettings)
+            ProfileAction.OnSettingsClick -> emitEffect(ProfileEffect.NavigateToSettings)
 
             ProfileAction.OnLogoutClick -> emitEffect(ProfileEffect.showToast("退出登录"))
 
-            ProfileAction.OnWalletClick -> emitEffect(ProfileEffect.GoWallet)
+            ProfileAction.OnWalletClick -> emitEffect(ProfileEffect.NavigateToWallet)
 
-            ProfileAction.OnFavouritesClick -> emitEffect(ProfileEffect.GoFavourites)
+            ProfileAction.OnFavouritesClick -> emitEffect(ProfileEffect.NavigateToFavourites)
 
-            ProfileAction.OnCardsClick -> emitEffect(ProfileEffect.GoCards)
+            ProfileAction.OnCardsClick -> emitEffect(ProfileEffect.NavigateToCards)
             else -> Unit
         }
     }
@@ -71,14 +71,14 @@ class ProfileViewModel @Inject constructor(
 
 }
 sealed interface ProfileEffect {
-    data object GoMe : ProfileEffect
-    data object GoConversation : ProfileEffect
-    data object GoFriends : ProfileEffect
-    data object GoSettings : ProfileEffect
-    data object GoWallet : ProfileEffect
-    data object GoFavourites : ProfileEffect
-    data object GoCards : ProfileEffect
-    data object GoAlbums : ProfileEffect
+    data object NavigateToMe : ProfileEffect
+    data object NavigateToConversation : ProfileEffect
+    data object NavigateToFriends : ProfileEffect
+    data object NavigateToSettings : ProfileEffect
+    data object NavigateToWallet : ProfileEffect
+    data object NavigateToFavourites : ProfileEffect
+    data object NavigateToCards : ProfileEffect
+    data object NavigateToAlbums : ProfileEffect
     data class showToast(val message: String) : ProfileEffect
 }
 sealed interface ProfileAction {

@@ -58,29 +58,29 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
 
                 when (effect) {
 
-                    ProfileEffect.GoMe -> {
+                    ProfileEffect.NavigateToMe -> {
                         navController.navigate(PROFILE_ME)
                     }
-                    ProfileEffect.GoConversation -> {
+                    ProfileEffect.NavigateToConversation -> {
                         navController.navigate(CONVERSATION_ROUTE)
                     }
-                    ProfileEffect.GoFriends -> {
+                    ProfileEffect.NavigateToFriends -> {
                         navController.navigate(FRIEND_ROUTE)
                     }
-                    ProfileEffect.GoFavourites -> {
+                    ProfileEffect.NavigateToFavourites -> {
                         navController.navigate(PROFILE_FAVOURITES_ROUTE)
                     }
-                    ProfileEffect.GoCards -> {
+                    ProfileEffect.NavigateToCards -> {
                         navController.navigate(PROFILE_CARDS_ROUTE)
                     }
-                    ProfileEffect.GoAlbums -> {
+                    ProfileEffect.NavigateToAlbums -> {
                         navController.navigate(PROFILE_ALBUMS_ROUTE)
                     }
 
-                    ProfileEffect.GoSettings -> {
+                    ProfileEffect.NavigateToSettings -> {
                         navController.navigate(PROFILE_SETTINGS_ROUTE)
                     }
-                    ProfileEffect.GoWallet -> {
+                    ProfileEffect.NavigateToWallet -> {
                         navController.navigate(PROFILE_WALLET_ROUTE)
                     }
                     else -> Unit
