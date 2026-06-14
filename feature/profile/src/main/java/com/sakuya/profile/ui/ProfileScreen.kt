@@ -40,7 +40,7 @@ import coil.request.ImageRequest
 import com.sakuya.designsystem.icon.SakuyaIcons
 import com.sakuya.profile.model.PrivacySettings
 import com.sakuya.profile.model.UserProfile
-import com.sakuya.profile.ProfileAction
+import com.sakuya.profile.viewmodel.ProfileAction
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable

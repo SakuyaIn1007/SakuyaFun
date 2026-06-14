@@ -1,73 +1,60 @@
 package com.sakuya.conversation.navigation
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import com.sakuya.conversation.model.Conversation
+import androidx.navigation.navArgument
 import com.sakuya.conversation.ui.ChatScreen
 import com.sakuya.conversation.ui.ConversationScreen
+import com.sakuya.conversation.viewmodel.ConversationEffect
+import com.sakuya.conversation.viewmodel.ConversationViewModel
+import com.sakuya.navigation.CHAT_ID_ARG
+import com.sakuya.navigation.CHAT_ROUTE
+import com.sakuya.navigation.CONVERSATION_ROUTE
+import com.sakuya.navigation.FNOTICE_ROUTE
+import com.sakuya.navigation.FRIEND_ROUTE
+import com.sakuya.navigation.GROUP_ROUTE
+import com.sakuya.navigation.chatRoute
 
 fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
-    val conversations = sampleConversations()
-
     composable(CONVERSATION_ROUTE) {
-        ConversationScreen(
-            conversations = conversations,
-            onConversationClick = { conversation ->
-                navController.navigate(chatRoute(conversation.id))
-            },
-            onNavigateToFriend = {
-                navController.navigate("friend")
-            },
-            onNavigateToGroup = {
-                navController.navigate("group")
-            },
-            onNavigateToNotice = {
-                navController.navigate("fnotice")
+        val viewModel: ConversationViewModel = hiltViewModel()
+
+        LaunchedEffect(Unit) {
+            viewModel.effect.collect { effect ->
+                when (effect) {
+                    is ConversationEffect.NavigateToChat -> {
+                        navController.navigate(
+                            chatRoute(effect.conversation.id, effect.conversation.title)
+                        )
+                    }
+                    ConversationEffect.NavigateToNotice -> navController.navigate(FNOTICE_ROUTE)
+                    ConversationEffect.NavigateToFriend -> navController.navigate(FRIEND_ROUTE)
+                    ConversationEffect.NavigateToGroup -> navController.navigate(GROUP_ROUTE)
+                    is ConversationEffect.ShowError -> {}
+                }
+            }
+        }
+
+        ConversationScreen(viewModel = viewModel)
+    }
+    composable(
+        route = "$CHAT_ROUTE/{$CHAT_ID_ARG}?title={$CHAT_TITLE_ARG}",
+        arguments = listOf(
+            navArgument(CHAT_ID_ARG) { type = NavType.StringType },
+            navArgument(CHAT_TITLE_ARG) {
+                type = NavType.StringType
+                defaultValue = ""
             }
         )
-    }
-    composable(CHAT_ROUTE_PATTERN) { backStackEntry ->
-        val conversationId = backStackEntry.arguments?.getString(CHAT_ID_ARG)
-        val title = conversations.firstOrNull { it.id == conversationId }?.title ?: "聊天"
-
+    ) {
         ChatScreen(
-            title = title,
             onBack = { navController.popBackStack() }
         )
     }
 }
 
-private fun sampleConversations() = listOf(
-    Conversation(
-        id = "family",
-        title = "家人群",
-        lastMessage = "晚饭已经准备好了，记得早点回来。",
-        timeLabel = "18:42",
-        unreadCount = 3,
-        avatarText = "家",
-        isPinned = true
-    ),
-    Conversation(
-        id = "sakuya",
-        title = "十六夜咲夜",
-        lastMessage = "明天的清单我整理好了。",
-        timeLabel = "17:08",
-        avatarText = "咲"
-    ),
-    Conversation(
-        id = "work",
-        title = "项目讨论",
-        lastMessage = "feature 的初版可以先走本地 mock 数据。",
-        timeLabel = "昨天",
-        unreadCount = 1,
-        avatarText = "项"
-    ),
-    Conversation(
-        id = "system",
-        title = "系统通知",
-        lastMessage = "账号安全保护已开启。",
-        timeLabel = "周三",
-        avatarText = "通"
-    )
-)
+private const val CHAT_TITLE_ARG = "title"

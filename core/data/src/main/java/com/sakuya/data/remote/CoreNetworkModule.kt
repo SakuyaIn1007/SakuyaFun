@@ -27,6 +27,10 @@ object CoreNetworkModule {
 
     @Provides
     @Singleton
+    fun provideGson(): Gson = Gson()
+
+    @Provides
+    @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://api.sakuya.com/")

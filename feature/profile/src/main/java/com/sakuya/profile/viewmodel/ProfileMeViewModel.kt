@@ -4,10 +4,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sakuya.profile.ProfileAction
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.data.repository.UserRepository
-import com.sakuya.profile.effect.ProfileMeEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -105,6 +103,17 @@ class ProfileMeViewModel @Inject constructor(
         }
     }
 
+}
+
+sealed interface ProfileMeEffect {
+    data object GoAvatar : ProfileMeEffect
+    data object GoName : ProfileMeEffect
+    data object GoGender : ProfileMeEffect
+    data object GoRegion : ProfileMeEffect
+    data object GoPhone : ProfileMeEffect
+    data object GoId : ProfileMeEffect
+    data object GoSignature : ProfileMeEffect
+    data object GoRingtone : ProfileMeEffect
 }
 sealed class UploadState {
     object Idle : UploadState()

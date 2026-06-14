@@ -11,6 +11,8 @@ import com.sakuya.authentication.ui.LoginScreen
 import com.sakuya.authentication.ui.RegisterScreen
 import com.sakuya.authentication.viewmodel.AuthEffect
 import com.sakuya.authentication.viewmodel.AuthViewModel
+import com.sakuya.navigation.AUTH_LOGIN_ROUTE
+import com.sakuya.navigation.AUTH_REGISTER_ROUTE
 
 fun NavGraphBuilder.authNavGraph(
     navController: NavHostController,

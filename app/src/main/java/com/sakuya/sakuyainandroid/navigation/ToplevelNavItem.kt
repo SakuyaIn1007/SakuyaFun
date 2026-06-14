@@ -1,11 +1,10 @@
 package com.sakuya.sakuyainandroid.navigation
 
 import androidx.annotation.DrawableRes
-import com.sakuya.conversation.navigation.CONVERSATION_ROUTE
-import com.sakuya.designsystem.icon.SakuyaIcons
-import com.sakuya.home.navigation.HOME_ROUTE
-import com.sakuya.library.navigation.LIBRARY_ROUTE
-import com.sakuya.profile.navigation.PROFILE_ROUTE
+import com.sakuya.navigation.CONVERSATION_ROUTE
+import com.sakuya.navigation.HOME_ROUTE
+import com.sakuya.navigation.LIBRARY_ROUTE
+import com.sakuya.navigation.PROFILE_ROUTE
 
 data class ToplevelNavItem(
     val route: String,

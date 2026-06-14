@@ -59,6 +59,7 @@ dependencies {
     implementation project(':feature:friend')
     implementation project(':feature:profile')
     implementation project(':feature:authentication')
+    implementation project(':core:navigation')
 
     implementation libs.androidx.compose.ui.test.junit4
     testImplementation libs.turbine

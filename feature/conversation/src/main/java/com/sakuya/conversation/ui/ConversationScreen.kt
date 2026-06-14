@@ -15,19 +15,22 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,85 +38,120 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.conversation.model.Conversation
+import com.sakuya.conversation.viewmodel.ConversationAction
+import com.sakuya.conversation.viewmodel.ConversationViewModel
 import com.sakuya.ui.component.AppPrimaryTopBar
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
-
-
 @Composable
 fun ConversationScreen(
-    conversations: List<Conversation>,
-    modifier: Modifier = Modifier,
-    onConversationClick: (Conversation) -> Unit = {},
-    onNavigateToNotice: () -> Unit = {},
-    onNavigateToFriend: () -> Unit = {},
-    onNavigateToGroup:  () -> Unit = {}
+    viewModel: ConversationViewModel = hiltViewModel()
 ) {
-    val temp1 = listOf(
-        "新通知" to {onNavigateToNotice},
-        "好友" to {onNavigateToFriend},
-        "群聊" to {onNavigateToGroup}
-        )
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        AppPrimaryTopBar(
-            title = "消息",
-            actions = {
-                IconButton(onClick = {}) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "新建会话"
-                    )
-                }
-            }
-        )
+    val conversations by viewModel.conversations.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.inverseOnSurface,
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+    ConversationContent(
+        conversations = conversations,
+        isLoading = isLoading,
+        onAction = viewModel::onAction
+    )
+}
+
+@Composable
+fun ConversationContent(
+    conversations: List<Conversation>,
+    isLoading: Boolean,
+    onAction: (ConversationAction) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(modifier = Modifier.padding(top = 24.dp)) {
-                temp1.forEach { (title, action) ->
-                    EntryCard(
-                        title = title,
-                        onClick = { action() }
+            AppPrimaryTopBar(
+                title = "消息",
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "新建会话"
+                        )
+                    }
+                }
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+            ) {
+                Column(modifier = Modifier.padding(top = 24.dp)) {
+                    ConversationEntryCard(
+                        title = "新通知",
+                        onClick = { onAction(ConversationAction.OnNoticeClick) }
+                    )
+                    Outline(dp = 76.dp)
+                    ConversationEntryCard(
+                        title = "好友",
+                        onClick = { onAction(ConversationAction.OnFriendClick) }
+                    )
+                    Outline(dp = 76.dp)
+                    ConversationEntryCard(
+                        title = "群聊",
+                        onClick = { onAction(ConversationAction.OnGroupClick) }
                     )
                     Outline(dp = 76.dp)
                 }
             }
-        }
-        LazyColumn(modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 32.dp)
-        ) {
-            item{
-                Text(
-                    text = "新消息",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                )
-            }
 
-            items(conversations, key = { it.id }) { conversation ->
-                ConversationRow(
-                    conversation = conversation,
-                    onClick = { onConversationClick(conversation) }
-                )
-                Outline(dp = 76.dp)
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 32.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "新消息",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    items(conversations, key = { it.id }) { conversation ->
+                        ConversationRow(
+                            conversation = conversation,
+                            onClick = { onAction(ConversationAction.OnChatClick(conversation)) }
+                        )
+                        Outline(dp = 76.dp)
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun EntryCard(
+private fun ConversationEntryCard(
     modifier: Modifier = Modifier,
     title: String,
     onClick: () -> Unit = {}
@@ -127,19 +165,18 @@ private fun EntryCard(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "箭头",
             tint = MaterialTheme.colorScheme.outline
         )
-
     }
 }
 
@@ -215,19 +252,29 @@ private fun ConversationRow(
 
 @Preview(showBackground = true)
 @Composable
-private fun ConversationScreenPreview() {
-    SakuyaInAndroidTheme (true){
-        ConversationScreen(
+private fun ConversationContentPreview() {
+    SakuyaInAndroidTheme(true) {
+        ConversationContent(
             conversations = listOf(
                 Conversation(
-                    id = "preview",
+                    id = "family",
+                    title = "家人群",
+                    lastMessage = "晚饭已经准备好了，记得早点回来。",
+                    timeLabel = "18:42",
+                    unreadCount = 3,
+                    avatarText = "家",
+                    isPinned = true
+                ),
+                Conversation(
+                    id = "sakuya",
                     title = "十六夜咲夜",
                     lastMessage = "明天的清单我整理好了。",
                     timeLabel = "17:08",
-                    unreadCount = 2,
                     avatarText = "咲"
-                )
-            )
+                ),
+            ),
+            isLoading = false,
+            onAction = {}
         )
     }
 }

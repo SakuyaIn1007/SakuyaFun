@@ -22,13 +22,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.sakuya.authentication.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.authentication.navigation.authNavGraph
 import com.sakuya.conversation.navigation.conversationNavGraph
 import com.sakuya.friend.navigation.friendNavGraph
 import com.sakuya.home.navigation.homeNavGraph
 import com.sakuya.library.navigation.libraryNavGraph
-import com.sakuya.profile.navigation.PROFILE_ROUTE
+import com.sakuya.navigation.AUTH_LOGIN_ROUTE
+import com.sakuya.navigation.PROFILE_ROUTE
 import com.sakuya.profile.navigation.profileNavGraph
 import com.sakuya.sakuyainandroid.navigation.topLevelNavItems
 import com.sakuya.ui.theme.SakuyaInAndroidTheme

@@ -1,5 +1,8 @@
 package com.sakuya.conversation.model
 
+import com.sakuya.data.local.entity.ConversationEntity
+
+
 data class Conversation(
     val id: String,
     val title: String,
@@ -9,3 +12,4 @@ data class Conversation(
     val avatarText: String,
     val isPinned: Boolean = false
 )
+

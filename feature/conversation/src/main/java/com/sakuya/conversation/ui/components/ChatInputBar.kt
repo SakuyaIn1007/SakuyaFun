@@ -50,7 +50,6 @@ fun ChatInputBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // 🎙️ 语音按钮
         IconButton(
             onClick = {},
             modifier = Modifier.size(32.dp) // 防误触大小

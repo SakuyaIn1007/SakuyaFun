@@ -16,12 +16,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.sakuya.conversation.navigation.CONVERSATION_ROUTE
-import com.sakuya.friend.navigation.FRIEND_ROUTE
+import com.sakuya.navigation.CONVERSATION_ROUTE
+import com.sakuya.navigation.FRIEND_ROUTE
+import com.sakuya.navigation.PROFILE_ALBUMS_ROUTE
+import com.sakuya.navigation.PROFILE_AVATAR
+import com.sakuya.navigation.PROFILE_CARDS_ROUTE
+import com.sakuya.navigation.PROFILE_FAVOURITES_ROUTE
+import com.sakuya.navigation.PROFILE_GENDER
+import com.sakuya.navigation.PROFILE_ME
+import com.sakuya.navigation.PROFILE_NAME
+import com.sakuya.navigation.PROFILE_PHONE
+import com.sakuya.navigation.PROFILE_REGION
+import com.sakuya.navigation.PROFILE_RINGTONE
+import com.sakuya.navigation.PROFILE_ROUTE
+import com.sakuya.navigation.PROFILE_SETTINGS_ROUTE
+import com.sakuya.navigation.PROFILE_SIGNATURE
+import com.sakuya.navigation.PROFILE_WALLET_ROUTE
 import com.sakuya.model.extentions.Gender
-import com.sakuya.profile.ProfileAction
-import com.sakuya.profile.effect.ProfileEffect
-import com.sakuya.profile.effect.ProfileMeEffect
 import com.sakuya.profile.ui.AvatarEditContent
 import com.sakuya.profile.ui.ProfileEditScreen
 import com.sakuya.profile.ui.ProfilePrivacyScreen
@@ -29,14 +40,11 @@ import com.sakuya.profile.ui.ProfileScreen
 import com.sakuya.profile.ui.components.EditGenderContent
 import com.sakuya.profile.ui.components.EditRegionContent
 import com.sakuya.profile.ui.subpages.MyScreen
+import com.sakuya.profile.viewmodel.ProfileEffect
+import com.sakuya.profile.viewmodel.ProfileMeEffect
 import com.sakuya.profile.viewmodel.ProfileMeViewModel
 import com.sakuya.profile.viewmodel.ProfileViewModel
 import com.sakuya.profile.viewmodel.UploadState
-import com.sakuya.profileservices.navigation.PROFILE_ALBUMS_ROUTE
-import com.sakuya.profileservices.navigation.PROFILE_CARDS_ROUTE
-import com.sakuya.profileservices.navigation.PROFILE_FAVOURITES_ROUTE
-import com.sakuya.profileservices.navigation.PROFILE_SETTINGS_ROUTE
-import com.sakuya.profileservices.navigation.PROFILE_WALLET_ROUTE
 import com.sakuya.profileservices.navigation.profileServicesNavGraph
 
 

@@ -2,9 +2,9 @@ package com.sakuya.sakuyainandroid
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sakuya.authentication.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.data.local.TokenStorage
-import com.sakuya.profile.navigation.PROFILE_ROUTE
+import com.sakuya.navigation.AUTH_LOGIN_ROUTE
+import com.sakuya.navigation.PROFILE_ROUTE
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

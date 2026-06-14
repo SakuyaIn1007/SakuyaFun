@@ -2,10 +2,8 @@ package com.sakuya.profile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sakuya.profile.ProfileAction
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.data.repository.UserRepository
-import com.sakuya.profile.effect.ProfileEffect
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,3 +70,36 @@ class ProfileViewModel @Inject constructor(
     }
 
 }
+sealed interface ProfileEffect {
+    data object GoMe : ProfileEffect
+    data object GoConversation : ProfileEffect
+    data object GoFriends : ProfileEffect
+    data object GoSettings : ProfileEffect
+    data object GoWallet : ProfileEffect
+    data object GoFavourites : ProfileEffect
+    data object GoCards : ProfileEffect
+    data object GoAlbums : ProfileEffect
+    data class showToast(val message: String) : ProfileEffect
+}
+sealed interface ProfileAction {
+
+    data object SaveName : ProfileAction
+    data object OnMeClick : ProfileAction
+    data object OnConversationClick : ProfileAction
+    data object OnFriendsClick : ProfileAction
+    data object OnSettingsClick : ProfileAction
+    data object OnWalletClick : ProfileAction
+    data object OnCardsClick : ProfileAction
+    data object OnFavouritesClick : ProfileAction
+    data object OnLogoutClick : ProfileAction
+    data object OnAlbumsClick : ProfileAction
+    data object OnAvatarClick : ProfileAction
+    data object OnNameClick : ProfileAction
+    data object OnGenderClick : ProfileAction
+    data object OnRegionClick : ProfileAction
+    data object OnPhoneClick : ProfileAction
+    data object OnIdClick : ProfileAction
+    data object OnSignatureClick : ProfileAction
+    data object OnRingtoneClick : ProfileAction
+}
+
