@@ -10,7 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
 fun AppPrimaryTopBar(
@@ -36,4 +38,12 @@ fun AppPrimaryTopBar(
         ),
         actions = actions
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AppPrimaryPreview(){
+    SakuyaInAndroidTheme(true) {
+        AppPrimaryTopBar("qwe")
+    }
 }

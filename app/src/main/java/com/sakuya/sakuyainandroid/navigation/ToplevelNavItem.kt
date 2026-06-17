@@ -1,6 +1,7 @@
 package com.sakuya.sakuyainandroid.navigation
 
 import androidx.annotation.DrawableRes
+import com.sakuya.designsystem.icon.SakuyaIcons
 import com.sakuya.navigation.CONVERSATION_ROUTE
 import com.sakuya.navigation.HOME_ROUTE
 import com.sakuya.navigation.LIBRARY_ROUTE

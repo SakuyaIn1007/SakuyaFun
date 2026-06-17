@@ -45,6 +45,10 @@ dependencies {
     implementation libs.material
     implementation libs.bundles.feature.ui
     implementation libs.androidx.navigation.compose
+    implementation libs.epublib.core
+    implementation libs.slf4j.api
+    implementation libs.slf4j.simple
+
     implementation libs.core.ktx
     ksp libs.hilt.compiler
 

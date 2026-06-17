@@ -3,6 +3,7 @@ pluginManagement {
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        maven { url 'https://jitpack.io'}
         google()
         mavenCentral()
 
@@ -15,6 +16,7 @@ dependencyResolutionManagement {
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        maven { url 'https://github.com/psiegman/mvn-repo/raw/master/releases' }
         google()
         mavenCentral()
 
