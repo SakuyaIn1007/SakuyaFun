@@ -11,5 +11,6 @@ object SakuyaIcons {
     val Settings = R.drawable.ic_settings
     val Conversation = R.drawable.ic_conversation
     val Friends = R.drawable.ic_friends
+    val Folder = R.drawable.ic_folder
 
 }

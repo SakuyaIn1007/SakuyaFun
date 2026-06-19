@@ -1,16 +1,33 @@
 package com.sakuya.reader.navigation
 
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import com.sakuya.navigation.READER_ROUTE
+import androidx.navigation.navArgument
+import com.sakuya.navigation.READER_ARG_PATH
+import com.sakuya.navigation.READER_FULL_ROUTE
 import com.sakuya.reader.ui.ReaderScreen
-import com.sakuya.reader.viewmodel.ReaderViewModel
 
 fun NavGraphBuilder.readerNavGraph(navController: NavHostController) {
-    composable(READER_ROUTE) {
-        val viewModel: ReaderViewModel = hiltViewModel()
-        ReaderScreen(viewModel)
+    composable(
+        route = READER_FULL_ROUTE,
+        arguments = listOf(
+            navArgument(READER_ARG_PATH) {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { backStackEntry ->
+        val rawPath = backStackEntry.arguments?.getString(READER_ARG_PATH)
+        val filePath = rawPath
+            ?.takeIf { it.isNotEmpty() }
+            .orEmpty()
+
+        ReaderScreen(
+            filePath = filePath,
+            onBack = { navController.popBackStack() }
+        )
     }
 }

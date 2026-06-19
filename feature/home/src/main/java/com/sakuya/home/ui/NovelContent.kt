@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.home.model.ContentItem
-import com.sakuya.home.ui.components.ContentCard
+import com.sakuya.ui.component.ContentCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable

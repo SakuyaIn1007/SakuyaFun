@@ -1,12 +1,18 @@
 package com.sakuya.library.viewmodel
-
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.sakuya.library.model.LibraryItem
 import com.sakuya.library.model.LibraryItemType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -15,30 +21,73 @@ class LibraryViewModel @Inject constructor() : ViewModel() {
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 
-    private val _novelItems = MutableStateFlow(sampleNovelItems())
-    val novelItems: StateFlow<List<LibraryItem>> = _novelItems.asStateFlow()
+    private val _bookItems = MutableStateFlow(sampleBookItems())
+    val bookItems: StateFlow<List<LibraryItem>> = _bookItems.asStateFlow()
 
-    private val _musicItems = MutableStateFlow(sampleMusicItems())
-    val musicItems: StateFlow<List<LibraryItem>> = _musicItems.asStateFlow()
+    private val _isEditing = MutableStateFlow(false)
+    val isEditing: StateFlow<Boolean> = _isEditing.asStateFlow()
+    private val _events = MutableSharedFlow<LibraryEvent>()
+    val events = _events.asSharedFlow()
 
-    fun selectTab(index: Int) {
-        _selectedTab.value = index
+    fun onAction(action: LibraryAction) {
+        when (action) {
+            is LibraryAction.SelectTab -> {
+                _selectedTab.value = action.index
+            }
+
+            LibraryAction.ToggleEdit -> {
+                _isEditing.value = !_isEditing.value
+            }
+
+            is LibraryAction.RemoveItem -> {
+                _bookItems.value = _bookItems.value.filter { it.id != action.id }
+            }
+
+            is LibraryAction.ImportBook -> {
+                val importedBook = LibraryItem(
+                    id = action.filePath,
+                    title = action.title.ifBlank { "未命名书籍" },
+                    subtitle = when (action.type) {
+                        LibraryItemType.TXT -> "本地 TXT"
+                        LibraryItemType.EPUB -> "本地 EPUB"
+                    },
+                    rating = 0f,
+                    tags = listOf("本地导入"),
+                    type = action.type,
+                    collectedAt = currentDateTime(),
+                    filePath = action.filePath
+                )
+                _bookItems.value = listOf(importedBook) + _bookItems.value.filter {
+                    it.filePath != action.filePath
+                }
+            }
+
+            is LibraryAction.OpenBook -> {
+                val filePath = action.item.filePath
+                if (filePath.isNotEmpty()) {
+                    viewModelScope.launch {
+                        _events.emit(LibraryEvent.OpenReader(filePath))
+                    }
+                }
+            }
+        }
     }
 
-    fun removeItem(id: String) {
-        _novelItems.value = _novelItems.value.filter { it.id != id }
-        _musicItems.value = _musicItems.value.filter { it.id != id }
-    }
+
 }
 
-private fun sampleNovelItems() = listOf(
+private fun currentDateTime(): String {
+    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
+}
+
+private fun sampleBookItems() = listOf(
     LibraryItem(
         id = "novel_1",
         title = "刀剑神域",
         subtitle = "川原砾 · 电击文库",
         rating = 4.8f,
         tags = listOf("科幻", "冒险", "虚拟现实"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-06-01"
     ),
     LibraryItem(
@@ -47,7 +96,7 @@ private fun sampleNovelItems() = listOf(
         subtitle = "伏濑 · GC Novels",
         rating = 4.6f,
         tags = listOf("异世界", "奇幻", "轻松"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-05-28"
     ),
     LibraryItem(
@@ -56,7 +105,7 @@ private fun sampleNovelItems() = listOf(
         subtitle = "长月达平 · MF文库J",
         rating = 4.7f,
         tags = listOf("异世界", "悬疑", "轮回"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-05-20"
     ),
     LibraryItem(
@@ -65,7 +114,7 @@ private fun sampleNovelItems() = listOf(
         subtitle = "理不尽な孫の手 · MF Books",
         rating = 4.5f,
         tags = listOf("异世界", "成长", "冒险"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-05-15"
     ),
     LibraryItem(
@@ -74,7 +123,7 @@ private fun sampleNovelItems() = listOf(
         subtitle = "安里アサト · 电击文库",
         rating = 4.8f,
         tags = listOf("科幻", "战争", "机甲"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-05-10"
     ),
     LibraryItem(
@@ -83,7 +132,7 @@ private fun sampleNovelItems() = listOf(
         subtitle = "支仓冻砂 · 电击文库",
         rating = 4.7f,
         tags = listOf("冒险", "经商", "奇幻"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-05-05"
     ),
     LibraryItem(
@@ -92,7 +141,7 @@ private fun sampleNovelItems() = listOf(
         subtitle = "丸山くがね · Enterbrain",
         rating = 4.7f,
         tags = listOf("异世界", "黑暗", "奇幻"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-04-28"
     ),
     LibraryItem(
@@ -101,64 +150,24 @@ private fun sampleNovelItems() = listOf(
         subtitle = "鸭志田一 · 电击文库",
         rating = 4.6f,
         tags = listOf("恋爱", "青春", "校园"),
-        type = LibraryItemType.NOVEL,
+        type = LibraryItemType.TXT,
         collectedAt = "2026-04-20"
     ),
 )
 
-private fun sampleMusicItems() = listOf(
-    LibraryItem(
-        id = "music_1",
-        title = "Gurenge",
-        subtitle = "LiSA · 鬼灭之刃 OP",
-        rating = 4.9f,
-        tags = listOf("动漫", "热血", "摇滚"),
-        type = LibraryItemType.MUSIC,
-        collectedAt = "2026-06-02"
-    ),
-    LibraryItem(
-        id = "music_2",
-        title = "IDOL",
-        subtitle = "YOASOBI · 我推的孩子 OP",
-        rating = 4.8f,
-        tags = listOf("动漫", "流行", "电子"),
-        type = LibraryItemType.MUSIC,
-        collectedAt = "2026-05-30"
-    ),
-    LibraryItem(
-        id = "music_3",
-        title = "KICK BACK",
-        subtitle = "米津玄师 · 电锯人 OP",
-        rating = 4.7f,
-        tags = listOf("动漫", "摇滚", "另类"),
-        type = LibraryItemType.MUSIC,
-        collectedAt = "2026-05-25"
-    ),
-    LibraryItem(
-        id = "music_4",
-        title = "紅蓮華",
-        subtitle = "LiSA · 鬼灭之刃 OP",
-        rating = 4.9f,
-        tags = listOf("动漫", "热血", "摇滚"),
-        type = LibraryItemType.MUSIC,
-        collectedAt = "2026-05-18"
-    ),
-    LibraryItem(
-        id = "music_5",
-        title = "夜に駆ける",
-        subtitle = "YOASOBI · 单曲",
-        rating = 4.8f,
-        tags = listOf("流行", "电子", "节奏"),
-        type = LibraryItemType.MUSIC,
-        collectedAt = "2026-05-12"
-    ),
-    LibraryItem(
-        id = "music_6",
-        title = "廻廻奇譚",
-        subtitle = "Eve · 咒术回战 OP",
-        rating = 4.7f,
-        tags = listOf("动漫", "摇滚", "J-Rock"),
-        type = LibraryItemType.MUSIC,
-        collectedAt = "2026-05-08"
-    ),
-)
+sealed interface LibraryAction {
+    data class ImportBook(
+        val filePath: String,
+        val title: String,
+        val type: LibraryItemType
+    ) : LibraryAction
+
+    data class OpenBook(val item: LibraryItem) : LibraryAction
+    data class RemoveItem(val id: String) : LibraryAction
+    data class SelectTab(val index: Int) : LibraryAction
+    data object ToggleEdit : LibraryAction
+}
+
+sealed interface LibraryEvent {
+    data class OpenReader(val filePath: String) : LibraryEvent
+}

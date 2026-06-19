@@ -39,7 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakuya.home.model.ContentItem
 import com.sakuya.home.ui.components.BannerCarousel
-import com.sakuya.home.ui.components.ContentCard
+import com.sakuya.ui.component.ContentCard
 import com.sakuya.home.ui.components.HomeTopBar
 import com.sakuya.home.viewmodel.HomeAction
 import com.sakuya.home.viewmodel.HomeEffect

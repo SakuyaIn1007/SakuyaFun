@@ -19,8 +19,18 @@ import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReaderTopBar(){
-    //ReaderTopBarContent()
+fun ReaderTopBar(
+    title: String,
+    onBack: () -> Unit,
+    showNavigationIcon: Boolean = true,
+    actions: @Composable RowScope.() -> Unit = {}
+) {
+    ReaderTopBarContent(
+        title = title,
+        onBack = onBack,
+        showNavigationIcon = showNavigationIcon,
+        actions = actions
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

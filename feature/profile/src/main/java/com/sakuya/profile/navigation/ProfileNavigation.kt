@@ -33,6 +33,7 @@ import com.sakuya.navigation.PROFILE_SETTINGS_ROUTE
 import com.sakuya.navigation.PROFILE_SIGNATURE
 import com.sakuya.navigation.PROFILE_WALLET_ROUTE
 import com.sakuya.model.extentions.Gender
+import com.sakuya.navigation.READER_BASE_ROUTE
 import com.sakuya.profile.ui.AvatarEditContent
 import com.sakuya.profile.ui.ProfileEditScreen
 import com.sakuya.profile.ui.ProfilePrivacyScreen
@@ -53,7 +54,6 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
         val viewModel: ProfileViewModel = hiltViewModel()
         val profile by viewModel.userProfile.collectAsState()
         LaunchedEffect(Unit) {
-
             viewModel.effect.collect { effect ->
 
                 when (effect) {

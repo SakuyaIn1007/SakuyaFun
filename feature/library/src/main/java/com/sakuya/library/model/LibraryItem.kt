@@ -7,10 +7,11 @@ data class LibraryItem(
     val rating: Float,
     val tags: List<String>,
     val type: LibraryItemType,
-    val collectedAt: String
+    val collectedAt: String,
+    val filePath: String = ""
 )
 
 enum class LibraryItemType {
-    NOVEL,
-    MUSIC
+    TXT,
+    EPUB
 }

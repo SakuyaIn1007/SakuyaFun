@@ -30,6 +30,7 @@ import com.sakuya.library.navigation.libraryNavGraph
 import com.sakuya.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.navigation.PROFILE_ROUTE
 import com.sakuya.profile.navigation.profileNavGraph
+import com.sakuya.reader.navigation.readerNavGraph
 import com.sakuya.sakuyainandroid.navigation.topLevelNavItems
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
@@ -124,6 +125,7 @@ private fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
     libraryNavGraph(navController)
     profileNavGraph(navController)
     friendNavGraph(navController)
+    readerNavGraph(navController)
 }
 
 private fun NavDestination?.isTopLevelDestination(route: String): Boolean {

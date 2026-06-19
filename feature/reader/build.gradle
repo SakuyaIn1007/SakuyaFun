@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.compose)
     alias(libs.plugins.devtools.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -45,11 +46,15 @@ dependencies {
     implementation libs.material
     implementation libs.bundles.feature.ui
     implementation libs.androidx.navigation.compose
-    implementation libs.epublib.core
+    implementation (libs.epublib.core) {
+        exclude group: "xmlpull"
+        exclude group: "net.sf.kxml"
+    }
     implementation libs.slf4j.api
     implementation libs.slf4j.simple
 
     implementation libs.core.ktx
+    implementation libs.hilt.android
     ksp libs.hilt.compiler
 
     testImplementation libs.turbine

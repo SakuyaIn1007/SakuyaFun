@@ -41,7 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakuya.home.model.RankTrend
 import com.sakuya.home.model.RankingItem
-import com.sakuya.home.ui.components.ContentCard
+import com.sakuya.ui.component.ContentCard
 import com.sakuya.home.viewmodel.RankingUiState
 import com.sakuya.home.viewmodel.RankingViewModel
 import com.sakuya.ui.theme.SakuyaInAndroidTheme

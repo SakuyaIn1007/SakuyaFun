@@ -60,6 +60,7 @@ class ProfileViewModel @Inject constructor(
             ProfileAction.OnFavouritesClick -> emitEffect(ProfileEffect.NavigateToFavourites)
 
             ProfileAction.OnCardsClick -> emitEffect(ProfileEffect.NavigateToCards)
+
             else -> Unit
         }
     }
@@ -80,6 +81,7 @@ sealed interface ProfileEffect {
     data object NavigateToCards : ProfileEffect
     data object NavigateToAlbums : ProfileEffect
     data class showToast(val message: String) : ProfileEffect
+
 }
 sealed interface ProfileAction {
 
