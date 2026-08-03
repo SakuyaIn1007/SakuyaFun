@@ -17,10 +17,19 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "API_BASE_URL", "\"${project.findProperty("apiBaseUrl") ?: "http://10.0.2.2:8080/"}\""
+            buildConfigField "String", "WS_CHAT_URL", "\"${project.findProperty("wsChatUrl") ?: "ws://10.0.2.2:8080/ws/chat"}\""
+        }
         release {
+            buildConfigField "String", "API_BASE_URL", "\"${project.findProperty("apiBaseUrl") ?: "https://api.sakuya.com/"}\""
+            buildConfigField "String", "WS_CHAT_URL", "\"${project.findProperty("wsChatUrl") ?: "wss://api.sakuya.com/ws/chat"}\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
@@ -32,7 +41,10 @@ android {
 }
 
 dependencies {
-    implementation project(":core:model")
+    api project(":core:model")
+    api libs.retrofit2
+    api libs.retrofit2.converter.gson
+    api libs.okhttp3
     //  Room依赖
     implementation libs.room.runtime
     implementation libs.room.ktx

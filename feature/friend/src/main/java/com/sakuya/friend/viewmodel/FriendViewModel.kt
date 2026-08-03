@@ -3,6 +3,7 @@ package com.sakuya.friend.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sakuya.friend.data.repository.FriendRepository
+import com.sakuya.friend.data.remote.FriendRequestItem
 import com.sakuya.friend.model.Friend
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,6 +20,12 @@ class FriendViewModel @Inject constructor(
 
     private val _friends = MutableStateFlow<List<Friend>>(emptyList())
     val friends = _friends.asStateFlow()
+
+    private val _searchResults = MutableStateFlow<List<Friend>>(emptyList())
+    val searchResults = _searchResults.asStateFlow()
+
+    private val _friendRequests = MutableStateFlow<List<FriendRequestItem>>(emptyList())
+    val friendRequests = _friendRequests.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -46,10 +53,14 @@ class FriendViewModel @Inject constructor(
 
     fun searchUsers(keyword: String) {
         viewModelScope.launch {
+            if (keyword.isBlank()) {
+                _searchResults.value = emptyList()
+                return@launch
+            }
             _isLoading.value = true
             repository.searchUsers(keyword)
                 .onSuccess { list ->
-                    _friends.value = list
+                    _searchResults.value = list
                 }
                 .onFailure { error ->
                     _effect.emit(FriendEffect.ShowError(error.message ?: "搜索失败"))
@@ -60,12 +71,55 @@ class FriendViewModel @Inject constructor(
 
     fun addFriend(userId: String, message: String = "") {
         viewModelScope.launch {
+            _isLoading.value = true
             repository.sendFriendRequest(userId, message)
                 .onSuccess {
                     _effect.emit(FriendEffect.ShowToast("好友请求已发送"))
                 }
                 .onFailure { error ->
                     _effect.emit(FriendEffect.ShowError(error.message ?: "发送请求失败"))
+                }
+            _isLoading.value = false
+        }
+    }
+
+    fun loadFriendRequests() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getFriendRequests()
+                .onSuccess { requests ->
+                    _friendRequests.value = requests
+                }
+                .onFailure { error ->
+                    _effect.emit(FriendEffect.ShowError(error.message ?: "加载好友请求失败"))
+                }
+            _isLoading.value = false
+        }
+    }
+
+    fun acceptFriendRequest(requestId: String) {
+        viewModelScope.launch {
+            repository.acceptFriendRequest(requestId)
+                .onSuccess { friend ->
+                    _friends.value = (_friends.value + friend).distinctBy { it.id }
+                    _friendRequests.value = _friendRequests.value.filterNot { it.id == requestId }
+                    _effect.emit(FriendEffect.ShowToast("已添加好友"))
+                }
+                .onFailure { error ->
+                    _effect.emit(FriendEffect.ShowError(error.message ?: "接受请求失败"))
+                }
+        }
+    }
+
+    fun rejectFriendRequest(requestId: String) {
+        viewModelScope.launch {
+            repository.rejectFriendRequest(requestId)
+                .onSuccess {
+                    _friendRequests.value = _friendRequests.value.filterNot { it.id == requestId }
+                    _effect.emit(FriendEffect.ShowToast("已拒绝请求"))
+                }
+                .onFailure { error ->
+                    _effect.emit(FriendEffect.ShowError(error.message ?: "拒绝请求失败"))
                 }
         }
     }
@@ -85,10 +139,22 @@ class FriendViewModel @Inject constructor(
 
     fun onAction(action: FriendAction) {
         when (action) {
-            is FriendAction.OnFriendClick -> emitEffect(
-                FriendEffect.NavigateToChat(action.friend)
-            )
-            FriendAction.OnAddFriendClick -> emitEffect(FriendEffect.NavigateToAddFriend)
+            is FriendAction.OnFriendClick -> openConversation(action.friend)
+            is FriendAction.OnAddFriendClick -> emitEffect(FriendEffect.NavigateToAddFriend)
+        }
+    }
+
+    private fun openConversation(friend: Friend) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            repository.getOrCreateConversation(friend.id)
+                .onSuccess { conversation ->
+                    _effect.emit(FriendEffect.NavigateToChat(conversation.id, conversation.title))
+                }
+                .onFailure { error ->
+                    _effect.emit(FriendEffect.ShowError(error.message ?: "创建会话失败"))
+                }
+            _isLoading.value = false
         }
     }
 
@@ -105,7 +171,7 @@ sealed interface FriendAction {
 }
 
 sealed interface FriendEffect {
-    data class NavigateToChat(val friend: Friend) : FriendEffect
+    data class NavigateToChat(val conversationId: String, val title: String) : FriendEffect
     data object NavigateToAddFriend : FriendEffect
     data class ShowError(val message: String) : FriendEffect
     data class ShowToast(val message: String) : FriendEffect

@@ -8,7 +8,11 @@ import com.sakuya.reader.data.repository.ReaderRepository
 import com.sakuya.reader.model.ReaderDocument
 import com.sakuya.reader.model.ReaderType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,7 +27,53 @@ class ReaderViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ReaderUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun openFile(uri: Uri) {
+    private val _effect = MutableSharedFlow<ReaderEffect>()
+    val effect = _effect.asSharedFlow()
+
+    private var saveProgressJob: Job? = null
+
+    fun onAction(action: ReaderAction) {
+        when (action) {
+            is ReaderAction.OpenFile -> {
+                openFile(
+                    uri = action.uri,
+                    bookId = action.bookId
+                )
+            }
+
+            is ReaderAction.OpenFilePickerClick -> {
+                emitEffect(ReaderEffect.OpenFilePicker)
+            }
+
+            is ReaderAction.ToggleUi -> {
+                toggleUI()
+            }
+
+            is ReaderAction.AddBookmark -> {
+                addBookmark()
+            }
+
+            is ReaderAction.SetProgress -> {
+                setProgress(
+                    progress = action.progress
+                )
+            }
+
+            is ReaderAction.ChangeFontSize -> {
+                changeFontSize(action.fontSize)
+            }
+        }
+    }
+
+    private fun emitEffect(effect: ReaderEffect) {
+        viewModelScope.launch {
+            _effect.emit(effect)
+        }
+    }
+
+    private fun openFile(uri: Uri, bookId: String?) {
+        val bookKey = bookId ?: uri.toString()
+        saveProgressJob?.cancel()
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -32,9 +82,8 @@ class ReaderViewModel @Inject constructor(
                     errorMessage = null
                 )
             }
-            val bookKey = uri.toString()
             val document = readerRepository.openDocument(uri)
-            val savedProgress = readerPrefs.gerProgress(bookKey)
+            val savedProgress = readerRepository.getProgress(bookKey)
             val savedFontSize = readerPrefs.getFontSize()
             _uiState.update {
                 it.copy(
@@ -57,34 +106,41 @@ class ReaderViewModel @Inject constructor(
         }
     }
 
-    fun setProgress(progress: Float) {
-        val safeProgress = progress.coerceIn(0f, 1f)
-        _uiState.update {
-            it.copy(progress = progress.coerceIn(0f, 1f))
-        }
-
+    private fun addBookmark() {
         val bookKey = _uiState.value.bookKey ?: return
-        readerPrefs.saveProgress(bookKey, safeProgress)
+        val progress = _uiState.value.progress
+
+        viewModelScope.launch {
+            readerRepository.addBookmark(bookKey, progress)
+            _effect.emit(ReaderEffect.BookmarkAdded)
+        }
     }
 
-    fun toggleUI() {
+    private fun setProgress(progress: Float) {
+        val safeProgress = progress.coerceIn(0f, 1f)
+        _uiState.update {
+            it.copy(progress = safeProgress)
+        }
+        val bookKey = _uiState.value.bookKey ?: return
+        saveProgressJob?.cancel()
+        saveProgressJob = viewModelScope.launch {
+            delay(300)
+            readerRepository.saveProgress(bookKey, safeProgress)
+        }
+    }
+
+    private fun toggleUI() {
         _uiState.update {
             it.copy(showUI = !it.showUI)
         }
     }
 
-    fun changeFontSize(newSize: Float) {
+    private fun changeFontSize(newSize: Float) {
+        val safeFontSize = newSize.coerceIn(12f, 32f)
         _uiState.update {
-            it.copy(fontSizeSp = newSize.coerceIn(12f, 32f))
+            it.copy(fontSizeSp = safeFontSize)
         }
-    }
-
-    fun saveProgress() {
-
-    }
-
-    fun restoreProgress() {
-
+        readerPrefs.saveFontSize(safeFontSize)
     }
 }
 
@@ -95,7 +151,23 @@ data class ReaderUiState(
     val showUI: Boolean = true,
     val isLoading: Boolean = false,
     val fontSizeSp: Float = 18f,
-    val errorMessage: String? =null,
-    //
+    val errorMessage: String? = null,
     val bookKey: String? = null
 )
+
+sealed interface ReaderEffect {
+    data object OpenFilePicker : ReaderEffect
+    data object BookmarkAdded : ReaderEffect
+}
+
+sealed interface ReaderAction {
+    data class OpenFile(
+        val uri: Uri,
+        val bookId: String?
+        ) : ReaderAction
+    data class SetProgress(val progress: Float) : ReaderAction
+    data class ChangeFontSize(val fontSize: Float) : ReaderAction
+    data object OpenFilePickerClick : ReaderAction
+    data object ToggleUi : ReaderAction
+    data object AddBookmark : ReaderAction
+}

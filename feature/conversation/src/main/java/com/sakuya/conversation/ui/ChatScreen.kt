@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,6 +46,7 @@ fun ChatScreen(
         title = uiState.title,
         messages = uiState.messages,
         inputText = uiState.inputText,
+        errorMessage = uiState.errorMessage,
         onInputChanged = viewModel::onInputChanged,
         onSendMessage = viewModel::sendMessage,
         onBack = onBack
@@ -58,13 +58,13 @@ fun ChatContent(
     title: String,
     messages: List<ChatMessageDto>,
     inputText: String,
+    errorMessage: String?,
     onInputChanged: (String) -> Unit,
     onSendMessage: () -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             AppSecondaryTopBar(
                 title = title,
@@ -89,6 +89,18 @@ fun ChatContent(
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (errorMessage != null) {
+                item(key = "error") {
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
             items(messages, key = { it.id }) { message ->
                 MessageRow(message = message)
             }
@@ -202,6 +214,7 @@ private fun ChatContentPreview() {
                 ),
             ),
             inputText = "",
+            errorMessage = null,
             onInputChanged = {},
             onSendMessage = {},
             onBack = {}

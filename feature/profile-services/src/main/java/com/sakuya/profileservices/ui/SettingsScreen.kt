@@ -28,10 +28,20 @@ import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onPrivacyClick: () -> Unit = {},
+    onSwitchAccount: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onUnavailableClick: () -> Unit = {},
 ) {
     SettingsContent(
         onBack = onBack,
+        onProfileClick = onProfileClick,
+        onPrivacyClick = onPrivacyClick,
+        onSwitchAccount = onSwitchAccount,
+        onLogout = onLogout,
+        onUnavailableClick = onUnavailableClick,
         modifier = Modifier.fillMaxSize()
     )
 }
@@ -39,7 +49,12 @@ fun SettingsScreen(
 @Composable
 fun SettingsContent(
     modifier: Modifier = Modifier,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onPrivacyClick: () -> Unit = {},
+    onSwitchAccount: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    onUnavailableClick: () -> Unit = {},
 ) {
     Column(
         modifier = modifier.background(MaterialTheme.colorScheme.background)
@@ -69,14 +84,15 @@ fun SettingsContent(
             item {
                 SettingItemRow(
                     title = "个人资料",
-                    onClick = { /* TODO: 跳转账号安全 */ }
+                    onClick = onProfileClick
                 )
             }
             item { SettingItemDivider() }
             item {
                 SettingItemRow(
                     title = "账号安全",
-                    onClick = { /* TODO */ }
+                    subtitle = "暂未开放",
+                    onClick = onUnavailableClick
                 )
             }
 
@@ -93,21 +109,23 @@ fun SettingsContent(
             item {
                 SettingItemRow(
                     title = "新消息通知",
-                    onClick = { /* TODO */ }
+                    subtitle = "暂未开放",
+                    onClick = onUnavailableClick
                 )
             }
             item { SettingItemDivider() } // 同组内部的细分割线喵
             item {
                 SettingItemRow(
                     title = "隐私",
-                    onClick = { /* TODO */ }
+                    onClick = onPrivacyClick
                 )
             }
             item { SettingItemDivider() }
             item {
                 SettingItemRow(
                     title = "通用",
-                    onClick = { /* TODO */ }
+                    subtitle = "暂未开放",
+                    onClick = onUnavailableClick
                 )
             }
 
@@ -124,7 +142,8 @@ fun SettingsContent(
             item {
                 SettingItemRow(
                     title = "帮助与反馈",
-                    onClick = { /* TODO */ }
+                    subtitle = "暂未开放",
+                    onClick = onUnavailableClick
                 )
             }
             item { SettingItemDivider() }
@@ -132,7 +151,7 @@ fun SettingsContent(
                 SettingItemRow(
                     title = "关于 SakuyaApp",
                     subtitle = "版本 1.0.0", // 顺便秀一下版本号喵
-                    onClick = { /* TODO */ }
+                    onClick = onUnavailableClick
                 )
             }
 
@@ -141,7 +160,7 @@ fun SettingsContent(
             item {
                 SettingActionRow(
                     title = "切换账号",
-                    onClick = { /* TODO */ }
+                    onClick = onSwitchAccount
                 )
             }
             item { SettingGroupDivider() }
@@ -149,7 +168,7 @@ fun SettingsContent(
                 SettingActionRow(
                     title = "退出登录",
                     textColor = MaterialTheme.colorScheme.onBackground, // 退出登录用显眼的红色警告喵！
-                    onClick = { /* TODO */ }
+                    onClick = onLogout
                 )
             }
             item { Spacer(modifier = Modifier.height(40.dp)) }

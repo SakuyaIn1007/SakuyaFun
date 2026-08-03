@@ -63,7 +63,10 @@ fun MyContent(
             title = "个人资料",
             onBack = onBack
         )
-        ProfileInfoItem(title = "头像"){
+        ProfileInfoItem(
+            title = "头像",
+            onClick = { onAction(ProfileAction.OnAvatarClick) }
+        ) {
             AsyncImage(
                 model = profile.avatarUrl,
                 contentDescription = null,
@@ -79,53 +82,80 @@ fun MyContent(
         ){
             Text(text = profile.nickname
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         ProfileOutline(12.dp)
-        ProfileInfoItem(title = "性别"){
+        ProfileInfoItem(
+            title = "性别",
+            onClick = { onAction(ProfileAction.OnGenderClick) }
+        ) {
             Text(text = profile.gender?.displayName ?: "未知"
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         ProfileOutline(12.dp)
-        ProfileInfoItem(title = "地区"){
+        ProfileInfoItem(
+            title = "地区",
+            onClick = { onAction(ProfileAction.OnRegionClick) }
+        ) {
             Text(text = profile.regionCode?: "未知"
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         ProfileOutline(12.dp)
-        ProfileInfoItem(title = "电话号码"){
+        ProfileInfoItem(
+            title = "电话号码",
+            onClick = { onAction(ProfileAction.OnPhoneClick) }
+        ) {
             Text(text = profile.phoneNumber?: ""
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         ProfileOutline(12.dp)
-        ProfileInfoItem(title = "ID"){
+        ProfileInfoItem(
+            title = "ID",
+            onClick = { onAction(ProfileAction.OnIdClick) }
+        ) {
             Text(text = profile.userId
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         ProfileOutline(12.dp)
-        ProfileInfoItem(title = "戳一下"){
-            Text(text = profile.signature?: ""
+        ProfileInfoItem(
+            title = "戳一下",
+            onClick = { onAction(ProfileAction.OnPokeClick) }
+        ) {
+            Text(text = profile.pokeText ?: ""
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         ProfileOutline(12.dp)
-        ProfileInfoItem(title = "个性签名"){
+        ProfileInfoItem(
+            title = "个性签名",
+            onClick = { onAction(ProfileAction.OnSignatureClick) }
+        ) {
             Text(text = profile.signature?: ""
                 , style = MaterialTheme.typography.titleMedium
-                , color = MaterialTheme.colorScheme.onTertiary
+                , color = MaterialTheme.colorScheme.outline
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        ProfileInfoItem(title = "电话铃声")
+        ProfileInfoItem(
+            title = "电话铃声",
+            onClick = { onAction(ProfileAction.OnRingtoneClick) }
+        ) {
+            Text(
+                text = profile.ringtoneName ?: "默认铃声",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
     }
 
 }

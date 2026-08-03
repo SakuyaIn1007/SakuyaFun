@@ -1,18 +1,19 @@
 package com.sakuya.data.remote
 
-import com.sakuya.data.local.TokenStorage
+import com.sakuya.data.local.SessionManager
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
 
 class AuthInterceptor @Inject constructor(
-    private val tokenStorage: TokenStorage
+    private val sessionManager: SessionManager
 ) : Interceptor{
     override fun intercept(chain: Interceptor.Chain): Response {
 //        获取原始请求
         val originalRequest = chain.request()
 //        获取本地Token
-        val token = tokenStorage.getTokenBlocking()
+        val token = sessionManager.getTokenBlocking()
         val newRequest = if (token != null) {
             originalRequest.newBuilder()
                 .header("Authorization", "Bearer $token")
@@ -21,6 +22,10 @@ class AuthInterceptor @Inject constructor(
         } else {
             originalRequest
         }
-        return chain.proceed(newRequest)
+        val response = chain.proceed(newRequest)
+        if (response.code == 401 && !token.isNullOrBlank()) {
+            runBlocking { sessionManager.expireSession() }
+        }
+        return response
     }
 }

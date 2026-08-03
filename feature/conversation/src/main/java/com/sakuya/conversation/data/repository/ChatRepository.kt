@@ -3,9 +3,11 @@ package com.sakuya.conversation.data.repository
 import com.sakuya.conversation.data.remote.ChatMessageDto
 import com.sakuya.conversation.data.remote.ChatWebSocket
 import com.sakuya.conversation.data.remote.ConversationApiService
+import com.sakuya.conversation.data.remote.SendMessageRequest
 import com.sakuya.data.local.entity.ChatMessageEntity
 import com.sakuya.data.local.entity.MessageType
 import com.sakuya.model.network.BaseResponse
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharedFlow
 import retrofit2.Response
 import javax.inject.Inject
@@ -17,13 +19,45 @@ class ChatRepository @Inject constructor(
     private val webSocket: ChatWebSocket
 ) {
     val realtimeMessages: SharedFlow<ChatMessageDto> = webSocket.messages
+    val connectionState = webSocket.connectionState
 
     suspend fun getHistoryMessages(conversationId: String): Result<List<ChatMessageDto>> {
-        return apiService.getMessages(conversationId).toResult()
+        return try {
+            apiService.getMessages(conversationId).toResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
-    fun sendMessage(conversationId: String, content: String) {
-        webSocket.sendMessage(conversationId, content)
+    suspend fun sendMessage(conversationId: String, content: String): Result<ChatMessageDto> {
+        return try {
+            apiService.sendMessage(
+                conversationId = conversationId,
+                request = SendMessageRequest.text(content)
+            ).toResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun markAsRead(conversationId: String): Result<Unit> {
+        return try {
+            val response = apiService.markAsRead(conversationId)
+            val body = response.body()
+            if (response.isSuccessful && body != null && body.isSuccess()) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(body?.message ?: "标记已读失败"))
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun connect() = webSocket.connect()

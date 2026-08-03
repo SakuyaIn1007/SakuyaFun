@@ -15,6 +15,9 @@ interface UserDao {
     @Query("SELECT * from user where id = :id")
     fun getByUserId(id: String): UserEntity?
 
+    @Query("SELECT * FROM user LIMIT 1")
+    suspend fun getCurrentUser(): UserEntity?
+
     @Query("SELECT * from user where id in (:userIds)")
     suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
 

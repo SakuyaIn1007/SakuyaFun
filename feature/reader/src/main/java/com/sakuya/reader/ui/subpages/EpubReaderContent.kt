@@ -2,10 +2,12 @@ package com.sakuya.reader.ui.subpages
 
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,9 +18,15 @@ import com.sakuya.ui.theme.SakuyaInAndroidTheme
 fun EpubReaderContent(
     epubChapters: List<String>,
     fontSizeSp: Float,
+    initialProgress: Float,
     onProgress: (Float) -> Unit
 ) {
     if (epubChapters.isEmpty()) return
+
+    val currentOnProgress = rememberUpdatedState(onProgress)
+    val restoredProgress = remember(epubChapters) {
+        initialProgress.coerceIn(0f, 1f)
+    }
 
     val fullHtml = remember(epubChapters) {
         epubChapters.joinToString("<hr/>") { extractBody(it) }
@@ -37,11 +45,25 @@ fun EpubReaderContent(
                 settings.useWideViewPort = true
                 settings.builtInZoomControls = false
                 settings.displayZoomControls = false
-                addJavascriptInterface(ScrollBridge(onProgress), "ScrollBridge")
+                addJavascriptInterface(
+                    ScrollBridge { progress -> currentOnProgress.value(progress) },
+                    "ScrollBridge"
+                )
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String?) {
+                        view.evaluateJavascript(
+                            "window.scrollTo(0, Math.max(0, document.documentElement.scrollHeight - window.innerHeight) * $restoredProgress);",
+                            null
+                        )
+                    }
+                }
             }
         },
         update = { webView ->
-            webView.loadDataWithBaseURL(null, wrappedHtml, "text/html", "UTF-8", null)
+            if (webView.tag != wrappedHtml) {
+                webView.tag = wrappedHtml
+                webView.loadDataWithBaseURL(null, wrappedHtml, "text/html", "UTF-8", null)
+            }
         }
     )
 }
@@ -116,6 +138,7 @@ fun EpubReaderPreview() {
                 "<h1>Chapter 2</h1><p>The story continues here.</p>"
             ),
             fontSizeSp = 18f,
+            initialProgress = 0f,
             onProgress = {}
         )
     }

@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:test;MODE=MySQL
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+app:
+  jwt:
+    secret: test-secret-that-is-definitely-longer-than-thirty-two-bytes
+    expiration: 1h
+  upload-dir: ./build/test-uploads
+  seed:
+    enabled: true

@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/sakuya;MODE=MySQL;AUTO_SERVER=TRUE
+    username: sa
+    password:
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:change-this-development-secret-to-at-least-32-bytes}
+  seed:
+    enabled: true

@@ -1,0 +1,20 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.compose)
+}
+
+android {
+    namespace 'com.sakuya.search'
+    compileSdk 35
+    defaultConfig { minSdk 24; targetSdk 35 }
+    buildFeatures { compose = true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_11; targetCompatibility JavaVersion.VERSION_11 }
+    kotlinOptions { jvmTarget = '11' }
+}
+
+dependencies {
+    implementation project(':core:navigation')
+    implementation libs.bundles.feature.ui
+    implementation libs.androidx.navigation.compose
+}

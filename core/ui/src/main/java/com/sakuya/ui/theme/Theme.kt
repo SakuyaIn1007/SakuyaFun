@@ -8,33 +8,68 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = SakuyaPrimaryDark,
-    secondary = SakuyaPrimaryDark,
-    onTertiary = Color(0xFFa3a3a3),
-    background = Color(0xFF1F2020),
-    onBackground = Color(0xFFFFFFFF),
-    outline = Color(0xFF9F9F9F),
-    inverseSurface = Color(0xFF1F2020),
-    inverseOnSurface = Color(0xFF32C2C2D)
+    onPrimary = SakuyaOnPrimaryDark,
+    primaryContainer = SakuyaPrimaryContainerDark,
+    onPrimaryContainer = SakuyaOnPrimaryContainerDark,
+    inversePrimary = SakuyaInversePrimaryDark,
+    secondary = SakuyaSecondaryDark,
+    onSecondary = SakuyaOnSecondaryDark,
+    secondaryContainer = SakuyaSecondaryContainerDark,
+    onSecondaryContainer = SakuyaOnSecondaryContainerDark,
+    tertiary = SakuyaTertiaryDark,
+    onTertiary = SakuyaOnTertiaryDark,
+    tertiaryContainer = SakuyaTertiaryContainerDark,
+    onTertiaryContainer = SakuyaOnTertiaryContainerDark,
+    background = SakuyaBackgroundDark,
+    onBackground = SakuyaOnBackgroundDark,
+    surface = SakuyaSurfaceDark,
+    onSurface = SakuyaOnSurfaceDark,
+    surfaceVariant = SakuyaSurfaceVariantDark,
+    onSurfaceVariant = SakuyaOnSurfaceVariantDark,
+    inverseSurface = SakuyaInverseSurfaceDark,
+    inverseOnSurface = SakuyaInverseOnSurfaceDark,
+    error = SakuyaErrorDark,
+    onError = SakuyaOnErrorDark,
+    errorContainer = SakuyaErrorContainerDark,
+    onErrorContainer = SakuyaOnErrorContainerDark,
+    outline = SakuyaOutlineDark,
+    outlineVariant = SakuyaOutlineVariantDark,
+    scrim = androidx.compose.ui.graphics.Color.Black
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = SakuyaPrimary,
+    onPrimary = SakuyaOnPrimary,
+    primaryContainer = SakuyaPrimaryContainer,
+    onPrimaryContainer = SakuyaOnPrimaryContainer,
+    inversePrimary = SakuyaInversePrimary,
     secondary = SakuyaSecondary,
+    onSecondary = SakuyaOnSecondary,
+    secondaryContainer = SakuyaSecondaryContainer,
+    onSecondaryContainer = SakuyaOnSecondaryContainer,
     tertiary = SakuyaTertiary,
-    // ☀️ 背景色：稍微带一点点暖意或者柔和感的奶灰白（比纯白柔和多啦）
-    background = Color(0xFFF4F6F9),
-    onBackground = Color(0xFF2D3748), // 👈 文字换成深灰，绝对不用死黑，非常护眼
-
-    // ✨ 核心对比色微调：换成充满高级感的“迷雾深海蓝”！
-    // 降低纯黑度，融入冷色调，这样跟背景撞在一起时，会有一种磨砂玻璃般的柔和过渡喵！
-    inverseSurface = Color(0xFF34495E),
-    inverseOnSurface = Color(0xFFF7FAFC) // 反转文字也用刚才的浅灰白，绝对不刺眼
-
+    onTertiary = SakuyaOnTertiary,
+    tertiaryContainer = SakuyaTertiaryContainer,
+    onTertiaryContainer = SakuyaOnTertiaryContainer,
+    background = SakuyaBackground,
+    onBackground = SakuyaOnBackground,
+    surface = SakuyaSurface,
+    onSurface = SakuyaOnSurface,
+    surfaceVariant = SakuyaSurfaceVariant,
+    onSurfaceVariant = SakuyaOnSurfaceVariant,
+    inverseSurface = SakuyaInverseSurface,
+    inverseOnSurface = SakuyaInverseOnSurface,
+    error = SakuyaError,
+    onError = SakuyaOnError,
+    errorContainer = SakuyaErrorContainer,
+    onErrorContainer = SakuyaOnErrorContainer,
+    outline = SakuyaOutline,
+    outlineVariant = SakuyaOutlineVariant,
+    scrim = androidx.compose.ui.graphics.Color.Black
 )
 
 @Composable

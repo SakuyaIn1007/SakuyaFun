@@ -69,14 +69,8 @@ fun ConversationContent(
 ) {
     Scaffold(
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
             AppPrimaryTopBar(
                 title = "消息",
                 actions = {
@@ -88,7 +82,14 @@ fun ConversationContent(
                     }
                 }
             )
-
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.inverseOnSurface,

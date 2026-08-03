@@ -49,9 +49,9 @@ class ConversationViewModel @Inject constructor(
             is ConversationAction.OnChatClick -> emitEffect(
                 ConversationEffect.NavigateToChat(action.conversation)
             )
-            ConversationAction.OnNoticeClick -> emitEffect(ConversationEffect.NavigateToNotice)
-            ConversationAction.OnFriendClick -> emitEffect(ConversationEffect.NavigateToFriend)
-            ConversationAction.OnGroupClick -> emitEffect(ConversationEffect.NavigateToGroup)
+            is ConversationAction.OnNoticeClick -> emitEffect(ConversationEffect.NavigateToNotice)
+            is ConversationAction.OnFriendClick -> emitEffect(ConversationEffect.NavigateToFriend)
+            is ConversationAction.OnGroupClick -> emitEffect(ConversationEffect.NavigateToGroup)
         }
     }
 

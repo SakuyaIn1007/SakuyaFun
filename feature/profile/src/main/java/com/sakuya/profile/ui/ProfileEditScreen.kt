@@ -47,6 +47,8 @@ fun ProfileEditScreen(
     onClick : () -> Unit = {},
     onSave : () -> Unit = {},
     onBack : () -> Unit,
+    showSave: Boolean = false,
+    saveEnabled: Boolean = true,
     content: @Composable () -> Unit = {},
 ) {
 
@@ -58,7 +60,17 @@ fun ProfileEditScreen(
     ) {
         AppSecondaryTopBar(
             title = title,
-            onBack = onBack
+            onBack = onBack,
+            actions = {
+                if (showSave) {
+                    TextButton(
+                        onClick = onSave,
+                        enabled = saveEnabled,
+                    ) {
+                        Text(text = "保存")
+                    }
+                }
+            }
         )
         Column(
             modifier = Modifier.padding(vertical = 16.dp)

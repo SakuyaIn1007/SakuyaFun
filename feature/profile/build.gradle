@@ -27,6 +27,15 @@ android {
     }
     buildFeatures{
         compose = true
+        buildConfig = true
+    }
+    buildTypes {
+        debug {
+            buildConfigField "boolean", "DEV_PROFILE_MOCK_DATA", "true"
+        }
+        release {
+            buildConfigField "boolean", "DEV_PROFILE_MOCK_DATA", "false"
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
@@ -40,6 +49,8 @@ android {
 dependencies {
     implementation project(":core:common")
     implementation project(":core:navigation")
+    implementation project(":feature:bookshelf")
+    implementation project(":feature:feed")
     implementation project(":feature:profile-services")
     implementation libs.bundles.feature.ui
     implementation libs.core.ktx

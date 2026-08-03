@@ -2,9 +2,13 @@ package com.sakuya.friend.data.repository
 
 import com.sakuya.friend.data.remote.FriendApiService
 import com.sakuya.friend.data.remote.FriendDto
+import com.sakuya.friend.data.remote.FriendRequestDto
 import com.sakuya.friend.data.remote.FriendRequestItem
+import com.sakuya.friend.data.remote.DirectConversationDto
 import com.sakuya.friend.model.Friend
-import kotlinx.coroutines.delay
+import com.sakuya.model.network.BaseResponse
+import kotlinx.coroutines.CancellationException
+import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,99 +16,114 @@ import javax.inject.Singleton
 class FriendRepository @Inject constructor(
     private val apiService: FriendApiService
 ) {
-    private val mockFriends = sampleFriends().toMutableList()
-    private val mockRequests = mutableListOf<FriendRequestItem>()
-
     suspend fun getFriends(): Result<List<Friend>> {
-        delay(300)
-        return Result.success(mockFriends)
+        return try {
+            apiService.getFriends().toResult()
+                .map { list -> list.map { it.toDomainModel() } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun searchUsers(keyword: String): Result<List<Friend>> {
-        delay(200)
-        val result = mockFriends.filter {
-            it.name.contains(keyword, ignoreCase = true)
+        return try {
+            apiService.searchUsers(keyword).toResult()
+                .map { list -> list.map { it.toDomainModel() } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        return Result.success(result)
     }
 
     suspend fun sendFriendRequest(userId: String, message: String): Result<Unit> {
-        delay(200)
-        val friend = mockFriends.find { it.id == userId }
-        if (friend != null) {
-            mockRequests.add(
-                FriendRequestItem(
-                    id = "req-${System.currentTimeMillis()}",
-                    userId = userId,
-                    name = friend.name,
-                    avatarText = friend.avatarText,
-                    message = message,
-                    createdAt = "刚刚"
-                )
-            )
+        return try {
+            apiService.sendFriendRequest(FriendRequestDto(userId, message)).toUnitResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        return Result.success(Unit)
     }
 
     suspend fun getFriendRequests(): Result<List<FriendRequestItem>> {
-        delay(200)
-        return Result.success(mockRequests.toList())
+        return try {
+            apiService.getFriendRequests().toResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun acceptFriendRequest(requestId: String): Result<Friend> {
-        delay(200)
-        val request = mockRequests.find { it.id == requestId }
-            ?: return Result.failure(Exception("请求不存在"))
-        mockRequests.remove(request)
-        val newFriend = Friend(
-            id = request.userId,
-            name = request.name,
-            status = "刚刚成为好友",
-            avatarText = request.avatarText,
-            isOnline = false
-        )
-        mockFriends.add(newFriend)
-        return Result.success(newFriend)
+        return try {
+            apiService.acceptFriendRequest(requestId).toResult()
+                .map { it.toDomainModel() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun rejectFriendRequest(requestId: String): Result<Unit> {
-        delay(200)
-        mockRequests.removeAll { it.id == requestId }
-        return Result.success(Unit)
+        return try {
+            apiService.rejectFriendRequest(requestId).toUnitResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun removeFriend(friendId: String): Result<Unit> {
-        delay(200)
-        mockFriends.removeAll { it.id == friendId }
-        return Result.success(Unit)
+        return try {
+            apiService.removeFriend(friendId).toUnitResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getOrCreateConversation(friendId: String): Result<DirectConversationDto> {
+        return try {
+            apiService.getOrCreateConversation(friendId).toResult()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
 
-private fun sampleFriends() = listOf(
-    Friend(
-        id = "sakuya",
-        name = "十六夜咲夜",
-        status = "刚刚在线",
-        avatarText = "咲",
-        isOnline = true
-    ),
-    Friend(
-        id = "remilia",
-        name = "蕾米莉亚",
-        status = "今天 16:20",
-        avatarText = "蕾"
-    ),
-    Friend(
-        id = "patchouli",
-        name = "帕秋莉",
-        status = "阅读中",
-        avatarText = "帕",
-        isOnline = true
-    ),
-    Friend(
-        id = "meiling",
-        name = "红美铃",
-        status = "昨天",
-        avatarText = "美"
+private fun FriendDto.toDomainModel(): Friend {
+    return Friend(
+        id = id,
+        name = name,
+        status = status,
+        avatarText = avatarText,
+        isOnline = isOnline
     )
-)
+}
+
+private fun <T> Response<BaseResponse<T>>.toResult(): Result<T> {
+    val body = body()
+    return if (isSuccessful && body != null) {
+        body.toResult()
+    } else {
+        Result.failure(Exception("HTTP ${code()}"))
+    }
+}
+
+private fun Response<BaseResponse<Unit>>.toUnitResult(): Result<Unit> {
+    val body = body()
+    return if (isSuccessful && body != null && body.isSuccess()) {
+        Result.success(Unit)
+    } else {
+        Result.failure(Exception(body?.message ?: "HTTP ${code()}"))
+    }
+}

@@ -59,7 +59,9 @@ data class VideoItem(
 }
 
 @Composable
-fun VideoScreen() {
+fun VideoScreen(
+    modifier: Modifier = Modifier
+) {
     // 模拟视频数据喵（跨越不同月份）
     val mockVideos = listOf(
         // 2026年5月
@@ -78,7 +80,7 @@ fun VideoScreen() {
 
     VideoContent(
         videos = mockVideos,
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     )
 }
 

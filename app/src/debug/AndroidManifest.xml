@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 仅 Debug 允许连接本机 Spring Boot 的 http/ws 服务。Release 仍要求 HTTPS/WSS。 -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>

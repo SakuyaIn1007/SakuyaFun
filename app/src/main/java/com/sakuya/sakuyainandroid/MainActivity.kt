@@ -1,8 +1,11 @@
 package com.sakuya.sakuyainandroid
 
 import android.os.Bundle
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -10,14 +13,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import androidx.core.view.WindowInsetsCompat
+import com.sakuya.sakuyainandroid.util.isSystemInDarkTheme
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 import dagger.hilt.android.AndroidEntryPoint
+import android.graphics.Color as AndroidColor
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -27,29 +32,45 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
-            SakuyaInAndroidTheme(true) {
-                val systemUiController = rememberSystemUiController()
+            val darkTheme by isSystemInDarkTheme()
+                .collectAsState(initial = resources.configuration.isSystemInDarkTheme)
 
+            SakuyaInAndroidTheme(darkTheme = darkTheme) {
                 SideEffect {
-                    systemUiController.apply {
-                        setStatusBarColor(
-                            color = Color.Transparent,
-                            darkIcons = true
-                        )
-                        setNavigationBarColor(
-                            color = Color.Transparent,
-                            darkIcons = false,
-                            navigationBarContrastEnforced = false
-                        )
-                        isStatusBarVisible = true
-                        isNavigationBarVisible = false
-                        systemBarsBehavior =
-                            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                    }
+                    configureSystemBars(darkTheme = darkTheme)
                 }
 
                 AppContent()
             }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun configureSystemBars(darkTheme: Boolean) {
+        val transparent = AndroidColor.TRANSPARENT
+
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                lightScrim = transparent,
+                darkScrim = transparent,
+                detectDarkMode = { darkTheme }
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                lightScrim = transparent,
+                darkScrim = transparent,
+                detectDarkMode = { darkTheme }
+            )
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+            window.isStatusBarContrastEnforced = false
+        }
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            show(WindowInsetsCompat.Type.systemBars())
+            isAppearanceLightStatusBars = !darkTheme
+            isAppearanceLightNavigationBars = !darkTheme
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
         }
     }
 }
@@ -70,5 +91,7 @@ private fun AppContent() {
     }
 
     val startDestination = (uiState as MainActivityUiState.Ready).startDestination
-    MainScreen(startDestination = startDestination)
+    key(startDestination) {
+        MainScreen(startDestination = startDestination)
+    }
 }

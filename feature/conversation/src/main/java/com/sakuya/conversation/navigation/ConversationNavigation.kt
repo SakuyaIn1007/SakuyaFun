@@ -1,6 +1,8 @@
 package com.sakuya.conversation.navigation
 
+import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -22,6 +24,7 @@ import com.sakuya.navigation.chatRoute
 fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
     composable(CONVERSATION_ROUTE) {
         val viewModel: ConversationViewModel = hiltViewModel()
+        val context = LocalContext.current
 
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->
@@ -34,7 +37,9 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
                     ConversationEffect.NavigateToNotice -> navController.navigate(FNOTICE_ROUTE)
                     ConversationEffect.NavigateToFriend -> navController.navigate(FRIEND_ROUTE)
                     ConversationEffect.NavigateToGroup -> navController.navigate(GROUP_ROUTE)
-                    is ConversationEffect.ShowError -> {}
+                    is ConversationEffect.ShowError -> {
+                        Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -52,7 +57,13 @@ fun NavGraphBuilder.conversationNavGraph(navController: NavHostController) {
         )
     ) {
         ChatScreen(
-            onBack = { navController.popBackStack() }
+            onBack = {
+                if (!navController.popBackStack()) {
+                    navController.navigate(CONVERSATION_ROUTE) {
+                        launchSingleTop = true
+                    }
+                }
+            }
         )
     }
 }

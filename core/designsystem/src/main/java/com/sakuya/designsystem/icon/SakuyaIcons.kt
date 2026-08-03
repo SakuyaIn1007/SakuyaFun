@@ -12,5 +12,7 @@ object SakuyaIcons {
     val Conversation = R.drawable.ic_conversation
     val Friends = R.drawable.ic_friends
     val Folder = R.drawable.ic_folder
+    val History = R.drawable.ic_history
+    val Privacy = R.drawable.ic_privacy
 
 }

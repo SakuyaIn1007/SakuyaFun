@@ -18,11 +18,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlin.math.roundToInt
 
 @Composable
 fun TxtReaderContent(
     fullText: String,
     fontSizeSp: Float,
+    initialProgress: Float,
     onProgress: (Float) -> Unit
 ) {
     if (fullText.isEmpty()) return
@@ -35,6 +39,16 @@ fun TxtReaderContent(
     }
 
     val scrollState = rememberScrollState()
+    val restoredProgress = remember(fullText) {
+        initialProgress.coerceIn(0f, 1f)
+    }
+
+    LaunchedEffect(fullText) {
+        val max = snapshotFlow { scrollState.maxValue }
+            .filter { it > 0 }
+            .first()
+        scrollState.scrollTo((max * restoredProgress).roundToInt())
+    }
 
     LaunchedEffect(scrollState) {
         snapshotFlow { scrollState.value }
@@ -72,6 +86,7 @@ fun TxtReaderPreview() {
         TxtReaderContent(
             fullText = sample,
             fontSizeSp = 18f,
+            initialProgress = 0f,
             onProgress = {}
         )
     }

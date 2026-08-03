@@ -3,7 +3,6 @@ package com.sakuya.authentication.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,7 +60,6 @@ fun RegisterContent(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             AppSecondaryTopBar(
                 title = "注册账号",

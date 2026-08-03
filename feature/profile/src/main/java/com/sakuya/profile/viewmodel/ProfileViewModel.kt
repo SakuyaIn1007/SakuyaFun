@@ -28,45 +28,59 @@ class ProfileViewModel @Inject constructor(
 
     fun loadUserProfile() {
         viewModelScope.launch {
-            val profile = userRepository.getUserProfile()
-            _userProfile.value = profile
+            userRepository.getUserProfile()
+                .onSuccess { profile -> _userProfile.value = profile }
+                .onFailure { error ->
+                    _effect.emit(ProfileEffect.showToast(error.message ?: "个人资料加载失败"))
+                }
         }
     }
 
-    fun updateProfile(updatedProfile: UserProfile) {
+    fun updateProfile(updatedProfile: UserProfile, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             userRepository.updateUserProfile(updatedProfile)
-            _userProfile.value = updatedProfile
+                .onSuccess { savedProfile ->
+                    _userProfile.value = savedProfile
+                    onSuccess()
+                }
+                .onFailure { error ->
+                    _effect.emit(ProfileEffect.showToast(error.message ?: "个人资料保存失败"))
+                }
         }
     }
 
     fun onAction(action: ProfileAction) {
         when (action) {
-//
-            ProfileAction.OnMeClick -> emitEffect(ProfileEffect.NavigateToMe)
+            is ProfileAction.OnMeClick -> emitEffect(ProfileEffect.NavigateToMe)
 
-            ProfileAction.OnConversationClick -> emitEffect(ProfileEffect.NavigateToConversation)
+            is ProfileAction.OnConversationClick -> emitEffect(ProfileEffect.NavigateToConversation)
 
-            ProfileAction.OnFriendsClick -> emitEffect(ProfileEffect.NavigateToFriends)
-//
-            ProfileAction.OnAlbumsClick -> emitEffect(ProfileEffect.NavigateToAlbums)
-//
-            ProfileAction.OnSettingsClick -> emitEffect(ProfileEffect.NavigateToSettings)
+            is ProfileAction.OnFriendsClick -> emitEffect(ProfileEffect.NavigateToFriends)
 
-            ProfileAction.OnLogoutClick -> emitEffect(ProfileEffect.showToast("退出登录"))
+            is ProfileAction.OnBookshelfClick -> emitEffect(ProfileEffect.NavigateToBookshelf)
 
-            ProfileAction.OnWalletClick -> emitEffect(ProfileEffect.NavigateToWallet)
+            is ProfileAction.OnReadingHistoryClick -> emitEffect(ProfileEffect.NavigateToReadingHistory)
 
-            ProfileAction.OnFavouritesClick -> emitEffect(ProfileEffect.NavigateToFavourites)
+            is ProfileAction.OnAlbumsClick -> emitEffect(ProfileEffect.NavigateToAlbums)
 
-            ProfileAction.OnCardsClick -> emitEffect(ProfileEffect.NavigateToCards)
+            is ProfileAction.OnSettingsClick -> emitEffect(ProfileEffect.NavigateToSettings)
+
+            is ProfileAction.OnPrivacyClick -> emitEffect(ProfileEffect.NavigateToPrivacy)
+
+            is ProfileAction.OnLogoutClick -> emitEffect(ProfileEffect.showToast("退出登录"))
+
+            is ProfileAction.OnWalletClick -> emitEffect(ProfileEffect.NavigateToWallet)
+
+            is ProfileAction.OnFavouritesClick -> emitEffect(ProfileEffect.NavigateToFavourites)
+
+            is ProfileAction.OnCardsClick -> emitEffect(ProfileEffect.NavigateToCards)
 
             else -> Unit
         }
     }
     private fun emitEffect(effect: ProfileEffect) {
         viewModelScope.launch {
-        _effect.emit(effect)
+            _effect.emit(effect)
         }
     }
 
@@ -75,7 +89,10 @@ sealed interface ProfileEffect {
     data object NavigateToMe : ProfileEffect
     data object NavigateToConversation : ProfileEffect
     data object NavigateToFriends : ProfileEffect
+    data object NavigateToBookshelf : ProfileEffect
+    data object NavigateToReadingHistory : ProfileEffect
     data object NavigateToSettings : ProfileEffect
+    data object NavigateToPrivacy : ProfileEffect
     data object NavigateToWallet : ProfileEffect
     data object NavigateToFavourites : ProfileEffect
     data object NavigateToCards : ProfileEffect
@@ -89,7 +106,10 @@ sealed interface ProfileAction {
     data object OnMeClick : ProfileAction
     data object OnConversationClick : ProfileAction
     data object OnFriendsClick : ProfileAction
+    data object OnBookshelfClick : ProfileAction
+    data object OnReadingHistoryClick : ProfileAction
     data object OnSettingsClick : ProfileAction
+    data object OnPrivacyClick : ProfileAction
     data object OnWalletClick : ProfileAction
     data object OnCardsClick : ProfileAction
     data object OnFavouritesClick : ProfileAction
@@ -101,7 +121,7 @@ sealed interface ProfileAction {
     data object OnRegionClick : ProfileAction
     data object OnPhoneClick : ProfileAction
     data object OnIdClick : ProfileAction
+    data object OnPokeClick : ProfileAction
     data object OnSignatureClick : ProfileAction
     data object OnRingtoneClick : ProfileAction
 }
-

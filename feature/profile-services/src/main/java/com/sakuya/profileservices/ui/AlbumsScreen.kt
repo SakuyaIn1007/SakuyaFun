@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -93,7 +92,6 @@ fun AlbumMainContent(
     onBack: () -> Unit
 ) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             AppSecondaryTopBar(
                 title = "相册",
@@ -117,11 +115,20 @@ fun AlbumMainContent(
             }
 
             AlbumTab.Photos -> {
-                PictureContent(listOf())
+                PictureContent(
+                    photos = listOf(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
             }
 
             AlbumTab.Videos -> {
-                VideoScreen()
+                VideoScreen(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                )
             }
         }
     }

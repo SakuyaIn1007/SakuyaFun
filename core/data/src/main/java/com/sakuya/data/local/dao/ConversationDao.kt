@@ -30,4 +30,7 @@ interface ConversationDao {
 //  新增未读消息
     @Query("UPDATE conversations set unreadCount = unreadCount + 1 where id = :id")
     suspend fun incrementUnread(id: String)
+
+    @Query("DELETE FROM conversations")
+    suspend fun clearAll()
 }

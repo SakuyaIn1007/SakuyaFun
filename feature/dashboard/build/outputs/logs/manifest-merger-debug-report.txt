@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml:2:13-83
+INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml:2:13-83
+	package
+		INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml
+	xmlns:android
+		ADDED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml:2:23-81
+uses-sdk
+INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml reason: use-sdk injection requested
+INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml
+INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml
+	android:targetSdkVersion
+		INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml
+	android:minSdkVersion
+		INJECTED from /Users/xiaoye/FlutterProjects/sakuyainandroid/feature/dashboard/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest17534400893242060112.xml

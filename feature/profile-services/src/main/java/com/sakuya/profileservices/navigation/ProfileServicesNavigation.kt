@@ -1,12 +1,17 @@
 package com.sakuya.profileservices.navigation
 
 import androidx.navigation.NavGraphBuilder
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.sakuya.designsystem.icon.SakuyaIcons
+import com.sakuya.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.navigation.PROFILE_ALBUMS_ROUTE
 import com.sakuya.navigation.PROFILE_CARDS_ROUTE
 import com.sakuya.navigation.PROFILE_FAVOURITES_ROUTE
+import com.sakuya.navigation.PROFILE_ME
+import com.sakuya.navigation.PROFILE_PRIVACY_ROUTE
 import com.sakuya.navigation.PROFILE_SETTINGS_ROUTE
 import com.sakuya.navigation.PROFILE_WALLET_ROUTE
 import com.sakuya.profileservices.data.GroupedWallet
@@ -17,6 +22,7 @@ import com.sakuya.profileservices.ui.CardsScreen
 import com.sakuya.profileservices.ui.FavouritesScreen
 import com.sakuya.profileservices.ui.SettingsScreen
 import com.sakuya.profileservices.ui.WalletContent
+import com.sakuya.profileservices.viewmodel.SettingsViewModel
 import java.util.Date
 
 fun NavGraphBuilder.profileServicesNavGraph(navController: NavHostController) {
@@ -39,7 +45,22 @@ fun NavGraphBuilder.profileServicesNavGraph(navController: NavHostController) {
         CardsScreen(onBack = { navController.popBackStack() })
     }
     composable(PROFILE_SETTINGS_ROUTE) {
-        SettingsScreen(onBack = { navController.popBackStack() })
+        val viewModel: SettingsViewModel = hiltViewModel()
+        val goLogin = {
+            navController.navigate(AUTH_LOGIN_ROUTE) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
+        }
+        SettingsScreen(
+            onBack = { navController.popBackStack() },
+            onProfileClick = { navController.navigate(PROFILE_ME) },
+            onPrivacyClick = { navController.navigate(PROFILE_PRIVACY_ROUTE) },
+            onSwitchAccount = { viewModel.logout(goLogin) },
+            onLogout = { viewModel.logout(goLogin) },
+        )
     }
 }
 

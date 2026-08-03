@@ -22,7 +22,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField "boolean", "DEV_SKIP_AUTH", "true"
+            buildConfigField "boolean", "DEV_SKIP_AUTH", (project.findProperty("devSkipAuth") == "true").toString()
         }
         release {
             buildConfigField "boolean", "DEV_SKIP_AUTH", "false"
@@ -53,13 +53,17 @@ dependencies {
     implementation project(':core:common')
     implementation project(':core:designsystem')
     implementation project(':core:di')
-    implementation project(':feature:home')
-    implementation project(':feature:library')
+    implementation project(':feature:catalog')
+    implementation project(':feature:bookshelf')
     implementation project(':feature:conversation')
     implementation project(':feature:friend')
     implementation project(':feature:profile')
     implementation project(':feature:authentication')
     implementation project(':feature:reader')
+    implementation project(":feature:bookdetail")
+    implementation project(':feature:search')
+    implementation project(':feature:feed')
+    implementation project(':feature:dashboard')
     implementation project(':core:navigation')
 
     implementation libs.androidx.compose.ui.test.junit4

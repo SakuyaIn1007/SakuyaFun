@@ -2,7 +2,7 @@ package com.sakuya.conversation.di
 
 import com.google.gson.Gson
 import com.sakuya.conversation.data.remote.ChatWebSocket
-import com.sakuya.data.local.TokenStorage
+import com.sakuya.data.local.SessionManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,7 +17,7 @@ object ChatWebSocketModule {
     @Singleton
     fun provideChatWebSocket(
         okHttpClient: OkHttpClient,
-        tokenStorage: TokenStorage,
+        sessionManager: SessionManager,
         gson: Gson
-    ): ChatWebSocket = ChatWebSocket(okHttpClient, tokenStorage, gson)
+    ): ChatWebSocket = ChatWebSocket(okHttpClient, sessionManager, gson)
 }

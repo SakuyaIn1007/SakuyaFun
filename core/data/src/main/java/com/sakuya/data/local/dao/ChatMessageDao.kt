@@ -27,6 +27,9 @@ interface ChatMessageDao {
     @Query("DELETE from chat_messages where conversationId = :conversationId")
     suspend fun deleteMessageByConversation(conversationId: String)
 
+    @Query("DELETE FROM chat_messages")
+    suspend fun clearAll()
+
     /*跨表接收消息的事务
     * 当App收到一条新聊天消息时，在底层其实需要同时执行两个动作：
     * 1. 在消息表追加一条消息记录
@@ -54,4 +57,3 @@ interface ChatMessageDao {
     @Query("UPDATE conversations set lastMessage = :lastMsg, timeLabel = :timeLabel, lastActiveTime = :activeTime, unreadCount = unreadCount + 1 where id = :conversationId")
     suspend fun updateConversationSummary(conversationId: String, lastMsg: String, timeLabel: String, activeTime: Long)
 }
-

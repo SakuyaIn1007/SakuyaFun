@@ -12,6 +12,8 @@ data class UserProfile(
     var regionCode: String? = "",
     var phoneNumber: String? = "",
     var email: String? = "",
+    var pokeText: String? = "",
+    var ringtoneName: String? = "",
     var privacySettings: PrivacySettings
 ){
     companion object{
@@ -29,4 +31,3 @@ data class PrivacySettings(
     var showProfileToStrangers: Boolean = true,
     var muteMessagesFromUnknown: Boolean = false
 )
-

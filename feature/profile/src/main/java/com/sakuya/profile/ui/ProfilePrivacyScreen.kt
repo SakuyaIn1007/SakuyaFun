@@ -42,8 +42,7 @@ fun ProfilePrivacyScreen(
             TextButton(onClick = onBack) { Text("返回") }
             TextButton(onClick = {
                 val updatedProfile = profile.copy(privacySettings = privacy)
-                viewModel.updateProfile(updatedProfile)
-                onBack()
+                viewModel.updateProfile(updatedProfile, onSuccess = onBack)
             }) { Text("保存") }
         }
 

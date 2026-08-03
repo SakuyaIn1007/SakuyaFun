@@ -11,6 +11,13 @@ data class UserEntity(
     val avatarUrl: String?,
     val signature: String?,
     val gender: Gender?,
+    val birthday: String?,
+    val regionCode: String?,
     val phoneNumber: String?,
-    val email: String?
+    val email: String?,
+    val pokeText: String?,
+    val ringtoneName: String?,
+    val canBeAddedByStrangers: Boolean = true,
+    val showProfileToStrangers: Boolean = true,
+    val muteMessagesFromUnknown: Boolean = false
 )

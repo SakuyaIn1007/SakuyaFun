@@ -42,6 +42,11 @@ interface FriendApiService {
     suspend fun removeFriend(
         @Path("id") friendId: String
     ): Response<BaseResponse<Unit>>
+
+    @POST("friends/{id}/conversation")
+    suspend fun getOrCreateConversation(
+        @Path("id") friendId: String
+    ): Response<BaseResponse<DirectConversationDto>>
 }
 
 data class FriendDto(
@@ -65,4 +70,9 @@ data class FriendRequestItem(
     val avatarText: String,
     val message: String,
     val createdAt: String
+)
+
+data class DirectConversationDto(
+    val id: String,
+    val title: String
 )

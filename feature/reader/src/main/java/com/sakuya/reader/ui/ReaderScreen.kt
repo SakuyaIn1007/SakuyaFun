@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +38,8 @@ import com.sakuya.reader.ui.components.ReaderBottomBar
 import com.sakuya.reader.ui.components.ReaderTopBar
 import com.sakuya.reader.ui.subpages.EpubReaderContent
 import com.sakuya.reader.ui.subpages.TxtReaderContent
+import com.sakuya.reader.viewmodel.ReaderAction
+import com.sakuya.reader.viewmodel.ReaderEffect
 import com.sakuya.reader.viewmodel.ReaderUiState
 import com.sakuya.reader.viewmodel.ReaderViewModel
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
@@ -44,6 +47,7 @@ import java.io.File
 
 @Composable
 fun ReaderScreen(
+    bookId: String?,
     filePath: String,
     onBack: () -> Unit = {},
     viewModel: ReaderViewModel = hiltViewModel()
@@ -57,7 +61,30 @@ fun ReaderScreen(
     ) { uri ->
         if (uri != null) {
             currentFileLabel = uri.lastPathSegment ?: ""
-            viewModel.openFile(uri)
+            viewModel.onAction(
+                ReaderAction.OpenFile(
+                    uri = uri,
+                    bookId = null
+                )
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                ReaderEffect.OpenFilePicker -> {
+                    filePickerLauncher.launch(
+                        arrayOf(
+                            "application/epub+zip",
+                            "text/plain",
+                            "*/*"
+                        )
+                    )
+                }
+
+                ReaderEffect.BookmarkAdded -> Unit
+            }
         }
     }
 
@@ -69,7 +96,12 @@ fun ReaderScreen(
             } else {
                 Uri.fromFile(File(filePath))
             }
-            viewModel.openFile(fileUri)
+            viewModel.onAction(
+                ReaderAction.OpenFile(
+                    uri = fileUri,
+                    bookId = bookId
+                )
+            )
         }
     }
 
@@ -77,18 +109,7 @@ fun ReaderScreen(
         state = state,
         bookTitle = state.document?.title ?: currentFileLabel,
         onBack = onBack,
-        onProgress = viewModel::setProgress,
-        onToggleUI = viewModel::toggleUI,
-        onFontSizeChanged = viewModel::changeFontSize,
-        onOpenFile = {
-            filePickerLauncher.launch(
-                arrayOf(
-                    "application/epub+zip",
-                    "text/plain",
-                    "*/*"
-                )
-            )
-        }
+        onAction = viewModel::onAction,
     )
 }
 
@@ -97,10 +118,7 @@ fun ReaderContent(
     state: ReaderUiState,
     bookTitle: String = "",
     onBack: () -> Unit = {},
-    onProgress: (Float) -> Unit = {},
-    onToggleUI: () -> Unit,
-    onFontSizeChanged: (Float) -> Unit = {},
-    onOpenFile: () -> Unit = {}
+    onAction: (ReaderAction) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -109,7 +127,15 @@ fun ReaderContent(
                     title = bookTitle,
                     onBack = onBack,
                     actions = {
-                        IconButton(onClick = onOpenFile) {
+                        IconButton(onClick = { onAction(ReaderAction.AddBookmark) }) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "添加书签",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        IconButton(onClick = { onAction(ReaderAction.OpenFilePickerClick) }) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = "选择文件",
@@ -126,7 +152,7 @@ fun ReaderContent(
                 ReaderBottomBar(
                     progress = state.progress,
                     fontSizeSp = state.fontSizeSp,
-                    onFontSizeChanged = onFontSizeChanged
+                    onFontSizeChanged = { onAction(ReaderAction.ChangeFontSize(it)) }
                 )
             }
         }
@@ -165,19 +191,21 @@ fun ReaderContent(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .clickable {
-                        onToggleUI()
+                        onAction(ReaderAction.ToggleUi)
                     }
             ) {
                 when (val document = state.document) {
                     is ReaderDocument.Txt -> TxtReaderContent(
                         fullText = document.text,
                         fontSizeSp = state.fontSizeSp,
-                        onProgress = onProgress
+                        initialProgress = state.progress,
+                        onProgress = { onAction(ReaderAction.SetProgress(it)) }
                     )
                     is ReaderDocument.Epub -> EpubReaderContent(
                         epubChapters = document.chapters.map { it.content },
                         fontSizeSp = state.fontSizeSp,
-                        onProgress = onProgress
+                        initialProgress = state.progress,
+                        onProgress = { onAction(ReaderAction.SetProgress(it)) }
                     )
                     null -> Unit
                 }
@@ -209,7 +237,7 @@ fun TxtReaderPreview() {
         ReaderContent(
             state = fakeState,
             bookTitle = "测试书籍",
-            onToggleUI = {}
+            onAction = {}
         )
     }
 }
@@ -242,7 +270,7 @@ fun EpubReaderPreview() {
         ReaderContent(
             state = fakeState,
             bookTitle = "测试 EPUB",
-            onToggleUI = {}
+            onAction = {}
         )
     }
 }

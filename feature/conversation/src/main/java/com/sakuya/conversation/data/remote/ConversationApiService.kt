@@ -8,6 +8,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.PUT
 
 interface ConversationApiService {
 
@@ -26,6 +27,11 @@ interface ConversationApiService {
         @Path("id") conversationId: String,
         @Body request: SendMessageRequest
     ): Response<BaseResponse<ChatMessageDto>>
+
+    @PUT("conversations/{id}/read")
+    suspend fun markAsRead(
+        @Path("id") conversationId: String
+    ): Response<BaseResponse<Unit>>
 }
 
 data class ConversationDto(

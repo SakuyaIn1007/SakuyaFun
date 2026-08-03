@@ -21,13 +21,17 @@
             <option value="$PROJECT_DIR$/core/ui" />
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/authentication" />
+            <option value="$PROJECT_DIR$/feature/bookdetail" />
+            <option value="$PROJECT_DIR$/feature/bookshelf" />
+            <option value="$PROJECT_DIR$/feature/catalog" />
             <option value="$PROJECT_DIR$/feature/conversation" />
+            <option value="$PROJECT_DIR$/feature/dashboard" />
+            <option value="$PROJECT_DIR$/feature/feed" />
             <option value="$PROJECT_DIR$/feature/friend" />
-            <option value="$PROJECT_DIR$/feature/home" />
-            <option value="$PROJECT_DIR$/feature/library" />
             <option value="$PROJECT_DIR$/feature/profile" />
             <option value="$PROJECT_DIR$/feature/profile-services" />
             <option value="$PROJECT_DIR$/feature/reader" />
+            <option value="$PROJECT_DIR$/feature/search" />
             <option value="$PROJECT_DIR$/feature/settings" />
           </set>
         </option>

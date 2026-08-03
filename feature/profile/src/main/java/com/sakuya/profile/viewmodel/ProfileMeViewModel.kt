@@ -1,13 +1,13 @@
 package com.sakuya.profile.viewmodel
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sakuya.profile.BuildConfig
+import com.sakuya.profile.data.mock.ProfileMockData
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,9 +15,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,30 +40,49 @@ class ProfileMeViewModel @Inject constructor(
 //    读取userProfile的数据
     fun loadUserProfile(){
         viewModelScope.launch {
-            val profile = userRepository.getUserProfile()
-            _userProfile.value = profile
+            userRepository.getUserProfile()
+                .onSuccess { profile -> _userProfile.value = profile }
+                .onFailure { error ->
+                    _effect.emit(ProfileMeEffect.ShowError(error.message ?: "个人资料加载失败"))
+                }
         }
     }
 //    上传头像
     fun uploadAvatar(uri: Uri){
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch {
             _uploadState.value = UploadState.Loading
-           val result = userRepository.uploadAvatar(uri)
+            val result = userRepository.uploadAvatar(uri)
 
             result.onSuccess { newAvatarUrl ->
-                _uploadState.value = UploadState.Success(newAvatarUrl)
+                val updatedProfile = _userProfile.value.copy(avatarUrl = newAvatarUrl)
+                userRepository.updateUserProfile(updatedProfile)
+                    .onSuccess { savedProfile ->
+                        _userProfile.value = savedProfile
+                        _uploadState.value = UploadState.Success(savedProfile.avatarUrl)
+                    }
+                    .onFailure { error ->
+                        _uploadState.value = UploadState.Error(error.message ?: "头像保存失败")
+                    }
             }.onFailure { error ->
-                _uploadState.value = UploadState.Error(result.exceptionOrNull()?.message ?: "上传失败")
+                _uploadState.value = UploadState.Error(error.message ?: "上传失败")
             }
         }
+    }
+
+    fun resetUploadState() {
+        _uploadState.value = UploadState.Idle
     }
 //    拉取地区列表
     fun fetchRegionList(){
         viewModelScope.launch{
             try{
-
+                _regionList.value = if (BuildConfig.DEV_PROFILE_MOCK_DATA) {
+                    ProfileMockData.regions
+                } else {
+                    emptyList()
+                }
             }catch (e: Exception){
-
+                _regionList.value = emptyList()
             }
         }
     }
@@ -74,21 +90,23 @@ class ProfileMeViewModel @Inject constructor(
 //    UI操作
     fun onAction(action: ProfileAction) {
         when (action) {
-            ProfileAction.OnAvatarClick -> emitEffect(ProfileMeEffect.GoAvatar)
+            is ProfileAction.OnAvatarClick -> emitEffect(ProfileMeEffect.GoAvatar)
 
-            ProfileAction.OnNameClick -> emitEffect(ProfileMeEffect.GoName)
+            is ProfileAction.OnNameClick -> emitEffect(ProfileMeEffect.GoName)
 
-            ProfileAction.OnGenderClick -> emitEffect(ProfileMeEffect.GoGender)
+            is ProfileAction.OnGenderClick -> emitEffect(ProfileMeEffect.GoGender)
 
-            ProfileAction.OnRegionClick -> emitEffect(ProfileMeEffect.GoRegion)
+            is ProfileAction.OnRegionClick -> emitEffect(ProfileMeEffect.GoRegion)
 
-            ProfileAction.OnPhoneClick -> emitEffect(ProfileMeEffect.GoPhone)
+            is ProfileAction.OnPhoneClick -> emitEffect(ProfileMeEffect.GoPhone)
 
-            ProfileAction.OnIdClick -> emitEffect(ProfileMeEffect.GoId)
+            is ProfileAction.OnIdClick -> emitEffect(ProfileMeEffect.GoId)
 
-            ProfileAction.OnSignatureClick -> emitEffect(ProfileMeEffect.GoSignature)
+            is ProfileAction.OnPokeClick -> emitEffect(ProfileMeEffect.GoPoke)
 
-            ProfileAction.OnRingtoneClick -> emitEffect(ProfileMeEffect.GoRingtone)
+            is ProfileAction.OnSignatureClick -> emitEffect(ProfileMeEffect.GoSignature)
+
+            is ProfileAction.OnRingtoneClick -> emitEffect(ProfileMeEffect.GoRingtone)
             else -> Unit
         }
     }
@@ -103,6 +121,19 @@ class ProfileMeViewModel @Inject constructor(
         }
     }
 
+    fun updateProfile(profile: UserProfile, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            userRepository.updateUserProfile(profile)
+                .onSuccess { savedProfile ->
+                    _userProfile.value = savedProfile
+                    onSuccess()
+                }
+                .onFailure { error ->
+                    _effect.emit(ProfileMeEffect.ShowError(error.message ?: "个人资料保存失败"))
+                }
+        }
+    }
+
 }
 
 sealed interface ProfileMeEffect {
@@ -112,8 +143,10 @@ sealed interface ProfileMeEffect {
     data object GoRegion : ProfileMeEffect
     data object GoPhone : ProfileMeEffect
     data object GoId : ProfileMeEffect
+    data object GoPoke : ProfileMeEffect
     data object GoSignature : ProfileMeEffect
     data object GoRingtone : ProfileMeEffect
+    data class ShowError(val message: String) : ProfileMeEffect
 }
 sealed class UploadState {
     object Idle : UploadState()

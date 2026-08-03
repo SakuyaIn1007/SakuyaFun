@@ -2,8 +2,8 @@ package com.sakuya.profile.ui
 
 import android.util.Log
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,9 +24,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,9 +43,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.sakuya.designsystem.icon.SakuyaIcons
+import com.sakuya.feed.ui.FeedTimeline
+import com.sakuya.library.ui.LibraryScreen
 import com.sakuya.profile.model.PrivacySettings
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.viewmodel.ProfileAction
+import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
@@ -48,92 +56,64 @@ fun ProfileScreen(
     profile: UserProfile,
     modifier: Modifier = Modifier,
     onAction: (ProfileAction) -> Unit = {},
+    onOpenReader: (bookId: String, filePath: String) -> Unit = { _, _ -> },
 ) {
     ProfileContent(
         profile,
         modifier,
-        onAction = onAction
+        onAction = onAction,
+        onOpenReader = onOpenReader
     )
 }
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProfileContent(
     profile: UserProfile,
     modifier: Modifier,
     onAction: (ProfileAction) -> Unit = {},
+    onOpenReader: (bookId: String, filePath: String) -> Unit = { _, _ -> },
 ) {
-    LazyColumn(
+    var selectedSection by remember { mutableIntStateOf(0) }
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        stickyHeader {
-            ProfileHeader(
-                profile,
-                onClick = {
-                    onAction(ProfileAction.OnMeClick)
-                }
-            )
+        ProfileSectionBar(selectedSection, { selectedSection = it }) {
+            onAction(ProfileAction.OnSettingsClick)
         }
+        ProfileHeader(profile) { onAction(ProfileAction.OnMeClick) }
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.weight(1f)) {
+            if (selectedSection == 0) {
+                LibraryScreen(onOpenReader = onOpenReader)
+            } else {
+                FeedTimeline()
+            }
+        }
+    }
+}
 
-        item { Spacer(modifier = Modifier.height(6.dp)) }
-        item {
-            ProfileFunctionItem(
-                title = "消息",
-                iconRes = SakuyaIcons.Conversation,
-                onClick = { onAction(ProfileAction.OnConversationClick) }
-            )
-        }
-        item { ProfileOutline() }
-        item {
-            ProfileFunctionItem(
-                title = "好友",
-                iconRes = SakuyaIcons.Friends,
-                onClick = { onAction(ProfileAction.OnFriendsClick) }
-            )
-        }
-        item { Spacer(modifier = Modifier.height(6.dp)) }
-        item {
-            ProfileFunctionItem(
-                title = "钱包",
-                iconRes = SakuyaIcons.Wallet,
-                onClick = { onAction(ProfileAction.OnWalletClick) }
-            )
-        }
-        item { Spacer(modifier = Modifier.height(6.dp)) }
-        item {
-            ProfileFunctionItem(
-                title = "收藏",
-                iconRes = SakuyaIcons.Favorites,
-                onClick = { onAction(ProfileAction.OnFavouritesClick) }
-            )
-        }
-        item { ProfileOutline() }
-        item {
-            ProfileFunctionItem(
-                title = "相册",
-                iconRes = SakuyaIcons.Pictures,
-                onClick = { onAction(ProfileAction.OnAlbumsClick) }
-            )
-        }
-        item { ProfileOutline() }
-        item {
-            ProfileFunctionItem(
-                title = "卡包",
-                iconRes = SakuyaIcons.Cards,
-                onClick = { onAction(ProfileAction.OnCardsClick) }
-            )
-        }
-        item { Spacer(modifier = Modifier.height(6.dp)) }
-        item {
-            ProfileFunctionItem(
-                title = "设置",
-                iconRes = SakuyaIcons.Settings,
-                onClick = { onAction(ProfileAction.OnSettingsClick) }
-            )
+@Composable
+private fun ProfileSectionBar(
+    selectedSection: Int,
+    onSectionSelected: (Int) -> Unit,
+    onSettingsClick: () -> Unit
+) {
+    PrimaryTabRow(
+        tabs = listOf("书架", "动态"),
+        selectedIndex = selectedSection,
+        onTabSelected = onSectionSelected,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .statusBarsPadding()
+            .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)
+    ) {
+        IconButton(onClick = onSettingsClick) {
+            Icon(painterResource(SakuyaIcons.Settings), "设置", Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -143,7 +123,7 @@ fun ProfileHeader(
     profile: UserProfile,
     onClick: () -> Unit = {}
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.inverseOnSurface)
@@ -152,7 +132,6 @@ fun ProfileHeader(
             verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .clickable {
                     Log.d("ProfileHeader", "clicked")
                     onClick()
@@ -169,17 +148,17 @@ fun ProfileHeader(
             ),
             contentDescription = "头像",
             modifier = Modifier.run {
-                size(68.dp)
-                    .clip(RoundedCornerShape(4.dp))
+                size(72.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             }
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
-                .height(68.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .height(72.dp),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = profile.nickname,
@@ -187,19 +166,68 @@ fun ProfileHeader(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(top = 2.dp)
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = profile.signature ?: "这个人是条懒狗，什么都没有留下",
+                text = profile.signature?.takeIf { it.isNotBlank() } ?: "点击完善个人资料",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(bottom = 6.dp)
+                maxLines = 1
             )
         }
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
+        MiniQrCode(
+            modifier = Modifier.size(22.dp),
+            color = MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.width(6.dp))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "箭头",
             tint = MaterialTheme.colorScheme.outline
         )
+        }
+        ProfileStats()
+    }
+}
+
+@Composable
+private fun ProfileStats() {
+    val stats = listOf("0" to "关注", "0" to "粉丝", "0" to "收藏", "0" to "历史浏览")
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
+    ) {
+        stats.forEach { (count, label) ->
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(count, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+                Spacer(Modifier.height(1.dp))
+                Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MiniQrCode(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.outline
+) {
+    Canvas(modifier = modifier) {
+        val cell = size.minDimension / 5f
+        val points = listOf(
+            0 to 0, 1 to 0, 0 to 1,
+            4 to 0, 3 to 0, 4 to 1,
+            0 to 4, 0 to 3, 1 to 4,
+            2 to 2, 3 to 3, 4 to 4, 2 to 4
+        )
+        points.forEach { (x, y) ->
+            drawRect(
+                color = color,
+                topLeft = androidx.compose.ui.geometry.Offset(x * cell, y * cell),
+                size = androidx.compose.ui.geometry.Size(cell * 0.78f, cell * 0.78f)
+            )
         }
     }
 }
@@ -215,7 +243,7 @@ fun ProfileFunctionItem(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.inverseOnSurface)
             .clickable { onClick() }
-            .padding(vertical = 16.dp),
+            .padding(vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(12.dp))

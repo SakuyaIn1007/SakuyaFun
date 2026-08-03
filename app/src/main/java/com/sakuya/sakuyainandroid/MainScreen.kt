@@ -2,35 +2,35 @@ package com.sakuya.sakuyainandroid
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.Icon
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import com.sakuya.navigation.FEED_COMPOSE_ROUTE
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.sakuya.authentication.navigation.authNavGraph
-import com.sakuya.conversation.navigation.conversationNavGraph
-import com.sakuya.friend.navigation.friendNavGraph
-import com.sakuya.home.navigation.homeNavGraph
-import com.sakuya.library.navigation.libraryNavGraph
-import com.sakuya.navigation.AUTH_LOGIN_ROUTE
-import com.sakuya.navigation.PROFILE_ROUTE
-import com.sakuya.profile.navigation.profileNavGraph
-import com.sakuya.reader.navigation.readerNavGraph
+import com.sakuya.sakuyainandroid.navigation.AppNavHost
 import com.sakuya.sakuyainandroid.navigation.topLevelNavItems
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
@@ -54,78 +54,75 @@ fun MainScreen(
                     currentDestination = currentDestination,
                     onNavigate = { route ->
                         navController.navigate(route) {
-                            popUpTo(PROFILE_ROUTE) {
+                            popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
                             launchSingleTop = true
                             restoreState = true
                         }
-                    }
+                    },
+                    onCreateFeed = { navController.navigate(FEED_COMPOSE_ROUTE) }
                 )
             }
         },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0.dp)
     ) { innerPadding ->
-        NavHost(
+        AppNavHost(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
-        ) {
-            mainNavGraph(navController = navController)
-        }
+        )
     }
 }
 
 @Composable
 private fun MainBottomBar(
     currentDestination: NavDestination?,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onCreateFeed: () -> Unit
 ) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.inverseOnSurface) {
-        topLevelNavItems.forEach { item ->
+        topLevelNavItems.forEachIndexed { index, item ->
+            if (index == 2) {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .width(58.dp)
+                        .size(height = 34.dp, width = 58.dp)
+                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp))
+                        .clickable(onClick = onCreateFeed),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "发表动态", tint = MaterialTheme.colorScheme.onPrimary)
+                }
+            }
             val selected = currentDestination.isTopLevelDestination(item.route)
             NavigationBarItem(
-                selected = false,
+                selected = selected,
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = androidx.compose.ui.graphics.Color.Transparent
+                ),
                 onClick = { onNavigate(item.route) },
                 icon = {
                     Icon(
                         modifier = Modifier
-                            .size(32.dp),
+                            .size(24.dp),
                         painter = painterResource(item.iconRes),
                         contentDescription = item.label,
-                        tint = if(selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 },
                 label = {
                     Text(
                         text = item.label,
-                        fontSize = MaterialTheme.typography.titleSmall.fontSize,
+                        fontSize = MaterialTheme.typography.labelSmall.fontSize,
                         color = if(selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                     )
                 }
             )
         }
     }
-}
-
-private fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
-    authNavGraph(
-        navController = navController,
-        onAuthenticated = {
-            navController.navigate(PROFILE_ROUTE) {
-                popUpTo(AUTH_LOGIN_ROUTE) {
-                    inclusive = true
-                }
-            }
-        }
-    )
-    homeNavGraph(navController)
-    conversationNavGraph(navController)
-    libraryNavGraph(navController)
-    profileNavGraph(navController)
-    friendNavGraph(navController)
-    readerNavGraph(navController)
 }
 
 private fun NavDestination?.isTopLevelDestination(route: String): Boolean {
@@ -144,7 +141,8 @@ fun MainBottomBarPreview() {
 
         MainBottomBar(
             currentDestination = mockDestination,
-            onNavigate = { /* Preview 里面空实现就行喵 */ }
+            onNavigate = { /* Preview 里面空实现就行喵 */ },
+            onCreateFeed = {}
         )
     }
 }

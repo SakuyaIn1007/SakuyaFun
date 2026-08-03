@@ -2,45 +2,40 @@ package com.sakuya.sakuyainandroid
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sakuya.data.local.SessionManager
 import com.sakuya.data.local.TokenStorage
 import com.sakuya.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.navigation.PROFILE_ROUTE
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
     tokenStorage: TokenStorage,
+    sessionManager: SessionManager,
 ) : ViewModel() {
     val uiState: StateFlow<MainActivityUiState> =
-        if (BuildConfig.DEV_SKIP_AUTH) {
-            flowOf(MainActivityUiState.Ready(PROFILE_ROUTE))
-                .stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5_000),
-                    initialValue = MainActivityUiState.Loading,
-                )
-        } else {
-            tokenStorage.getToken()
-                .map { token ->
-                    val startDestination = if (token.isNullOrBlank()) {
-                        AUTH_LOGIN_ROUTE
-                    } else {
-                        PROFILE_ROUTE
-                    }
-                    MainActivityUiState.Ready(startDestination)
-                }
-                .stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5_000),
-                    initialValue = MainActivityUiState.Loading,
-                )
+        combine(
+            tokenStorage.getToken(),
+            sessionManager.sessionExpired
+        ) { token, sessionExpired ->
+            val startDestination = when {
+                sessionExpired -> AUTH_LOGIN_ROUTE
+                BuildConfig.DEV_SKIP_AUTH -> PROFILE_ROUTE
+                token.isNullOrBlank() -> AUTH_LOGIN_ROUTE
+                else -> PROFILE_ROUTE
+            }
+            MainActivityUiState.Ready(startDestination)
         }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = MainActivityUiState.Loading,
+            )
 }
 
 sealed interface MainActivityUiState {

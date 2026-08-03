@@ -3,29 +3,86 @@ package com.sakuya.reader.data.repository
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.sakuya.data.local.dao.BookmarkDao
+import com.sakuya.data.local.dao.ReadingProgressDao
+import com.sakuya.data.local.entity.BookmarkEntity
+import com.sakuya.data.local.entity.ReadingProgressEntity
 import com.sakuya.reader.data.EpubLoader
+import com.sakuya.reader.data.FileDownloader
 import com.sakuya.reader.data.TxtLoader
 import com.sakuya.reader.model.ReaderChapter
 import com.sakuya.reader.model.ReaderDocument
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.UUID
 import javax.inject.Inject
 
 //ReaderRepository处理文件获取
 class ReaderRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val epubLoader: EpubLoader,
-    private val txtLoader: TxtLoader
+    private val txtLoader: TxtLoader,
+    private val fileDownloader: FileDownloader,
+    private val readingProgressDao: ReadingProgressDao,
+    private val bookmarkDao: BookmarkDao
 ) {
+
     suspend fun openDocument(uri: Uri): ReaderDocument? = withContext(Dispatchers.IO) {
-        val extension = resolveExtension(uri)
-        when (extension) {
-            "txt" -> openTxt(uri)
-            "epub" -> openEpub(uri)
-            else -> openEpub(uri) ?: openTxt(uri)
+        val localUri = if (uri.scheme == "http" || uri.scheme == "https") {
+            runCatching { Uri.fromFile(fileDownloader.downloadToCache(uri.toString())) }.getOrNull()
+                ?: return@withContext null
+        } else {
+            uri
         }
+        val extension = resolveExtension(localUri)
+        when (extension) {
+            "txt" -> openTxt(localUri)
+            "epub" -> openEpub(localUri)
+            else -> openEpub(localUri) ?: openTxt(localUri)
+        }
+    }
+
+    fun observeBookmarks(bookId: String): Flow<List<BookmarkEntity>> {
+        return bookmarkDao.observeBookmarks(bookId)
+    }
+
+    suspend fun addBookmark(bookId: String, progress: Float) {
+        val safeProgress = progress.coerceIn(0f, 1f)
+        bookmarkDao.upsertBookmark(
+            BookmarkEntity(
+                id = UUID.randomUUID().toString(),
+                bookId = bookId,
+                title = "进度 ${(safeProgress * 100).toInt()}%",
+                progress = safeProgress,
+                note = "",
+                createdAt = System.currentTimeMillis()
+            )
+        )
+    }
+    suspend fun deleteBookmark(id: String) {
+        bookmarkDao.deleteBookmark(id)
+    }
+
+
+    suspend fun getProgress(bookKey: String): Float = withContext(Dispatchers.IO) {
+        readingProgressDao.getProgress(bookKey)?.progress ?: 0f
+    }
+
+    suspend fun saveProgress(bookKey: String, progress: Float) = withContext(Dispatchers.IO) {
+        readingProgressDao.upsertProgress(
+            ReadingProgressEntity(
+                bookKey = bookKey,
+                progress = progress.coerceIn(0f, 1f),
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    suspend fun deleteProgress(bookKey: String) = withContext(Dispatchers.IO) {
+        readingProgressDao.deleteProgress(bookKey)
     }
 
     private fun openTxt(uri: Uri): ReaderDocument.Txt? {

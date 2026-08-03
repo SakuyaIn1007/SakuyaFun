@@ -1,0 +1,3 @@
+package com.sakuya.backend.chat;
+import java.time.Instant; import java.util.*; import org.springframework.data.domain.Pageable; import org.springframework.data.jpa.repository.JpaRepository;
+public interface ChatMessageRepository extends JpaRepository<ChatMessage,UUID>{List<ChatMessage> findByConversationIdOrderByCreatedAtDesc(UUID conversationId,Pageable pageable);List<ChatMessage> findByConversationIdAndCreatedAtBeforeOrderByCreatedAtDesc(UUID conversationId,Instant before,Pageable pageable);Optional<ChatMessage> findTopByConversationIdOrderByCreatedAtDesc(UUID conversationId);long countByConversationIdAndCreatedAtAfterAndSenderIdNot(UUID conversationId,Instant after,UUID senderId);}
