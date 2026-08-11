@@ -114,7 +114,7 @@ fun ConversationContent(
                 }
             }
 
-            if (isLoading) {
+            if (isLoading && conversations.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

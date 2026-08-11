@@ -1,12 +1,8 @@
 package com.sakuya.dashboard.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
@@ -26,11 +22,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.feed.ui.FeedTimelineScreen
+import com.sakuya.model.feed.FeedStream
 
 /** The bottom-navigation landing page; discovery remains in the Light Novel feature. */
 @Composable
 fun DashboardScreen(
     onSearchClick: () -> Unit,
+    onOpenDynamic: (String) -> Unit,
+    onOpenAuthor: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(1) }
@@ -38,6 +38,8 @@ fun DashboardScreen(
         selectedTab = selectedTab,
         onTabSelected = { selectedTab = it },
         onSearchClick = onSearchClick,
+        onOpenDynamic = onOpenDynamic,
+        onOpenAuthor = onOpenAuthor,
         modifier = modifier
     )
 }
@@ -47,6 +49,8 @@ fun DashboardContent(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
     onSearchClick: () -> Unit,
+    onOpenDynamic: (String) -> Unit,
+    onOpenAuthor: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -70,37 +74,26 @@ fun DashboardContent(
     ) { innerPadding ->
         DashboardFeedContent(
             selectedTab = selectedTab,
+            onOpenDynamic = onOpenDynamic,
+            onOpenAuthor = onOpenAuthor,
             modifier = Modifier.padding(innerPadding)
         )
     }
 }
 
 @Composable
-private fun DashboardFeedContent(selectedTab: Int, modifier: Modifier = Modifier) {
-    val isFollowing = selectedTab == 0
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        verticalArrangement = Arrangement.Top
-    ) {
-        Text(
-            text = if (isFollowing) "关注动态" else "推荐动态",
-            style = MaterialTheme.typography.titleLarge
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = if (isFollowing) {
-                "这里会展示你关注的人发布的动态。"
-            } else {
-                "这里会展示为你推荐的阅读动态与社区活动。"
-            },
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline
-        )
-    }
+private fun DashboardFeedContent(
+    selectedTab: Int,
+    onOpenDynamic: (String) -> Unit,
+    onOpenAuthor: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    FeedTimelineScreen(
+        stream = if (selectedTab == 0) FeedStream.FOLLOWING else FeedStream.RECOMMENDED,
+        onPostClick = onOpenDynamic,
+        onAuthorClick = onOpenAuthor,
+        modifier = modifier,
+    )
 }
 
 @Preview(showBackground = true)
@@ -110,7 +103,9 @@ private fun DashboardContentPreview() {
         DashboardContent(
             selectedTab = 1,
             onTabSelected = {},
-            onSearchClick = {}
+            onSearchClick = {},
+            onOpenDynamic = {},
+            onOpenAuthor = {},
         )
     }
 }

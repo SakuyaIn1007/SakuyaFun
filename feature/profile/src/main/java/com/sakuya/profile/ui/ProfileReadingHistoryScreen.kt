@@ -38,7 +38,7 @@ fun ProfileReadingHistoryScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         AppSecondaryTopBar(
-            title = "阅读记录",
+            title = "历史浏览",
             onBack = onBack
         )
         LazyColumn(modifier = Modifier.fillMaxSize()) {

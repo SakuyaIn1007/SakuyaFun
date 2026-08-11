@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -43,12 +44,13 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.sakuya.designsystem.icon.SakuyaIcons
-import com.sakuya.feed.ui.FeedTimeline
 import com.sakuya.library.ui.LibraryScreen
+import com.sakuya.model.feed.DynamicPost
 import com.sakuya.profile.model.PrivacySettings
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.viewmodel.ProfileAction
 import com.sakuya.ui.component.PrimaryTabRow
+import com.sakuya.ui.component.DynamicPostCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
@@ -57,12 +59,22 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     onAction: (ProfileAction) -> Unit = {},
     onOpenReader: (bookId: String, filePath: String) -> Unit = { _, _ -> },
+    onOpenDynamic: () -> Unit = {},
+    onOpenFollowing: () -> Unit = {},
+    onOpenFollowers: () -> Unit = {},
+    onOpenFavourites: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
 ) {
     ProfileContent(
         profile,
         modifier,
         onAction = onAction,
-        onOpenReader = onOpenReader
+        onOpenReader = onOpenReader,
+        onOpenDynamic = onOpenDynamic,
+        onOpenFollowing = onOpenFollowing,
+        onOpenFollowers = onOpenFollowers,
+        onOpenFavourites = onOpenFavourites,
+        onOpenHistory = onOpenHistory,
     )
 }
 
@@ -73,6 +85,11 @@ fun ProfileContent(
     modifier: Modifier,
     onAction: (ProfileAction) -> Unit = {},
     onOpenReader: (bookId: String, filePath: String) -> Unit = { _, _ -> },
+    onOpenDynamic: () -> Unit = {},
+    onOpenFollowing: () -> Unit = {},
+    onOpenFollowers: () -> Unit = {},
+    onOpenFavourites: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
 ) {
     var selectedSection by remember { mutableIntStateOf(0) }
     Column(
@@ -83,14 +100,60 @@ fun ProfileContent(
         ProfileSectionBar(selectedSection, { selectedSection = it }) {
             onAction(ProfileAction.OnSettingsClick)
         }
-        ProfileHeader(profile) { onAction(ProfileAction.OnMeClick) }
+        ProfileHeader(
+            profile = profile,
+            onClick = { onAction(ProfileAction.OnMeClick) },
+            onOpenFollowing = onOpenFollowing,
+            onOpenFollowers = onOpenFollowers,
+            onOpenFavourites = onOpenFavourites,
+            onOpenHistory = onOpenHistory,
+        )
         Spacer(Modifier.height(12.dp))
         Box(Modifier.weight(1f)) {
             if (selectedSection == 0) {
                 LibraryScreen(onOpenReader = onOpenReader)
             } else {
-                FeedTimeline()
+                ProfileDynamicContent(profile, onOpenDynamic)
             }
+        }
+    }
+}
+
+@Composable
+private fun ProfileDynamicContent(profile: UserProfile, onOpenDynamic: () -> Unit) {
+    val posts = listOf(
+        DynamicPost(
+            id = "my-post-1",
+            authorName = profile.nickname,
+            authorInitial = profile.nickname.take(1).ifBlank { "我" },
+            authorColor = 0xFF5D8C77,
+            title = "我的周末阅读记录",
+            content = "重新翻开搁置已久的小说，读到熟悉段落时还是会被其中的细节打动。",
+            imageColors = listOf(0xFF8799B0, 0xFFC3947A, 0xFF749B90),
+            tags = listOf("#阅读记录", "#周末"),
+            commentCount = 6,
+            likeCount = 23,
+            userId = "current-user",
+            isMine = true,
+        ),
+        DynamicPost(
+            id = "my-post-2",
+            authorName = profile.nickname,
+            authorInitial = profile.nickname.take(1).ifBlank { "我" },
+            authorColor = 0xFF5D8C77,
+            title = "写在书页边的句子",
+            content = "有些句子并不会立刻懂得，但在某个平常的夜晚又会突然想起。",
+            tags = listOf("#摘抄", "#随想"),
+            commentCount = 2,
+            likeCount = 11,
+            userId = "current-user",
+            isMine = true,
+        ),
+    )
+    LazyColumn(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        items(posts, key = DynamicPost::id) { post ->
+            DynamicPostCard(post = post, onClick = onOpenDynamic)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
         }
     }
 }
@@ -121,7 +184,11 @@ private fun ProfileSectionBar(
 @Composable
 fun ProfileHeader(
     profile: UserProfile,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    onOpenFollowing: () -> Unit = {},
+    onOpenFollowers: () -> Unit = {},
+    onOpenFavourites: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -186,19 +253,29 @@ fun ProfileHeader(
             tint = MaterialTheme.colorScheme.outline
         )
         }
-        ProfileStats()
+        ProfileStats(onOpenFollowing, onOpenFollowers, onOpenFavourites, onOpenHistory)
     }
 }
 
 @Composable
-private fun ProfileStats() {
-    val stats = listOf("0" to "关注", "0" to "粉丝", "0" to "收藏", "0" to "历史浏览")
+private fun ProfileStats(
+    onOpenFollowing: () -> Unit,
+    onOpenFollowers: () -> Unit,
+    onOpenFavourites: () -> Unit,
+    onOpenHistory: () -> Unit,
+) {
+    val stats = listOf(
+        Triple("0", "关注", onOpenFollowing),
+        Triple("0", "粉丝", onOpenFollowers),
+        Triple("0", "收藏", onOpenFavourites),
+        Triple("0", "历史浏览", onOpenHistory),
+    )
     Row(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
     ) {
-        stats.forEach { (count, label) ->
+        stats.forEach { (count, label, onClick) ->
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).clickable(onClick = onClick),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(count, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)

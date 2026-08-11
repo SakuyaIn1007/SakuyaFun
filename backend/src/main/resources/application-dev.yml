@@ -1,8 +1,14 @@
 spring:
   datasource:
-    url: jdbc:h2:file:./data/sakuya;MODE=MySQL;AUTO_SERVER=TRUE
-    username: sa
-    password:
+    # 开发环境直接连接 MySQL；可通过 DB_URL、DB_USERNAME、DB_PASSWORD 覆盖本机或容器连接信息。
+    # 执行流程：bootRun 使用 dev Profile -> 读取此数据源配置 -> DataInitializer 将 sakuya 演示数据写入 MySQL。
+    url: ${DB_URL:jdbc:mysql://localhost:3306/sakuya?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
 
 app:
   jwt:

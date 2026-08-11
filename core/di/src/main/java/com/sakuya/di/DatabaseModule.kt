@@ -35,7 +35,7 @@ object DatabaseModule {
             "sakuya.db"
         )
 
-        builder.addMigrations(MIGRATION_5_6)
+        builder.addMigrations(MIGRATION_5_6, MIGRATION_6_7)
 
         if (BuildConfig.DEBUG) {
             builder.fallbackToDestructiveMigration()
@@ -89,6 +89,21 @@ object DatabaseModule {
             db.execSQL("ALTER TABLE user ADD COLUMN canBeAddedByStrangers INTEGER NOT NULL DEFAULT 1")
             db.execSQL("ALTER TABLE user ADD COLUMN showProfileToStrangers INTEGER NOT NULL DEFAULT 1")
             db.execSQL("ALTER TABLE user ADD COLUMN muteMessagesFromUnknown INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    /**
+     * 聊天记录升级为可恢复的本地状态。
+     * 执行流程：为已有消息补齐发送者、头像和发送/已读状态，旧记录以安全默认值继续可读。
+     */
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE chat_messages ADD COLUMN senderId TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE chat_messages ADD COLUMN avatarText TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE chat_messages ADD COLUMN attachmentsJson TEXT NOT NULL DEFAULT '[]'")
+            db.execSQL("ALTER TABLE chat_messages ADD COLUMN replyJson TEXT")
+            db.execSQL("ALTER TABLE chat_messages ADD COLUMN sendStatus TEXT NOT NULL DEFAULT 'sent'")
+            db.execSQL("ALTER TABLE chat_messages ADD COLUMN readStatus TEXT NOT NULL DEFAULT 'unread'")
         }
     }
 }

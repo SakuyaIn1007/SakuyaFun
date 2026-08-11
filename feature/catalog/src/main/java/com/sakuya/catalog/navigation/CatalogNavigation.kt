@@ -28,7 +28,14 @@ fun NavGraphBuilder.catalogNavGraph(navController: NavHostController) {
         )
     }
     composable(CATALOG_SCHEDULE_ROUTE) {
-        CatalogScheduleScreen(onBack = { navController.popBackStack() })
+        CatalogScheduleScreen(
+            onBack = { navController.popBackStack() },
+            onBookClick = { bookId ->
+                navController.navigate(
+                    "$BOOK_DETAIL_BASE_ROUTE?$BOOK_DETAIL_ARG_ID=${Uri.encode(bookId)}"
+                )
+            },
+        )
     }
     composable(LIGHT_NOVEL_AWARD_ROUTE) {
         LightNovelAwardScreen(

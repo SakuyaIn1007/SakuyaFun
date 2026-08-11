@@ -53,6 +53,7 @@ import com.sakuya.catalog.R
 import com.sakuya.catalog.viewmodel.CatalogUiState
 import com.sakuya.catalog.viewmodel.CatalogViewModel
 import com.sakuya.ui.component.PrimaryTabRow
+import com.sakuya.ui.component.ContentCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -75,6 +76,17 @@ fun CatalogScreen(
         onNavigateToAward = onNavigateToAward
     )
 }
+
+/**
+ * CatalogScreen.kt
+ * 职责说明：承载轻小说内容列表，统一由目录页负责题材列表的展示与书籍点击分发。
+ * 执行流程：CatalogContent 选择轻小说 Tab -> 调用本 Content -> ContentCard 点击后回传书籍 ID。
+ */
+@Composable
+fun NovelContent(
+    items: List<ContentItem> = emptyList(),
+    onBookClick: (bookId: String) -> Unit = {},
+) = CatalogNovelContent(items = items, onBookClick = onBookClick)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

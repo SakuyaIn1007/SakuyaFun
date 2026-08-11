@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.friend.model.Friend
 import com.sakuya.friend.viewmodel.FriendAction
 import com.sakuya.friend.viewmodel.FriendViewModel
+import com.sakuya.model.group.GroupConversation
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
@@ -68,7 +69,7 @@ fun FriendScreen(
 }
 
 @Composable
-fun AddFriendScreen(
+internal fun AddFriendContent(
     viewModel: FriendViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -127,7 +128,7 @@ fun AddFriendScreen(
 }
 
 @Composable
-fun FriendRequestsScreen(
+internal fun FriendRequestsContent(
     requests: List<FriendRequestItem>,
     isLoading: Boolean,
     onBack: () -> Unit = {},
@@ -159,8 +160,11 @@ fun FriendRequestsScreen(
 }
 
 @Composable
-fun GroupScreen(
+internal fun GroupContent(
+    groups: List<GroupConversation>,
+    isLoading: Boolean,
     onBack: () -> Unit = {},
+    onGroupClick: (GroupConversation) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -169,7 +173,79 @@ fun GroupScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         AppSecondaryTopBar(title = "群聊", onBack = onBack)
-        EmptyMessage("群聊功能正在准备中")
+        if (isLoading && groups.isEmpty()) {
+            LoadingBox()
+        } else if (groups.isEmpty()) {
+            EmptyMessage("暂无群聊")
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                item {
+                    Text(
+                        text = "群聊 ${groups.size}",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
+                items(groups, key = { it.group.id }) { group ->
+                    GroupChatRow(
+                        group = group,
+                        onClick = { onGroupClick(group) }
+                    )
+                    Outline(dp = 76.dp)
+                }
+            }
+        }
+    }
+}
+
+/** 群聊行只渲染 GroupConversation；点击整行后由导航层打开该群的会话页。 */
+@Composable
+internal fun GroupChatRow(
+    group: GroupConversation,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        FriendAvatar(text = group.group.avatarText, online = false)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = group.group.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "${group.group.memberCount} 人 · ${group.lastMessage}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (group.unreadCount > 0) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = group.unreadCount.toString(),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
     }
 }
 
@@ -265,7 +341,7 @@ private fun FriendRow(
 }
 
 @Composable
-private fun FriendSearchRow(
+internal fun FriendSearchRow(
     friend: Friend,
     onAdd: () -> Unit,
     modifier: Modifier = Modifier
@@ -301,7 +377,7 @@ private fun FriendSearchRow(
 }
 
 @Composable
-private fun FriendRequestRow(
+internal fun FriendRequestRow(
     request: FriendRequestItem,
     onAccept: () -> Unit,
     onReject: () -> Unit,
@@ -347,7 +423,7 @@ private fun FriendRequestRow(
 }
 
 @Composable
-private fun LoadingBox(modifier: Modifier = Modifier) {
+internal fun LoadingBox(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -357,7 +433,7 @@ private fun LoadingBox(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun EmptyMessage(
+internal fun EmptyMessage(
     text: String,
     modifier: Modifier = Modifier
 ) {
@@ -374,7 +450,7 @@ private fun EmptyMessage(
 }
 
 @Composable
-private fun FriendAvatar(
+internal fun FriendAvatar(
     text: String,
     online: Boolean,
     modifier: Modifier = Modifier
@@ -430,6 +506,20 @@ private fun FriendContentPreview() {
             showBackButton = true,
             onBack = {},
             onAction = {}
+        )
+    }
+}
+
+/** 预览群聊入口的列表层级、未读角标与好友页的视觉一致性。 */
+@Preview(showBackground = true)
+@Composable
+private fun GroupScreenPreview() {
+    SakuyaInAndroidTheme {
+        GroupContent(
+            groups = emptyList(),
+            isLoading = false,
+            onBack = {},
+            onGroupClick = {},
         )
     }
 }

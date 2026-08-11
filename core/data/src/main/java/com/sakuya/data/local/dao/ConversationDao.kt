@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ConversationDao {
 
-    @Query("SELECT * from conversations order by lastActiveTime desc")
+    @Query("SELECT * FROM conversations ORDER BY isPinned DESC, lastActiveTime DESC")
     fun observeAll(): Flow<List<ConversationEntity>>
 
     @Query("SELECT * from conversations where id = :id")

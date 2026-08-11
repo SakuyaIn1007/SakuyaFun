@@ -59,7 +59,7 @@ data class VideoItem(
 }
 
 @Composable
-fun VideoScreen(
+internal fun VideoGalleryContent(
     modifier: Modifier = Modifier
 ) {
     // 模拟视频数据喵（跨越不同月份）
@@ -78,7 +78,7 @@ fun VideoScreen(
         VideoItem("9", "", "https://picsum.photos/300?random=19", 14000L, 1742200000000L)
     )
 
-    VideoContent(
+    VideoGalleryContent(
         videos = mockVideos,
         modifier = modifier.fillMaxSize()
     )
@@ -86,7 +86,7 @@ fun VideoScreen(
 
 @OptIn(ExperimentalFoundationApi::class) // stickyHeader 刚性需要这个注解喵
 @Composable
-fun VideoContent(
+internal fun VideoGalleryContent(
     videos: List<VideoItem>,
     modifier: Modifier = Modifier
 ) {
@@ -247,6 +247,6 @@ fun VideoGridItem(
 @Composable
 fun VideoPreview() {
     SakuyaInAndroidTheme(darkTheme = false) {
-        VideoScreen()
+        VideoContent()
     }
 }

@@ -237,14 +237,15 @@ private fun LibraryTabBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, top = 2.dp, end = 8.dp, bottom = 6.dp)
+                // 与下方书籍网格统一为更紧凑的左右留白，避免工具栏显得比内容区域更宽松。
+                .padding(start = 8.dp, top = 2.dp, end = 4.dp, bottom = 6.dp)
         ) {
             Row(Modifier.fillMaxWidth()) {
                 tabs.forEachIndexed { index, title ->
                     val isSelected = selectedTab == index
                     Box(
                         modifier = Modifier.weight(1f)
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = 2.dp)
                             .background(
                                 if (isSelected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.background,
                                 RoundedCornerShape(10.dp)
@@ -281,7 +282,7 @@ private fun LibraryTabBar(
                     onQueryChanged = onSearchQueryChanged,
                     modifier = Modifier
                         .fillMaxWidth(0.4f)
-                        .padding(start = 8.dp, end = 4.dp)
+                        .padding(start = 4.dp, end = 2.dp)
                 )
                 Spacer(Modifier.weight(1f))
                 if (isEditing) {
@@ -347,7 +348,7 @@ private fun LibrarySearchField(
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         modifier = modifier
             .height(40.dp)
-            .background(MaterialTheme.colorScheme.background, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
             .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
     ) { innerTextField ->
@@ -396,12 +397,12 @@ private fun LibraryContentList(
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(
-            start = 16.dp,
+            start = 12.dp,
             top = 12.dp,
-            end = 16.dp,
+            end = 12.dp,
             bottom = 20.dp
         )
     ) {

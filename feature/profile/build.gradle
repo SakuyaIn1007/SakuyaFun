@@ -48,9 +48,10 @@ android {
 
 dependencies {
     implementation project(":core:common")
+    implementation project(":core:model")
     implementation project(":core:navigation")
+    implementation project(":core:ui")
     implementation project(":feature:bookshelf")
-    implementation project(":feature:feed")
     implementation project(":feature:profile-services")
     implementation libs.bundles.feature.ui
     implementation libs.core.ktx

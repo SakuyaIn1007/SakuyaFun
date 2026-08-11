@@ -104,7 +104,11 @@ fun NavGraphBuilder.friendNavGraph(navController: NavHostController) {
     }
     composable(GROUP_ROUTE) {
         GroupScreen(
-            onBack = { navController.popBackStack() }
+            onBack = { navController.popBackStack() },
+            // 群聊项点击后沿用聊天页，保证从群聊入口进入的返回链路与好友会话一致。
+            onGroupClick = { group ->
+                navController.navigate(chatRoute(group.group.id, group.group.name))
+            }
         )
     }
 }

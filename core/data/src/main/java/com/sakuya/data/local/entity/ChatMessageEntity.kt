@@ -20,11 +20,19 @@ import androidx.room.PrimaryKey
 data class ChatMessageEntity(
     @PrimaryKey val id: String,
     val conversationId: String,
+    val senderId: String = "",
     val content: String,
     val timeLabel: String,
     val isMine: Boolean,
+    val avatarText: String = "",
     val timeStamp: Long,
-    val messageType: MessageType = MessageType.TEXT
+    val messageType: MessageType = MessageType.TEXT,
+    /** JSON 形式保存附件，避免聊天模块的领域模型反向依赖 core:data。 */
+    val attachmentsJson: String = "[]",
+    /** JSON 形式保存回复引用；无回复时为 null。 */
+    val replyJson: String? = null,
+    val sendStatus: String = "sent",
+    val readStatus: String = "unread",
 )
 
 enum class MessageType(val typeName: String){

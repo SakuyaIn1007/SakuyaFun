@@ -3,6 +3,8 @@ package com.sakuya.navigation
 const val PROFILE_ROUTE = "profile"
 const val PROFILE_ME = "profile_me"
 const val PROFILE_READING_HISTORY = "profile_reading_history"
+const val PROFILE_FOLLOWING_ROUTE = "profile_following"
+const val PROFILE_FOLLOWERS_ROUTE = "profile_followers"
 const val PROFILE_AVATAR = "profile_avatar"
 const val PROFILE_NAME = "profile_name"
 const val PROFILE_GENDER = "profile_gender"

@@ -25,12 +25,15 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.sakuya.navigation.CONVERSATION_ROUTE
+import com.sakuya.navigation.FEED_ROUTE
 import com.sakuya.navigation.FRIEND_ROUTE
 import com.sakuya.navigation.LIBRARY_ROUTE
 import com.sakuya.navigation.PROFILE_ALBUMS_ROUTE
 import com.sakuya.navigation.PROFILE_AVATAR
 import com.sakuya.navigation.PROFILE_CARDS_ROUTE
 import com.sakuya.navigation.PROFILE_FAVOURITES_ROUTE
+import com.sakuya.navigation.PROFILE_FOLLOWERS_ROUTE
+import com.sakuya.navigation.PROFILE_FOLLOWING_ROUTE
 import com.sakuya.navigation.PROFILE_GENDER
 import com.sakuya.navigation.PROFILE_ID
 import com.sakuya.navigation.PROFILE_ME
@@ -47,13 +50,13 @@ import com.sakuya.navigation.READER_ARG_BOOK_ID
 import com.sakuya.navigation.READER_ARG_PATH
 import com.sakuya.navigation.READER_BASE_ROUTE
 import com.sakuya.navigation.PROFILE_SIGNATURE
-import com.sakuya.navigation.PROFILE_WALLET_ROUTE
 import com.sakuya.model.extentions.Gender
 import com.sakuya.profile.ui.AvatarEditContent
 import com.sakuya.profile.ui.ProfileEditScreen
 import com.sakuya.profile.ui.ProfilePrivacyScreen
 import com.sakuya.profile.ui.ProfileReadingHistoryScreen
 import com.sakuya.profile.ui.ProfileScreen
+import com.sakuya.profile.ui.ProfileRelationshipScreen
 import com.sakuya.profile.ui.components.EditGenderContent
 import com.sakuya.profile.ui.components.EditRegionContent
 import com.sakuya.profile.viewmodel.RegionItem
@@ -107,12 +110,10 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                     ProfileEffect.NavigateToPrivacy -> {
                         navController.navigate(PROFILE_PRIVACY_ROUTE)
                     }
-                    ProfileEffect.NavigateToWallet -> {
-                        navController.navigate(PROFILE_WALLET_ROUTE)
-                    }
                     is ProfileEffect.showToast -> {
                         Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
                     }
+                    else ->{}
                 }
             }
         }
@@ -123,8 +124,19 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                 navController.navigate(
                     "$READER_BASE_ROUTE?$READER_ARG_BOOK_ID=${Uri.encode(bookId)}&$READER_ARG_PATH=${Uri.encode(filePath)}"
                 )
-            }
+            },
+            onOpenDynamic = { navController.navigate(FEED_ROUTE) },
+            onOpenFollowing = { navController.navigate(PROFILE_FOLLOWING_ROUTE) },
+            onOpenFollowers = { navController.navigate(PROFILE_FOLLOWERS_ROUTE) },
+            onOpenFavourites = { navController.navigate(PROFILE_FAVOURITES_ROUTE) },
+            onOpenHistory = { navController.navigate(PROFILE_READING_HISTORY) },
         )
+    }
+    composable(PROFILE_FOLLOWING_ROUTE) {
+        ProfileRelationshipScreen(isFollowing = true, onBack = { navController.popBackStack() })
+    }
+    composable(PROFILE_FOLLOWERS_ROUTE) {
+        ProfileRelationshipScreen(isFollowing = false, onBack = { navController.popBackStack() })
     }
 //
     composable(PROFILE_ME){

@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,7 +49,6 @@ fun GlobalSearchHeader(
     onClearQuery: () -> Unit = {},
     onSearchClick: (() -> Unit)? = null,
     onFeatureClick: () -> Unit = {},
-    showFeature: Boolean = true,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface
 ) {
@@ -181,29 +179,6 @@ fun GlobalSearchHeader(
                     }
                 }
             }
-        }
-
-        if (showFeature) {
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(
-            modifier = Modifier
-                .size(44.dp)
-                .clickable { onFeatureClick() },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "排行榜",
-                modifier = Modifier.size(22.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "排行榜",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
         }
     }
 }

@@ -22,6 +22,9 @@ public class User {
     private String ringtoneName;
     private boolean canBeAddedByStrangers = true;
     private boolean showProfileToStrangers = true;
+    /** 是否允许陌生人查看自己的关注和粉丝列表；仅影响关系列表，不影响个人资料页。 */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean showFollowLists = true;
     private boolean muteMessagesFromUnknown = false;
     @Column(nullable = false, updatable = false) private Instant createdAt;
 
@@ -45,6 +48,7 @@ public class User {
     public String getRingtoneName() { return ringtoneName; }
     public boolean isCanBeAddedByStrangers() { return canBeAddedByStrangers; }
     public boolean isShowProfileToStrangers() { return showProfileToStrangers; }
+    public boolean isShowFollowLists() { return showFollowLists; }
     public boolean isMuteMessagesFromUnknown() { return muteMessagesFromUnknown; }
     public void setAvatarUrl(String value) { avatarUrl = value == null ? "" : value; }
     public void setNickname(String value) { nickname = value; }
@@ -58,5 +62,6 @@ public class User {
     public void setRingtoneName(String value) { ringtoneName = value; }
     public void setCanBeAddedByStrangers(boolean value) { canBeAddedByStrangers = value; }
     public void setShowProfileToStrangers(boolean value) { showProfileToStrangers = value; }
+    public void setShowFollowLists(boolean value) { showFollowLists = value; }
     public void setMuteMessagesFromUnknown(boolean value) { muteMessagesFromUnknown = value; }
 }

@@ -15,6 +15,8 @@ android {
 }
 
 dependencies {
+    implementation project(':feature:feed')
     implementation project(':core:ui')
+    implementation project(':core:model')
     implementation libs.bundles.feature.ui
 }

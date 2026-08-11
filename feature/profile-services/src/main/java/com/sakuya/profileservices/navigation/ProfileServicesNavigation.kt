@@ -13,7 +13,7 @@ import com.sakuya.navigation.PROFILE_FAVOURITES_ROUTE
 import com.sakuya.navigation.PROFILE_ME
 import com.sakuya.navigation.PROFILE_PRIVACY_ROUTE
 import com.sakuya.navigation.PROFILE_SETTINGS_ROUTE
-import com.sakuya.navigation.PROFILE_WALLET_ROUTE
+
 import com.sakuya.profileservices.data.GroupedWallet
 import com.sakuya.profileservices.data.WalletItem
 import com.sakuya.profileservices.data.remote.FavouritesItemData
@@ -21,17 +21,10 @@ import com.sakuya.profileservices.ui.AlbumMainScreen
 import com.sakuya.profileservices.ui.CardsScreen
 import com.sakuya.profileservices.ui.FavouritesScreen
 import com.sakuya.profileservices.ui.SettingsScreen
-import com.sakuya.profileservices.ui.WalletContent
 import com.sakuya.profileservices.viewmodel.SettingsViewModel
 import java.util.Date
 
 fun NavGraphBuilder.profileServicesNavGraph(navController: NavHostController) {
-    composable(PROFILE_WALLET_ROUTE) {
-        WalletContent(
-            groups = sampleWalletGroups(),
-            onBack = { navController.popBackStack() }
-        )
-    }
     composable(PROFILE_FAVOURITES_ROUTE) {
         FavouritesScreen(
             favourites = sampleFavourites(),

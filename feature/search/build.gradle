@@ -14,6 +14,7 @@ android {
 }
 
 dependencies {
+    implementation project(':core:model')
     implementation project(':core:navigation')
     implementation libs.bundles.feature.ui
     implementation libs.androidx.navigation.compose

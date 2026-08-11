@@ -24,7 +24,7 @@ public class ProfileController {
         User u = current(auth); u.setAvatarUrl(r.avatarUrl()); u.setNickname(r.nickname()); u.setSignature(r.signature()); u.setGender(r.gender());
         u.setBirthday(r.birthday()); u.setRegionCode(r.regionCode()); u.setPhoneNumber(r.phoneNumber()); u.setEmail(r.email());
         u.setPokeText(r.pokeText()); u.setRingtoneName(r.ringtoneName());
-        if (r.privacySettings() != null) { u.setCanBeAddedByStrangers(r.privacySettings().canBeAddedByStrangers()); u.setShowProfileToStrangers(r.privacySettings().showProfileToStrangers()); u.setMuteMessagesFromUnknown(r.privacySettings().muteMessagesFromUnknown()); }
+        if (r.privacySettings() != null) { u.setCanBeAddedByStrangers(r.privacySettings().canBeAddedByStrangers()); u.setShowProfileToStrangers(r.privacySettings().showProfileToStrangers()); u.setMuteMessagesFromUnknown(r.privacySettings().muteMessagesFromUnknown()); if (r.privacySettings().showFollowLists() != null) u.setShowFollowLists(r.privacySettings().showFollowLists()); }
         return ApiResponse.ok(ProfileDto.from(u));
     }
     @PostMapping("/upload/avatar") ApiResponse<String> avatar(Authentication auth, @RequestPart(value="image", required=false) MultipartFile image, @RequestPart(value="file", required=false) MultipartFile file) throws IOException {
@@ -36,7 +36,10 @@ public class ProfileController {
         String url = ServletUriComponentsBuilder.fromCurrentContextPath().path("/uploads/").path(name).toUriString(); User u = current(auth); u.setAvatarUrl(url); users.save(u); return ApiResponse.ok(url);
     }
     private User current(Authentication auth) { return users.findById(AuthSupport.userId(auth)).orElseThrow(() -> new BusinessException(404, "用户不存在")); }
-    public record PrivacySettingsDto(boolean canBeAddedByStrangers, boolean showProfileToStrangers, boolean muteMessagesFromUnknown) {}
+    /** 当前用户的隐私设置；showFollowLists 为关注/粉丝列表的可见性开关。 */
+    public record PrivacySettingsDto(boolean canBeAddedByStrangers, boolean showProfileToStrangers, boolean muteMessagesFromUnknown, boolean showFollowLists) {}
+    /** 更新隐私设置时，showFollowLists 使用可空类型以兼容旧客户端未传该字段的请求。 */
+    public record UpdatePrivacySettingsDto(boolean canBeAddedByStrangers, boolean showProfileToStrangers, boolean muteMessagesFromUnknown, Boolean showFollowLists) {}
     public record UpdateProfileRequest(
         @Size(max = 2048) String avatarUrl,
         @NotBlank @Size(max = 40) String nickname,
@@ -48,9 +51,9 @@ public class ProfileController {
         @Email @Size(max = 254) String email,
         @Size(max = 20) String pokeText,
         @Size(max = 80) String ringtoneName,
-        PrivacySettingsDto privacySettings
+        UpdatePrivacySettingsDto privacySettings
     ) {}
     public record ProfileDto(String userId, String avatarUrl, String nickname, String signature, Integer gender, String birthday, String regionCode, String phoneNumber, String email, String pokeText, String ringtoneName, PrivacySettingsDto privacySettings) {
-        static ProfileDto from(User u) { return new ProfileDto(u.getId().toString(),u.getAvatarUrl(),u.getNickname(),u.getSignature(),u.getGender(),u.getBirthday(),u.getRegionCode(),u.getPhoneNumber(),u.getEmail(),u.getPokeText(),u.getRingtoneName(),new PrivacySettingsDto(u.isCanBeAddedByStrangers(),u.isShowProfileToStrangers(),u.isMuteMessagesFromUnknown())); }
+        static ProfileDto from(User u) { return new ProfileDto(u.getId().toString(),u.getAvatarUrl(),u.getNickname(),u.getSignature(),u.getGender(),u.getBirthday(),u.getRegionCode(),u.getPhoneNumber(),u.getEmail(),u.getPokeText(),u.getRingtoneName(),new PrivacySettingsDto(u.isCanBeAddedByStrangers(),u.isShowProfileToStrangers(),u.isMuteMessagesFromUnknown(),u.isShowFollowLists())); }
     }
 }

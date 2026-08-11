@@ -61,6 +61,25 @@ sealed class AlbumTab(
     object Videos : AlbumTab("videos", "视频", Icons.Default.PlayArrow)
 }
 
+/**
+ * AlbumsScreen.kt
+ * 职责说明：统一承载相册、图片和视频三类内容入口。
+ * 执行流程：底部 Tab 选择照片或视频 -> 对应 Content 委托图库渲染器 -> Lazy 列表展示分组媒体。
+ */
+@Composable
+fun PictureContent() = PictureGalleryContent()
+
+@Composable
+fun PictureContent(photos: List<PhotoItem>, modifier: Modifier = Modifier) =
+    PictureGalleryContent(photos = photos, modifier = modifier)
+
+@Composable
+fun VideoContent(modifier: Modifier = Modifier) = VideoGalleryContent(modifier = modifier)
+
+@Composable
+fun VideoContent(videos: List<VideoItem>, modifier: Modifier = Modifier) =
+    VideoGalleryContent(videos = videos, modifier = modifier)
+
 @Composable
 fun AlbumMainScreen(
     onBack: () -> Unit = {}
@@ -124,7 +143,7 @@ fun AlbumMainContent(
             }
 
             AlbumTab.Videos -> {
-                VideoScreen(
+                VideoContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)

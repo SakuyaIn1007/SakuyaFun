@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.sakuya.library.data.repository.LibraryRepository
 import com.sakuya.library.model.LibraryItem
 import com.sakuya.library.model.LibraryItemType
+import com.sakuya.library.model.LibrarySyncStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,8 @@ import javax.inject.Inject
 class LibraryViewModel @Inject constructor(
     private val repository: LibraryRepository
 ) : ViewModel() {
+    /** 仓库直接暴露同步状态，书架 UI 可在不阻塞本地列表的情况下提示同步进度。 */
+    val syncStatus: StateFlow<LibrarySyncStatus> = repository.syncStatus
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 

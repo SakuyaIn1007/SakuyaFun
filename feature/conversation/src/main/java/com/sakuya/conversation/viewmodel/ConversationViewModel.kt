@@ -27,16 +27,24 @@ class ConversationViewModel @Inject constructor(
     val effect = _effect.asSharedFlow()
 
     init {
+        observeLocalConversations()
         loadConversations()
+    }
+
+    /** Room 先输出缓存会话；网络刷新完成后的数据会通过同一条流自动更新页面。 */
+    private fun observeLocalConversations() {
+        viewModelScope.launch {
+            repository.observeConversations().collect { conversations ->
+                _conversations.value = conversations
+            }
+        }
     }
 
     fun loadConversations() {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.getConversations()
-                .onSuccess { list ->
-                    _conversations.value = list
-                }
+            repository.refreshConversations()
+                .onSuccess { }
                 .onFailure { error ->
                     _effect.emit(ConversationEffect.ShowError(error.message ?: "加载会话列表失败"))
                 }

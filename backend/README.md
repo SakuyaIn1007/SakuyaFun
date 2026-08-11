@@ -11,8 +11,9 @@ cd ..
 ./gradlew -p backend bootRun
 ```
 
-默认地址为 `http://localhost:8080`，默认启用 `dev` Profile，H2 数据保存在 `backend/data/`。开发环境首次启动会创建两个演示账号：
+默认地址为 `http://localhost:8080`，默认启用 `dev` Profile，并连接本机 MySQL 的 `sakuya` 数据库。可使用 `backend/docker-compose.yml` 启动 MySQL；开发环境首次启动会创建以下演示账号：
 
+- `sakuya / password123`（含完整资料、两位好友、两条会话、三本书架书目及一条待处理好友申请）
 - `alice / password123`
 - `bob / password123`
 
@@ -50,6 +51,7 @@ JWT_SECRET='replace-with-a-random-secret-at-least-32-bytes' \
 | 好友 | `GET /friends`, `GET /friends/search`, `POST/GET /friends/requests` |
 | 处理好友申请 | `PUT /friends/requests/{id}/accept|reject` |
 | 会话 / 消息 | `GET /conversations`, `GET/POST /conversations/{id}/messages` |
+| 轻小说时间表 | `GET /novels/releases`，返回已公布更新日期、卷信息与推荐标记 |
 | 好友单聊 | `POST /friends/{friendId}/conversation` |
 | 消息已读 | `PUT /conversations/{id}/read` |
 | 实时聊天 | `WS /ws/chat`，握手时携带 Bearer Token |

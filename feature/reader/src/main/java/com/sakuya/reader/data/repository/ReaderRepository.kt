@@ -12,9 +12,13 @@ import com.sakuya.reader.data.FileDownloader
 import com.sakuya.reader.data.TxtLoader
 import com.sakuya.reader.model.ReaderChapter
 import com.sakuya.reader.model.ReaderDocument
+import com.sakuya.reader.model.ReaderBookmark
+import com.sakuya.reader.model.ReaderOpenResult
+import com.sakuya.reader.model.ReaderParseError
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -30,23 +34,25 @@ class ReaderRepository @Inject constructor(
     private val bookmarkDao: BookmarkDao
 ) {
 
-    suspend fun openDocument(uri: Uri): ReaderDocument? = withContext(Dispatchers.IO) {
+    /** 将文件下载、格式识别和解析失败细分为领域错误，避免阅读页只能显示模糊的空结果。 */
+    suspend fun openDocument(uri: Uri): ReaderOpenResult = withContext(Dispatchers.IO) {
         val localUri = if (uri.scheme == "http" || uri.scheme == "https") {
             runCatching { Uri.fromFile(fileDownloader.downloadToCache(uri.toString())) }.getOrNull()
-                ?: return@withContext null
+                ?: return@withContext ReaderOpenResult.Failure(ReaderParseError.DownloadFailed)
         } else {
             uri
         }
         val extension = resolveExtension(localUri)
         when (extension) {
-            "txt" -> openTxt(localUri)
-            "epub" -> openEpub(localUri)
-            else -> openEpub(localUri) ?: openTxt(localUri)
+            "txt" -> openTxt(localUri)?.let(ReaderOpenResult::Success) ?: ReaderOpenResult.Failure(ReaderParseError.InvalidContent())
+            "epub" -> openEpub(localUri)?.let(ReaderOpenResult::Success) ?: ReaderOpenResult.Failure(ReaderParseError.InvalidContent())
+            null -> ReaderOpenResult.Failure(ReaderParseError.UnsupportedFormat)
+            else -> ReaderOpenResult.Failure(ReaderParseError.UnsupportedFormat)
         }
     }
 
-    fun observeBookmarks(bookId: String): Flow<List<BookmarkEntity>> {
-        return bookmarkDao.observeBookmarks(bookId)
+    fun observeBookmarks(bookId: String): Flow<List<ReaderBookmark>> = bookmarkDao.observeBookmarks(bookId).map { bookmarks ->
+        bookmarks.map { bookmark -> ReaderBookmark(bookmark.id, bookmark.title, bookmark.progress, bookmark.note, bookmark.createdAt) }
     }
 
     suspend fun addBookmark(bookId: String, progress: Float) {

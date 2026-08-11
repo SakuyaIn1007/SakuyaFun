@@ -14,6 +14,9 @@ import com.sakuya.catalog.navigation.catalogNavGraph
 import com.sakuya.library.navigation.libraryNavGraph
 import com.sakuya.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.navigation.DASHBOARD_ROUTE
+import com.sakuya.navigation.FEED_ROUTE
+import com.sakuya.navigation.feedDetailRoute
+import com.sakuya.navigation.feedAuthorRoute
 import com.sakuya.navigation.SEARCH_ROUTE
 import com.sakuya.navigation.PROFILE_ROUTE
 import com.sakuya.navigation.READER_ARG_BOOK_ID
@@ -25,7 +28,11 @@ import com.sakuya.search.navigation.searchNavGraph
 
 fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
     composable(DASHBOARD_ROUTE) {
-        DashboardScreen(onSearchClick = { navController.navigate(SEARCH_ROUTE) })
+        DashboardScreen(
+            onSearchClick = { navController.navigate(SEARCH_ROUTE) },
+            onOpenDynamic = { postId -> navController.navigate(feedDetailRoute(postId)) },
+            onOpenAuthor = { userId -> navController.navigate(feedAuthorRoute(userId)) },
+        )
     }
     authNavGraph(
         navController = navController,

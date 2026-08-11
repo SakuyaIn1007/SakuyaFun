@@ -19,18 +19,7 @@ import com.sakuya.ui.component.ContentCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
-fun NovelScreen(
-    items: List<ContentItem> = emptyList(),
-    onBookClick: (bookId: String) -> Unit = {}
-) {
-    NovelContent(
-        items = items,
-        onBookClick = onBookClick
-    )
-}
-
-@Composable
-fun NovelContent(
+internal fun CatalogNovelContent(
     items: List<ContentItem> = emptyList(),
     onBookClick: (bookId: String) -> Unit = {}
 ) {

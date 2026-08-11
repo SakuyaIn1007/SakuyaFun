@@ -2,6 +2,7 @@ package com.sakuya.reader.data
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.sakuya.reader.model.ReaderTheme
 import javax.inject.Inject
 
 class ReaderPrefs @Inject constructor(
@@ -30,11 +31,18 @@ class ReaderPrefs @Inject constructor(
         return prefs.getFloat(FONT_SIZE_KEY, 18f)
     }
 
+    fun saveTheme(theme: ReaderTheme) { prefs.edit().putString(THEME_KEY, theme.name).apply() }
+
+    fun getTheme(): ReaderTheme = prefs.getString(THEME_KEY, ReaderTheme.SYSTEM.name)
+        ?.let { runCatching { ReaderTheme.valueOf(it) }.getOrDefault(ReaderTheme.SYSTEM) }
+        ?: ReaderTheme.SYSTEM
+
     private fun progressKey(bookKey: String): String {
         return "progress:$bookKey"
     }
 
     private companion object {
         const val FONT_SIZE_KEY = "font_size_sp"
+        const val THEME_KEY = "reader_theme"
     }
 }

@@ -46,7 +46,9 @@ data class ConversationDto(
 
 data class SendMessageRequest(
     val content: String,
-    val messageType: String = "text"
+    val messageType: String = "text",
+    val attachments: List<ChatAttachmentDto> = emptyList(),
+    val replyToMessageId: String? = null,
 ){
     companion object {
         fun text(content: String) = SendMessageRequest(content, MessageType.TEXT.typeName)

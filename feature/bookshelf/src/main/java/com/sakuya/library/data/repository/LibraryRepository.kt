@@ -7,10 +7,13 @@ import com.sakuya.data.local.dao.ReadingProgressDao
 import com.sakuya.data.local.entity.LibraryBookEntity
 import com.sakuya.library.model.LibraryItem
 import com.sakuya.library.model.LibraryItemType
+import com.sakuya.library.model.LibrarySyncStatus
 import com.sakuya.library.data.remote.LibraryApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -25,30 +28,24 @@ class LibraryRepository @Inject constructor(
     private val bookmarkDao: BookmarkDao,
     private val apiService: LibraryApiService
 ) {
+    private val _syncStatus = MutableStateFlow(LibrarySyncStatus.SYNCED)
+    val syncStatus = _syncStatus.asStateFlow()
+
+    /** 同步状态独立于列表数据，以便书架在保留本地内容时显示同步中的反馈。 */
     suspend fun syncLibrary() {
-        val response = apiService.getLibrary()
-        val body = response.body()
-        if (!response.isSuccessful || body == null || !body.isSuccess()) {
-            error(body?.message ?: "同步书架失败（HTTP ${response.code()}）")
-        }
-        val remoteItems = body.data ?: error("服务器未返回书架数据")
-        val now = System.currentTimeMillis()
-        remoteItems.forEach { item ->
-            val existing = libraryBookDao.getBook(item.id)
-            libraryBookDao.upsertBook(
-                LibraryBookEntity(
-                    id = item.id,
-                    filePath = item.filePath,
-                    title = item.title,
-                    subtitle = item.subtitle,
-                    rating = item.rating,
-                    tags = item.tags.joinToString(","),
-                    type = item.type.name,
-                    collectedAt = existing?.collectedAt ?: now,
-                    updatedAt = now
-                )
-            )
-        }
+        _syncStatus.value = LibrarySyncStatus.SYNCING
+        runCatching {
+            val response = apiService.getLibrary()
+            val body = response.body()
+            if (!response.isSuccessful || body == null || !body.isSuccess()) error(body?.message ?: "同步书架失败（HTTP ${response.code()}）")
+            val remoteItems = body.data ?: error("服务器未返回书架数据")
+            val now = System.currentTimeMillis()
+            remoteItems.forEach { item ->
+                val existing = libraryBookDao.getBook(item.id)
+                libraryBookDao.upsertBook(LibraryBookEntity(item.id, item.title, item.subtitle, item.filePath, item.rating, item.tags.joinToString(","), item.type.name, existing?.collectedAt ?: now, now))
+            }
+        }.onSuccess { _syncStatus.value = LibrarySyncStatus.SYNCED }
+            .onFailure { _syncStatus.value = LibrarySyncStatus.FAILED; throw it }
     }
     fun observeBooks(): Flow<List<LibraryItem>> {
         return combine(
@@ -58,7 +55,8 @@ class LibraryRepository @Inject constructor(
             val progressMap = progressList.associateBy { it.bookKey }
             books.map { book->
                 book.toLibraryItem(
-                    progress = progressMap[book.id]?.progress ?: 0f
+                    progress = progressMap[book.id]?.progress ?: 0f,
+                    lastReadAt = progressMap[book.id]?.updatedAt?.formatTime(),
                 )
 
             }
@@ -130,7 +128,7 @@ class LibraryRepository @Inject constructor(
 
             progressList.mapNotNull { progress ->
                 val book = bookMap[progress.bookKey]
-                book?.toLibraryItem(progress = progress.progress)
+                book?.toLibraryItem(progress = progress.progress, lastReadAt = progress.updatedAt.formatTime())
             }
         }
     }
@@ -150,7 +148,7 @@ class LibraryRepository @Inject constructor(
         bookmarkDao.deleteBookmarkByBookId(id)
     }
 
-    private fun LibraryBookEntity.toLibraryItem(progress: Float): LibraryItem {
+    private fun LibraryBookEntity.toLibraryItem(progress: Float, lastReadAt: String? = null): LibraryItem {
         return LibraryItem(
             id = id,
             title = title,
@@ -161,7 +159,9 @@ class LibraryRepository @Inject constructor(
                 .getOrDefault(LibraryItemType.TXT),
             collectedAt = collectedAt.formatTime(),
             filePath = filePath,
-            progress = progress
+            progress = progress,
+            lastReadAt = lastReadAt,
+            syncStatus = if (filePath.isBlank()) LibrarySyncStatus.SYNCED else LibrarySyncStatus.LOCAL_ONLY,
         )
     }
 

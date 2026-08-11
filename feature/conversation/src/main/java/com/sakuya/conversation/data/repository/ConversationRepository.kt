@@ -7,7 +7,8 @@ import com.sakuya.data.local.dao.ConversationDao
 import com.sakuya.data.local.entity.ConversationEntity
 import com.sakuya.model.network.BaseResponse
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,40 +18,39 @@ class ConversationRepository @Inject constructor(
     private val apiService: ConversationApiService,
     private val conversationDao: ConversationDao
 ) {
-    suspend fun getConversations(): Result<List<Conversation>> {
+    /**
+     * 会话列表优先由 Room 提供。
+     * 执行流程：ViewModel 订阅缓存立即渲染，网络刷新成功后覆盖写入，界面自动得到最新内容。
+     */
+    fun observeConversations(): Flow<List<Conversation>> =
+        conversationDao.observeAll().map { entities -> entities.map(ConversationEntity::toDomain) }
+
+    suspend fun refreshConversations(): Result<Unit> {
         return try {
             val conversations = apiService.getConversations()
                 .toResult()
                 .getOrThrow()
                 .map { it.toDomainModel() }
-                .sortedWith(compareByDescending<Conversation> { it.isPinned })
 
             conversationDao.upsertAll(conversations.map { it.toEntity() })
-            Result.success(conversations)
+            Result.success(Unit)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            val cached = conversationDao.observeAll()
-                .first()
-                .map { entity ->
-                    Conversation(
-                        id = entity.id,
-                        title = entity.title,
-                        lastMessage = entity.lastMessage,
-                        timeLabel = entity.timeLabel,
-                        unreadCount = entity.unreadCount,
-                        avatarText = entity.avatarText ?: "?",
-                        isPinned = entity.isPinned
-                    )
-                }
-            if (cached.isNotEmpty()) {
-                Result.success(cached)
-            } else {
-                Result.failure(e)
-            }
+            Result.failure(e)
         }
     }
 }
+
+private fun ConversationEntity.toDomain(): Conversation = Conversation(
+    id = id,
+    title = title,
+    lastMessage = lastMessage,
+    timeLabel = timeLabel,
+    unreadCount = unreadCount,
+    avatarText = avatarText ?: "?",
+    isPinned = isPinned,
+)
 
 private fun ConversationDto.toDomainModel(): Conversation {
     return Conversation(

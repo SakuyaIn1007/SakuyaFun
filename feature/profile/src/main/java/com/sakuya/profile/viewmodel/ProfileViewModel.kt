@@ -69,7 +69,6 @@ class ProfileViewModel @Inject constructor(
 
             is ProfileAction.OnLogoutClick -> emitEffect(ProfileEffect.showToast("退出登录"))
 
-            is ProfileAction.OnWalletClick -> emitEffect(ProfileEffect.NavigateToWallet)
 
             is ProfileAction.OnFavouritesClick -> emitEffect(ProfileEffect.NavigateToFavourites)
 
@@ -93,7 +92,6 @@ sealed interface ProfileEffect {
     data object NavigateToReadingHistory : ProfileEffect
     data object NavigateToSettings : ProfileEffect
     data object NavigateToPrivacy : ProfileEffect
-    data object NavigateToWallet : ProfileEffect
     data object NavigateToFavourites : ProfileEffect
     data object NavigateToCards : ProfileEffect
     data object NavigateToAlbums : ProfileEffect
@@ -110,7 +108,6 @@ sealed interface ProfileAction {
     data object OnReadingHistoryClick : ProfileAction
     data object OnSettingsClick : ProfileAction
     data object OnPrivacyClick : ProfileAction
-    data object OnWalletClick : ProfileAction
     data object OnCardsClick : ProfileAction
     data object OnFavouritesClick : ProfileAction
     data object OnLogoutClick : ProfileAction

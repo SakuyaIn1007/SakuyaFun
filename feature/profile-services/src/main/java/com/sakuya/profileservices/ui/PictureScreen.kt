@@ -64,7 +64,7 @@ data class PhotoItem(
 }
 
 @Composable
-fun PictureScreen() {
+internal fun PictureGalleryContent() {
     // 模拟微信相册的假数据喵（跨越不同月份）
     val mockPhotos = listOf(
         // 2026年5月
@@ -81,7 +81,7 @@ fun PictureScreen() {
         PhotoItem("9", "https://picsum.photos/300?random=9", 1742200000000L)
     )
 
-    PictureContent(
+    PictureGalleryContent(
         photos = mockPhotos,
         modifier = Modifier.fillMaxSize()
     )
@@ -89,7 +89,7 @@ fun PictureScreen() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PictureContent(
+internal fun PictureGalleryContent(
     photos: List<PhotoItem>,
     modifier: Modifier = Modifier
 ) {
@@ -209,6 +209,6 @@ fun PictureContent(
 @Composable
 fun PicturePreview() {
     SakuyaInAndroidTheme(darkTheme = true) {
-        PictureScreen()
+        PictureContent()
     }
 }

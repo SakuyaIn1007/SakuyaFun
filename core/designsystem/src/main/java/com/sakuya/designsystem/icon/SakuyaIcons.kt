@@ -14,5 +14,9 @@ object SakuyaIcons {
     val Folder = R.drawable.ic_folder
     val History = R.drawable.ic_history
     val Privacy = R.drawable.ic_privacy
+    val Comment = R.drawable.ic_comment
+    val Thumb = R.drawable.ic_thumb
+    // 动态卡片等非聊天输入区域使用横向三点图标；资源名须与 drawable 文件全小写命名一致。
+    val MoreHoriz = R.drawable.ic_morehoriz
 
 }

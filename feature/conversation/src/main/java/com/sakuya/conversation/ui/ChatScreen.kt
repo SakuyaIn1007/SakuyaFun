@@ -29,7 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sakuya.conversation.data.remote.ChatMessageDto
+import com.sakuya.conversation.model.ChatMessage
+import com.sakuya.conversation.model.ChatReadStatus
+import com.sakuya.conversation.model.ChatSendStatus
 import com.sakuya.conversation.ui.components.ChatInputBar
 import com.sakuya.conversation.viewmodel.ChatViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
@@ -47,6 +49,7 @@ fun ChatScreen(
         messages = uiState.messages,
         inputText = uiState.inputText,
         errorMessage = uiState.errorMessage,
+        showWebSocketConnectionError = uiState.showWebSocketConnectionError,
         onInputChanged = viewModel::onInputChanged,
         onSendMessage = viewModel::sendMessage,
         onBack = onBack
@@ -56,9 +59,10 @@ fun ChatScreen(
 @Composable
 fun ChatContent(
     title: String,
-    messages: List<ChatMessageDto>,
+    messages: List<ChatMessage>,
     inputText: String,
     errorMessage: String?,
+    showWebSocketConnectionError: Boolean,
     onInputChanged: (String) -> Unit,
     onSendMessage: () -> Unit,
     onBack: () -> Unit
@@ -66,10 +70,26 @@ fun ChatContent(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            AppSecondaryTopBar(
-                title = title,
-                onBack = onBack
-            )
+            Column {
+                AppSecondaryTopBar(
+                    title = title,
+                    onBack = onBack
+                )
+                /**
+                 * 连接状态放在 TopBar 下方，避免覆盖历史消息内容。
+                 * ViewModel 仅在 WebSocket 连接失败后显示，恢复连接时自动隐藏。
+                 */
+                if (showWebSocketConnectionError) {
+                    Text(
+                        text = "消息服务器连接失败，正在重试…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+                }
+            }
         },
         bottomBar = {
             ChatInputBar(
@@ -89,6 +109,18 @@ fun ChatContent(
             ),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (messages.isEmpty() && errorMessage == null) {
+                item(key = "empty_messages") {
+                    Text(
+                        text = "暂无聊天记录",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                    )
+                }
+            }
             if (errorMessage != null) {
                 item(key = "error") {
                     Text(
@@ -110,7 +142,7 @@ fun ChatContent(
 
 @Composable
 private fun MessageRow(
-    message: ChatMessageDto,
+    message: ChatMessage,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -132,7 +164,7 @@ private fun MessageRow(
 
 @Composable
 private fun MessageBubble(
-    message: ChatMessageDto,
+    message: ChatMessage,
     modifier: Modifier = Modifier
 ) {
     val bubbleColor = if (message.isMine) {
@@ -153,11 +185,40 @@ private fun MessageBubble(
             .background(bubbleColor)
             .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
+        message.replyTo?.let { reply ->
+            Text(
+                text = "回复 ${reply.senderName}：${reply.preview}",
+                color = textColor.copy(alpha = 0.75f),
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        message.attachments.forEach { attachment ->
+            Text(
+                text = if (attachment.type.name == "IMAGE") "[图片]" else "[文件] ${attachment.name.ifBlank { attachment.url }}",
+                color = textColor,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
         Text(
             text = message.content,
             color = textColor,
             style = MaterialTheme.typography.bodyMedium
         )
+        if (message.isMine) {
+            Text(
+                text = when (message.sendStatus) {
+                    ChatSendStatus.PENDING -> "发送中"
+                    ChatSendStatus.FAILED -> "发送失败"
+                    ChatSendStatus.SENT -> if (message.readStatus == ChatReadStatus.READ) "已读" else "已送达"
+                },
+                color = textColor.copy(alpha = 0.75f),
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.align(Alignment.End).padding(top = 3.dp),
+            )
+        }
     }
 }
 
@@ -197,7 +258,7 @@ private fun ChatContentPreview() {
         ChatContent(
             title = "十六夜咲夜",
             messages = listOf(
-                ChatMessageDto(
+                ChatMessage(
                     id = "msg-1",
                     conversationId = "sakuya",
                     content = "今天要确认一下资料。",
@@ -205,7 +266,7 @@ private fun ChatContentPreview() {
                     isMine = false,
                     avatarText = "咲"
                 ),
-                ChatMessageDto(
+                ChatMessage(
                     id = "msg-2",
                     conversationId = "sakuya",
                     content = "收到，我等下补两项。",
@@ -215,6 +276,7 @@ private fun ChatContentPreview() {
             ),
             inputText = "",
             errorMessage = null,
+            showWebSocketConnectionError = false,
             onInputChanged = {},
             onSendMessage = {},
             onBack = {}
