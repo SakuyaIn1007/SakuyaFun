@@ -1,5 +1,6 @@
 package com.sakuya.authentication.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sakuya.authentication.data.repository.AuthRepository
@@ -72,6 +73,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun register() {
+        Log.d("AuthViewModel","1")
         val state = _registerState.value
         val validationError = validateAccountAndPassword(state.account, state.password)
             ?: if (state.nickname.isBlank()) "请输入昵称" else null
@@ -79,7 +81,7 @@ class AuthViewModel @Inject constructor(
             _registerState.update { it.copy(errorMessage = validationError) }
             return
         }
-
+        Log.d("AuthViewModel","2")
         viewModelScope.launch {
             _registerState.update { it.copy(isLoading = true, errorMessage = null) }
             authRepository.register(

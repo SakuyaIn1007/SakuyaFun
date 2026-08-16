@@ -1,6 +1,7 @@
 package com.sakuya.conversation.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,14 @@ import com.sakuya.conversation.viewmodel.ChatViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
+/**
+ * ChatScreen.kt
+ * 职责说明：
+ * 1. 收集 ChatViewModel 的不可变状态并将用户操作回传给 ViewModel。
+ * 2. 只渲染 Room 驱动的聊天历史、发送状态和失败消息的重试入口。
+ * 执行流程：Room 更新触发状态重组；WebSocket 失败不在页面提示，底层静默重连，
+ * 因而离线时仍优先展示已缓存的历史消息。
+ */
 @Composable
 fun ChatScreen(
     onBack: () -> Unit = {},
@@ -49,9 +58,9 @@ fun ChatScreen(
         messages = uiState.messages,
         inputText = uiState.inputText,
         errorMessage = uiState.errorMessage,
-        showWebSocketConnectionError = uiState.showWebSocketConnectionError,
         onInputChanged = viewModel::onInputChanged,
         onSendMessage = viewModel::sendMessage,
+        onRetryMessage = viewModel::retryMessage,
         onBack = onBack
     )
 }
@@ -62,34 +71,15 @@ fun ChatContent(
     messages: List<ChatMessage>,
     inputText: String,
     errorMessage: String?,
-    showWebSocketConnectionError: Boolean,
     onInputChanged: (String) -> Unit,
     onSendMessage: () -> Unit,
+    onRetryMessage: (ChatMessage) -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column {
-                AppSecondaryTopBar(
-                    title = title,
-                    onBack = onBack
-                )
-                /**
-                 * 连接状态放在 TopBar 下方，避免覆盖历史消息内容。
-                 * ViewModel 仅在 WebSocket 连接失败后显示，恢复连接时自动隐藏。
-                 */
-                if (showWebSocketConnectionError) {
-                    Text(
-                        text = "消息服务器连接失败，正在重试…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp)
-                    )
-                }
-            }
+            AppSecondaryTopBar(title = title, onBack = onBack)
         },
         bottomBar = {
             ChatInputBar(
@@ -134,7 +124,7 @@ fun ChatContent(
                 }
             }
             items(messages, key = { it.id }) { message ->
-                MessageRow(message = message)
+                MessageRow(message = message, onRetry = { onRetryMessage(message) })
             }
         }
     }
@@ -143,6 +133,7 @@ fun ChatContent(
 @Composable
 private fun MessageRow(
     message: ChatMessage,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -154,7 +145,7 @@ private fun MessageRow(
             ChatAvatar(text = message.avatarText.ifEmpty { "?" })
             Spacer(modifier = Modifier.width(8.dp))
         }
-        MessageBubble(message = message)
+        MessageBubble(message = message, onRetry = onRetry)
         if (message.isMine) {
             Spacer(modifier = Modifier.width(8.dp))
             ChatAvatar(text = "我", isMine = true)
@@ -165,6 +156,7 @@ private fun MessageRow(
 @Composable
 private fun MessageBubble(
     message: ChatMessage,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val bubbleColor = if (message.isMine) {
@@ -211,12 +203,21 @@ private fun MessageBubble(
             Text(
                 text = when (message.sendStatus) {
                     ChatSendStatus.PENDING -> "发送中"
-                    ChatSendStatus.FAILED -> "发送失败"
+                    ChatSendStatus.FAILED -> "发送失败，点击重试"
                     ChatSendStatus.SENT -> if (message.readStatus == ChatReadStatus.READ) "已读" else "已送达"
                 },
                 color = textColor.copy(alpha = 0.75f),
                 style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.End).padding(top = 3.dp),
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 3.dp)
+                    .then(
+                        if (message.sendStatus == ChatSendStatus.FAILED) {
+                            Modifier.clickable(onClick = onRetry)
+                        } else {
+                            Modifier
+                        }
+                    ),
             )
         }
     }
@@ -276,9 +277,9 @@ private fun ChatContentPreview() {
             ),
             inputText = "",
             errorMessage = null,
-            showWebSocketConnectionError = false,
             onInputChanged = {},
             onSendMessage = {},
+            onRetryMessage = {},
             onBack = {}
         )
     }

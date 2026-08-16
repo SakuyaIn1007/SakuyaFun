@@ -17,6 +17,8 @@ public class GlobalExceptionHandler {
             case 403 -> HttpStatus.FORBIDDEN;
             case 404 -> HttpStatus.NOT_FOUND;
             case 409 -> HttpStatus.CONFLICT;
+            case 503 -> HttpStatus.SERVICE_UNAVAILABLE;
+            case 504 -> HttpStatus.GATEWAY_TIMEOUT;
             default -> HttpStatus.BAD_REQUEST;
         };
         return ResponseEntity.status(status).body(ApiResponse.error(e.getCode(), e.getMessage()));

@@ -10,11 +10,14 @@ import com.sakuya.data.local.entity.ReadingProgressEntity
 import com.sakuya.reader.data.EpubLoader
 import com.sakuya.reader.data.FileDownloader
 import com.sakuya.reader.data.TxtLoader
+import com.sakuya.reader.data.Wenku8ReaderApiService
+import com.sakuya.reader.data.mapReadableAnchors
 import com.sakuya.reader.model.ReaderChapter
 import com.sakuya.reader.model.ReaderDocument
 import com.sakuya.reader.model.ReaderBookmark
 import com.sakuya.reader.model.ReaderOpenResult
 import com.sakuya.reader.model.ReaderParseError
+import com.sakuya.reader.model.Wenku8NovelOpenResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -30,9 +33,59 @@ class ReaderRepository @Inject constructor(
     private val epubLoader: EpubLoader,
     private val txtLoader: TxtLoader,
     private val fileDownloader: FileDownloader,
+    private val wenku8Api: Wenku8ReaderApiService,
     private val readingProgressDao: ReadingProgressDao,
     private val bookmarkDao: BookmarkDao
 ) {
+
+    /** 远端章节不会落盘；读取成功后仅生成内存 TXT 文档交给既有阅读 UI。 */
+    suspend fun openRemoteChapter(novelId: String, chapterId: String, fallbackTitle: String): ReaderOpenResult = withContext(Dispatchers.IO) {
+        runCatching {
+            val response = wenku8Api.content(chapterId, novelId)
+            val body = response.body()
+            if (!response.isSuccessful || body == null || !body.isSuccess()) error(body?.message ?: "章节加载失败")
+            val data = body.data ?: error("服务器未返回章节正文")
+            val content = data.content.orEmpty()
+            if (content.isBlank()) return@withContext ReaderOpenResult.Failure(ReaderParseError.EmptyDocument)
+            // Wenku8 章节正文接口未承诺返回标题，导航层传入的目录标题是可靠回退值。
+            ReaderOpenResult.Success(ReaderDocument.Txt(data.title.orEmpty().ifBlank { fallbackTitle }, content))
+        }.getOrElse { ReaderOpenResult.Failure(ReaderParseError.InvalidContent(it.message)) }
+    }
+
+    /**
+     * 连续阅读执行流程：先请求全文与章节锚点 -> 锚点可用则建立会话内全文文档 ->
+     * 任意上游限制、正文异常或目标章无法定位时，再按原接口读取当前章节作为可恢复降级。
+     */
+    suspend fun openRemoteNovel(novelId: String, targetChapterId: String, fallbackTitle: String): Wenku8NovelOpenResult = withContext(Dispatchers.IO) {
+        runCatching {
+            val response = wenku8Api.fullContent(novelId)
+            val body = response.body()
+            if (!response.isSuccessful || body == null || !body.isSuccess()) error(body?.message ?: "连续阅读加载失败")
+            val data = body.data ?: error("服务器未返回全文内容")
+            val content = data.content.orEmpty()
+            if (content.isBlank()) error("连续阅读正文为空")
+            val anchors = mapReadableAnchors(data.chapters, content.length)
+            if (anchors.none { it.chapterId == targetChapterId }) error("当前章节无法在全文中定位")
+            Wenku8NovelOpenResult.Full(
+                ReaderDocument.Wenku8Full(
+                    title = data.title.orEmpty().ifBlank { fallbackTitle },
+                    text = content,
+                    chapters = anchors
+                )
+            )
+        }.getOrElse { fullError ->
+            when (val chapter = openRemoteChapter(novelId, targetChapterId, fallbackTitle)) {
+                is ReaderOpenResult.Success -> Wenku8NovelOpenResult.ChapterFallback(
+                    document = chapter.document as? ReaderDocument.Txt
+                        ?: ReaderDocument.Txt(fallbackTitle, ""),
+                    notice = "连续阅读暂不可用，已切换为当前章节。"
+                )
+                is ReaderOpenResult.Failure -> Wenku8NovelOpenResult.Failure(
+                    ReaderParseError.InvalidContent("连续阅读和当前章节均无法加载：${chapter.error.displayDetail(fullError.message)}")
+                )
+            }
+        }
+    }
 
     /** 将文件下载、格式识别和解析失败细分为领域错误，避免阅读页只能显示模糊的空结果。 */
     suspend fun openDocument(uri: Uri): ReaderOpenResult = withContext(Dispatchers.IO) {
@@ -182,5 +235,10 @@ class ReaderRepository @Inject constructor(
             ?.substringAfterLast('/')
             ?.takeIf { it.isNotBlank() }
             ?: fallback
+    }
+
+    private fun ReaderParseError.displayDetail(fallback: String?): String = when (this) {
+        is ReaderParseError.InvalidContent -> detail ?: fallback.orEmpty()
+        else -> fallback.orEmpty()
     }
 }

@@ -10,6 +10,7 @@ import com.sakuya.data.local.AppDatabase
 import com.sakuya.data.local.dao.BookmarkDao
 import com.sakuya.data.local.dao.ChatMessageDao
 import com.sakuya.data.local.dao.ConversationDao
+import com.sakuya.data.local.dao.FeedCacheDao
 import com.sakuya.data.local.dao.LibraryBookDao
 import com.sakuya.data.local.dao.ReadingProgressDao
 import com.sakuya.data.local.dao.UserDao
@@ -35,7 +36,7 @@ object DatabaseModule {
             "sakuya.db"
         )
 
-        builder.addMigrations(MIGRATION_5_6, MIGRATION_6_7)
+        builder.addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
 
         if (BuildConfig.DEBUG) {
             builder.fallbackToDestructiveMigration()
@@ -80,6 +81,10 @@ object DatabaseModule {
         database: AppDatabase
     ): BookmarkDao = database.bookmarkDao()
 
+    @Provides
+    @Singleton
+    fun provideFeedCacheDao(database: AppDatabase): FeedCacheDao = database.feedCacheDao()
+
     private val MIGRATION_5_6 = object : Migration(5, 6) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE user ADD COLUMN birthday TEXT")
@@ -104,6 +109,13 @@ object DatabaseModule {
             db.execSQL("ALTER TABLE chat_messages ADD COLUMN replyJson TEXT")
             db.execSQL("ALTER TABLE chat_messages ADD COLUMN sendStatus TEXT NOT NULL DEFAULT 'sent'")
             db.execSQL("ALTER TABLE chat_messages ADD COLUMN readStatus TEXT NOT NULL DEFAULT 'unread'")
+        }
+    }
+
+    /** 首页动态缓存表不改动既有业务数据，升级后首次成功同步才开始写入。 */
+    private val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `feed_cache` (`stream` TEXT NOT NULL, `postId` TEXT NOT NULL, `position` INTEGER NOT NULL, `userId` TEXT NOT NULL, `authorName` TEXT NOT NULL, `authorInitial` TEXT NOT NULL, `authorColor` INTEGER NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `attachmentsJson` TEXT NOT NULL, `imageColorsJson` TEXT NOT NULL, `tagsJson` TEXT NOT NULL, `publishedAt` TEXT NOT NULL, `relatedNovelJson` TEXT, `commentCount` INTEGER NOT NULL, `likeCount` INTEGER NOT NULL, `favoriteCount` INTEGER NOT NULL, `isLiked` INTEGER NOT NULL, `isFavorited` INTEGER NOT NULL, `isMine` INTEGER NOT NULL, PRIMARY KEY(`stream`, `postId`))")
         }
     }
 }

@@ -22,6 +22,9 @@ object CoreNetworkModule {
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
+            // Wenku8 首次刷新需经过后端和浏览器抓取；后端缓存建立后通常不会走到该上限。
+            .readTimeout(100, TimeUnit.SECONDS)
+            .callTimeout(110, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .build()
     }

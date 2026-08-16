@@ -5,12 +5,14 @@ import androidx.room.RoomDatabase
 import com.sakuya.data.local.dao.BookmarkDao
 import com.sakuya.data.local.dao.ChatMessageDao
 import com.sakuya.data.local.dao.ConversationDao
+import com.sakuya.data.local.dao.FeedCacheDao
 import com.sakuya.data.local.dao.LibraryBookDao
 import com.sakuya.data.local.dao.ReadingProgressDao
 import com.sakuya.data.local.dao.UserDao
 import com.sakuya.data.local.entity.BookmarkEntity
 import com.sakuya.data.local.entity.ChatMessageEntity
 import com.sakuya.data.local.entity.ConversationEntity
+import com.sakuya.data.local.entity.FeedCacheEntity
 import com.sakuya.data.local.entity.LibraryBookEntity
 import com.sakuya.data.local.entity.ReadingProgressEntity
 import com.sakuya.data.local.entity.UserEntity
@@ -23,9 +25,10 @@ import com.sakuya.data.local.entity.UserEntity
         UserEntity::class,
         LibraryBookEntity::class,
         ReadingProgressEntity::class,
-        BookmarkEntity::class
+        BookmarkEntity::class,
+        FeedCacheEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,4 +38,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chatMessageDao(): ChatMessageDao
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun userDao(): UserDao
+    abstract fun feedCacheDao(): FeedCacheDao
 }

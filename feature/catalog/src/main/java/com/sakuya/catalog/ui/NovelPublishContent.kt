@@ -26,8 +26,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.sakuya.catalog.model.NovelRelease
+import com.sakuya.catalog.model.ContentItem
 import com.sakuya.catalog.model.NovelReleaseDate
 import com.sakuya.catalog.model.NovelReleaseDayGroup
 import com.sakuya.catalog.viewmodel.ScheduleUiState
@@ -42,7 +45,7 @@ import java.util.GregorianCalendar
 @Composable
 internal fun CatalogScheduleContent(
     uiState: ScheduleUiState,
-    onBookClick: (String) -> Unit,
+    onBookClick: (ContentItem) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -87,7 +90,7 @@ private fun ScheduleSectionTitle(title: String) {
 @Composable
 private fun RecommendedReleaseBanners(
     releases: List<NovelRelease>,
-    onBookClick: (String) -> Unit,
+    onBookClick: (ContentItem) -> Unit,
 ) {
     if (releases.isEmpty()) {
         Text(
@@ -104,7 +107,7 @@ private fun RecommendedReleaseBanners(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(releases, key = { it.novel.id }) { release ->
-            ReleaseBanner(release = release, onClick = { onBookClick(release.novel.id) })
+            ReleaseBanner(release = release, onClick = { onBookClick(release.novel) })
         }
     }
 }
@@ -156,7 +159,7 @@ private fun ReleaseBanner(
 @Composable
 private fun ReleaseDaySection(
     group: NovelReleaseDayGroup,
-    onBookClick: (String) -> Unit,
+    onBookClick: (ContentItem) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -167,7 +170,7 @@ private fun ReleaseDaySection(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
         group.releases.forEach { release ->
-            ReleaseNovelItem(release = release, onClick = { onBookClick(release.novel.id) })
+            ReleaseNovelItem(release = release, onClick = { onBookClick(release.novel) })
         }
     }
 }
@@ -191,6 +194,14 @@ private fun ReleaseNovelItem(
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
+            if (!release.novel.coverRequestUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = release.novel.coverRequestUrl,
+                    contentDescription = "${release.novel.title} 封面",
+                    modifier = Modifier.matchParentSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
             Text(
                 text = release.novel.title.take(1),
                 style = MaterialTheme.typography.titleLarge,

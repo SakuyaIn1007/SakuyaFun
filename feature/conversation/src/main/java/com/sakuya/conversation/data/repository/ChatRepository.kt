@@ -27,6 +27,15 @@ import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * ChatRepository.kt
+ * 职责说明：
+ * 1. 协调 REST 历史消息、WebSocket 实时消息与 Room 持久化。
+ * 2. 向 ViewModel 仅提供以 Room 为单一数据源的消息流，隔离网络 DTO 和连接细节。
+ * 3. 持久化本地乐观消息及其发送失败状态，保证离线和页面重建后的可恢复性。
+ * 执行流程：历史和实时数据先转换并写入 Room；页面订阅 Room 自动刷新；
+ * WebSocket 的失败和退避重连留在底层处理，不向 UI 暴露连接错误状态。
+ */
 @Singleton
 class ChatRepository @Inject constructor(
     private val apiService: ConversationApiService,
@@ -37,7 +46,6 @@ class ChatRepository @Inject constructor(
 ) {
     /** WebSocket DTO 在仓库边界转换，保证 ViewModel 与 UI 永远不会依赖网络模型。 */
     val realtimeMessages = webSocket.messages.map(ChatMessageDto::toDomain)
-    val connectionState = webSocket.connectionState
 
     /**
      * 聊天记录以 Room 为单一页面数据源。
@@ -94,7 +102,9 @@ class ChatRepository @Inject constructor(
                     replyToMessageId = draft.replyTo?.messageId,
                 )
             ).toResult().map(ChatMessageDto::toDomain).onSuccess { message ->
-                chatMessageDao.upsertMessage(message.toEntity(gson))
+                // REST 确认消息与本地乐观消息走同一跨表事务：正式时间和摘要会覆盖临时状态，
+                // 而 isMine 分支保证发送方自己的消息不会增加未读数。
+                chatMessageDao.handleIncomingMessage(message.toEntity(gson))
             }
         } catch (e: CancellationException) {
             throw e
@@ -103,10 +113,14 @@ class ChatRepository @Inject constructor(
         }
     }
 
-    /** 本地乐观消息先落库，确保离开页面或重建 ViewModel 后仍能看到发送状态。 */
+    /**
+     * 本地乐观消息先落库，并同步更新会话摘要。
+     * 执行流程：PENDING 与 FAILED 均先写消息表，再在同一事务更新 lastMessage、timeLabel
+     * 和 lastActiveTime；本地消息的 isMine=true 会确保 unreadCount 保持不变。
+     */
     suspend fun saveLocalMessage(message: ChatMessage) {
         ensureConversation(message.conversationId)
-        chatMessageDao.upsertMessage(message.toEntity(gson))
+        chatMessageDao.handleIncomingMessage(message.toEntity(gson))
     }
 
     /** 服务端确认后删除临时 ID 的 pending 记录，正式记录由 sendMessage 写入。 */

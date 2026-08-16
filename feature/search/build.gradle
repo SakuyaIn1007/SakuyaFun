@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.compose)
+    alias(libs.plugins.devtools.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -14,8 +16,10 @@ android {
 }
 
 dependencies {
+    implementation project(':core:data')
     implementation project(':core:model')
     implementation project(':core:navigation')
     implementation libs.bundles.feature.ui
     implementation libs.androidx.navigation.compose
+    ksp libs.hilt.compiler
 }

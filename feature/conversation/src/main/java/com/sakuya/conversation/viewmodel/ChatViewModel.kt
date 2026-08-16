@@ -3,7 +3,6 @@ package com.sakuya.conversation.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sakuya.conversation.data.remote.ConnectionState
 import com.sakuya.conversation.data.repository.ChatRepository
 import com.sakuya.conversation.model.ChatMessage
 import com.sakuya.conversation.model.ChatMessageDraft
@@ -22,12 +21,19 @@ data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
     val isLoading: Boolean = false,
-    val isConnected: Boolean = false,
-    val showWebSocketConnectionError: Boolean = false,
     val isSending: Boolean = false,
     val errorMessage: String? = null
 )
 
+/**
+ * ChatViewModel.kt
+ * 职责说明：
+ * 1. 统一管理聊天页的输入、Room 消息列表与发送状态。
+ * 2. 先订阅 Room 历史记录，再在后台同步 REST 历史和接收 WebSocket 实时消息。
+ * 3. 将发送中的本地消息持久化；发送失败后保留失败状态并提供重试入口。
+ * 执行流程：页面进入后确保会话存在并立即观察 Room；网络数据只写入 Room，
+ * WebSocket 连接失败由底层静默重连，不改变页面的离线历史展示。
+ */
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -55,7 +61,6 @@ class ChatViewModel @Inject constructor(
             observeLocalMessages()
             loadHistoryMessages()
             observeRealtimeMessages()
-            observeConnectionState()
             chatRepository.connect()
         }
     }
@@ -90,27 +95,6 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun observeConnectionState() {
-        viewModelScope.launch {
-            chatRepository.connectionState.collect { state ->
-                _uiState.update {
-                    /**
-                     * WebSocket 失败后会立刻进入重连状态，因此错误提示需要保留到真正连通时才隐藏。
-                     * 这样页面能稳定显示一次连接失败信息，而不影响历史消息列表。
-                     */
-                    it.copy(
-                        isConnected = state == ConnectionState.CONNECTED,
-                        showWebSocketConnectionError = when (state) {
-                            ConnectionState.CONNECTED -> false
-                            ConnectionState.FAILED -> true
-                            else -> it.showWebSocketConnectionError
-                        }
-                    )
-                }
-            }
-        }
-    }
-
     /** 输入变化只更新表单状态，发送逻辑集中在 sendMessage 以便统一维护乐观消息状态。 */
     fun onInputChanged(value: String) {
         _uiState.update { it.copy(inputText = value, errorMessage = null) }
@@ -134,21 +118,40 @@ class ChatViewModel @Inject constructor(
                 sendStatus = ChatSendStatus.PENDING,
             )
             _uiState.update { it.copy(inputText = "", isSending = true, errorMessage = null) }
-            chatRepository.saveLocalMessage(pendingMessage)
-            chatRepository.sendMessage(conversationId, ChatMessageDraft(content = content))
-                .onSuccess { message ->
-                    chatRepository.removeLocalMessage(pendingMessage.id)
-                    _uiState.update { it.copy(isSending = false) }
-                }
-                .onFailure { error ->
-                    chatRepository.saveLocalMessage(pendingMessage.copy(sendStatus = ChatSendStatus.FAILED))
-                    _uiState.update {
-                        it.copy(
-                            isSending = false,
-                            errorMessage = error.message ?: "消息发送失败"
-                        )
-                    }
-                }
+            sendPendingMessage(pendingMessage)
+        }
+    }
+
+    /**
+     * 重试只针对 Room 中已失败的本地消息，保留原有内容、附件和回复关系。
+     * 执行流程：先将状态恢复为 PENDING，再复用发送流程；成功删除临时记录，失败重新标记 FAILED。
+     */
+    fun retryMessage(message: ChatMessage) {
+        if (message.sendStatus != ChatSendStatus.FAILED) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSending = true, errorMessage = null) }
+            sendPendingMessage(message.copy(sendStatus = ChatSendStatus.PENDING))
+        }
+    }
+
+    /** 将乐观消息写入 Room 后发送；无论页面是否重建，发送结果都以本地消息状态为准。 */
+    private suspend fun sendPendingMessage(pendingMessage: ChatMessage) {
+        chatRepository.saveLocalMessage(pendingMessage)
+        chatRepository.sendMessage(
+            conversationId = conversationId,
+            draft = ChatMessageDraft(
+                content = pendingMessage.content,
+                attachments = pendingMessage.attachments,
+                replyTo = pendingMessage.replyTo,
+            )
+        ).onSuccess {
+            chatRepository.removeLocalMessage(pendingMessage.id)
+            _uiState.update { it.copy(isSending = false) }
+        }.onFailure { error ->
+            chatRepository.saveLocalMessage(pendingMessage.copy(sendStatus = ChatSendStatus.FAILED))
+            _uiState.update {
+                it.copy(isSending = false, errorMessage = error.message ?: "消息发送失败")
+            }
         }
     }
 

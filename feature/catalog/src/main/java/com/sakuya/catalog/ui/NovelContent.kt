@@ -21,7 +21,7 @@ import com.sakuya.ui.theme.SakuyaInAndroidTheme
 @Composable
 internal fun CatalogNovelContent(
     items: List<ContentItem> = emptyList(),
-    onBookClick: (bookId: String) -> Unit = {}
+    onBookClick: (ContentItem) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -43,9 +43,10 @@ internal fun CatalogNovelContent(
                 rating = item.rating,
                 tags = item.tags,
                 index = index,
+                coverUrl = item.coverRequestUrl,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .clickable { onBookClick(item.id) }
+                    .clickable { onBookClick(item) }
             )
             Spacer(modifier = Modifier.height(10.dp))
         }

@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 private val coverGradients = listOf(
     listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
@@ -44,6 +46,8 @@ fun ContentCard(
     rating: Float,
     tags: List<String>,
     index: Int,
+    /** 远端封面由应用级 Coil ImageLoader 自动携带 JWT；为空或失败时保留渐变占位。 */
+    coverUrl: String? = null,
     modifier: Modifier = Modifier
 ) {
     val gradient = coverGradients[index % coverGradients.size]
@@ -71,6 +75,14 @@ fun ContentCard(
                 ),
             contentAlignment = Alignment.Center
         ) {
+            if (!coverUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = coverUrl,
+                    contentDescription = "$title 封面",
+                    modifier = Modifier.matchParentSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Text(
                 text = title.take(2),
                 color = Color.White.copy(alpha = 0.7f),

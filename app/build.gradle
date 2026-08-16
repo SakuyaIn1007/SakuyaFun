@@ -53,6 +53,7 @@ dependencies {
     implementation project(':core:common')
     implementation project(':core:designsystem')
     implementation project(':core:di')
+    implementation project(':core:data')
     implementation project(':feature:catalog')
     implementation project(':feature:bookshelf')
     implementation project(':feature:conversation')

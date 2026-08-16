@@ -54,6 +54,8 @@ dependencies {
     implementation libs.slf4j.simple
 
     implementation libs.core.ktx
+    implementation libs.retrofit2
+    implementation libs.retrofit2.converter.gson
     implementation libs.hilt.android
     ksp libs.hilt.compiler
 

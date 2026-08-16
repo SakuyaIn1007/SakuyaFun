@@ -25,6 +25,24 @@ app:
   upload-dir: ${UPLOAD_DIR:./uploads}
   seed:
     enabled: false
+  # 仅部署端配置；为空时 POST/PUT/DELETE /admin/novel-releases 一律拒绝。
+  release-management:
+    token: ${RELEASE_MANAGEMENT_TOKEN:}
+
+# 内部验证默认关闭；部署 Python 适配服务后以 WENKU8_ADAPTER_ENABLED=true 显式开启。
+wenku8:
+  adapter:
+    base-url: ${WENKU8_ADAPTER_BASE_URL:http://localhost:8000}
+    enabled: ${WENKU8_ADAPTER_ENABLED:false}
+    # Python 全文接口默认可等待 180 秒；网关额外预留网络传输时间。
+    full-content-timeout-seconds: ${WENKU8_FULL_CONTENT_TIMEOUT_SECONDS:195}
+  catalog:
+    sync:
+      # 适配服务未启用时任务会保留旧缓存并跳过外部写入；生产环境可通过环境变量关闭。
+      enabled: ${WENKU8_CATALOG_SYNC_ENABLED:true}
+      startup-enabled: ${WENKU8_CATALOG_STARTUP_SYNC_ENABLED:true}
+      cron: ${WENKU8_CATALOG_SYNC_CRON:0 30 3 * * *}
+      zone: ${WENKU8_CATALOG_SYNC_ZONE:Asia/Shanghai}
 
 management:
   endpoints:

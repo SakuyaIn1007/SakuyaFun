@@ -7,9 +7,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -50,12 +50,14 @@ fun ReaderTopBarContent(
         } ,
         navigationIcon = {
             if (showNavigationIcon) {
-                IconButton(onClick = onBack) {
+                /** 返回由 ReaderNavigation 传入 NavController.popBackStack，远端章节会回到卷章目录。 */
+                TextButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         modifier = Modifier.size(24.dp),
-                        contentDescription = "back"
+                        contentDescription = "返回"
                     )
+                    Text("返回")
                 }
             }
         },

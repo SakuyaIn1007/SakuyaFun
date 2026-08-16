@@ -11,6 +11,7 @@ import com.sakuya.reader.model.ReaderOpenResult
 import com.sakuya.reader.model.ReaderParseError
 import com.sakuya.reader.model.ReaderTheme
 import com.sakuya.reader.model.ReaderType
+import com.sakuya.reader.model.Wenku8NovelOpenResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,6 +24,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
+/**
+ * ReaderViewModel.kt
+ * 职责说明：统一管理本地文件和 Wenku8 会话阅读状态、进度、书签及连续阅读降级流程。
+ * 执行流程：UI 发出打开/重试事件 -> ViewModel 在 viewModelScope 调用 Repository -> 更新不可变 UiState -> UI 渲染或定位章节。
+ */
 class ReaderViewModel @Inject constructor(
     private val readerRepository: ReaderRepository,
     private val readerPrefs: ReaderPrefs
@@ -36,6 +42,8 @@ class ReaderViewModel @Inject constructor(
 
     private var saveProgressJob: Job? = null
     private var observeBookmarksJob: Job? = null
+    private var openRemoteJob: Job? = null
+    private var remoteRequest: RemoteReadRequest? = null
 
     fun onAction(action: ReaderAction) {
         when (action) {
@@ -45,6 +53,8 @@ class ReaderViewModel @Inject constructor(
                     bookId = action.bookId
                 )
             }
+            is ReaderAction.OpenRemoteChapter -> openRemoteNovel(action.novelId, action.chapterId, action.title)
+            ReaderAction.RetryRemoteRead -> remoteRequest?.let { openRemoteNovel(it.novelId, it.chapterId, it.title) }
 
             is ReaderAction.OpenFilePickerClick -> {
                 emitEffect(ReaderEffect.OpenFilePicker)
@@ -82,6 +92,8 @@ class ReaderViewModel @Inject constructor(
     private fun openFile(uri: Uri, bookId: String?) {
         val bookKey = bookId ?: uri.toString()
         saveProgressJob?.cancel()
+        openRemoteJob?.cancel()
+        remoteRequest = null
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -108,10 +120,82 @@ class ReaderViewModel @Inject constructor(
                     theme = savedTheme,
                     parseError = (openResult as? ReaderOpenResult.Failure)?.error,
                     errorMessage = (openResult as? ReaderOpenResult.Failure)?.error?.toDisplayMessage(),
-                    bookKey = bookKey
+                    bookKey = bookKey,
+                    targetChapterId = null,
+                    remoteNotice = null,
+                    persistProgress = true
                 )
             }
             if (document != null) observeBookmarks(bookKey)
+        }
+    }
+
+    /**
+     * 同一小说只使用 wenku8:{novelId} 一份连续进度。目录传入的章节始终优先于旧进度；
+     * 全文失败时只展示当前章，且不覆写这份连续进度，等待用户稍后重试全文。
+     */
+    private fun openRemoteNovel(novelId: String, chapterId: String, title: String) {
+        val request = RemoteReadRequest(novelId, chapterId, title)
+        val bookKey = "wenku8:$novelId"
+        remoteRequest = request
+        saveProgressJob?.cancel()
+        openRemoteJob?.cancel()
+        openRemoteJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    document = null,
+                    errorMessage = null,
+                    parseError = null,
+                    remoteNotice = null,
+                    progress = 0f,
+                    bookKey = bookKey,
+                    targetChapterId = chapterId,
+                    persistProgress = false
+                )
+            }
+            when (val result = readerRepository.openRemoteNovel(novelId, chapterId, title)) {
+                is Wenku8NovelOpenResult.Full -> {
+                    val savedProgress = readerRepository.getProgress(bookKey)
+                    _uiState.update {
+                        it.copy(
+                            document = result.document,
+                            type = ReaderType.TXT,
+                            isLoading = false,
+                            progress = savedProgress,
+                            targetChapterId = chapterId,
+                            persistProgress = true
+                        )
+                    }
+                    observeBookmarks(bookKey)
+                }
+                is Wenku8NovelOpenResult.ChapterFallback -> {
+                    _uiState.update {
+                        it.copy(
+                            document = result.document,
+                            type = ReaderType.TXT,
+                            isLoading = false,
+                            progress = 0f,
+                            targetChapterId = null,
+                            remoteNotice = result.notice,
+                            persistProgress = false
+                        )
+                    }
+                    observeBookmarks(bookKey)
+                }
+                is Wenku8NovelOpenResult.Failure -> {
+                    _uiState.update {
+                        it.copy(
+                            document = null,
+                            isLoading = false,
+                            targetChapterId = null,
+                            persistProgress = false,
+                            parseError = result.error,
+                            errorMessage = result.error.toDisplayMessage()
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -142,6 +226,7 @@ class ReaderViewModel @Inject constructor(
             it.copy(progress = safeProgress)
         }
         val bookKey = _uiState.value.bookKey ?: return
+        if (!_uiState.value.persistProgress) return
         saveProgressJob?.cancel()
         saveProgressJob = viewModelScope.launch {
             delay(300)
@@ -180,7 +265,12 @@ data class ReaderUiState(
     val bookmarks: List<ReaderBookmark> = emptyList(),
     val parseError: ReaderParseError? = null,
     val errorMessage: String? = null,
-    val bookKey: String? = null
+    val bookKey: String? = null,
+    /** 仅 Wenku8 全文使用；非空时全文 UI 在恢复旧进度前先定位目录选中的章节。 */
+    val targetChapterId: String? = null,
+    /** 全文受限时明确提示已降级为单章阅读。 */
+    val remoteNotice: String? = null,
+    val persistProgress: Boolean = true
 )
 
 sealed interface ReaderEffect {
@@ -193,14 +283,19 @@ sealed interface ReaderAction {
         val uri: Uri,
         val bookId: String?
         ) : ReaderAction
+    data class OpenRemoteChapter(val novelId: String, val chapterId: String, val title: String) : ReaderAction
     data class SetProgress(val progress: Float) : ReaderAction
     data class ChangeFontSize(val fontSize: Float) : ReaderAction
     data class ChangeTheme(val theme: ReaderTheme) : ReaderAction
     data class DeleteBookmark(val bookmarkId: String) : ReaderAction
+    data object RetryRemoteRead : ReaderAction
     data object OpenFilePickerClick : ReaderAction
     data object ToggleUi : ReaderAction
     data object AddBookmark : ReaderAction
 }
+
+/** 保存一次可重试的远端目录选择；不包含正文、Cookie 或任何上游登录信息。 */
+private data class RemoteReadRequest(val novelId: String, val chapterId: String, val title: String)
 
 /** 将底层错误转换为稳定的用户可读信息，UI 不需判断具体解析实现。 */
 private fun ReaderParseError.toDisplayMessage(): String = when (this) {

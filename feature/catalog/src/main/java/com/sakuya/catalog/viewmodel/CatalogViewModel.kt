@@ -8,6 +8,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,30 +25,21 @@ class CatalogViewModel @Inject constructor(
         loadCatalogData()
     }
 
+    /**
+     * 推荐与周榜独立加载，任何一路失败都不能清空另一条已经成功返回的 Wenku8 缓存数据。
+     * 执行流程：并行请求两个后端接口 -> 分别写入对应列表/错误字段 -> 两路结束后关闭全页加载态。
+     */
     fun loadCatalogData() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            catalogRepository.getRecommendItems()
-                .onSuccess { items ->
-                    _uiState.update { it.copy(recommendItems = items) }
-                }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(error = error.message ?: "加载推荐失败")
-                    }
-                }
-
-            catalogRepository.getNovelItems()
-                .onSuccess { items ->
-                    _uiState.update { it.copy(novelItems = items) }
-                }
-                .onFailure { error ->
-                    _uiState.update {
-                        it.copy(error = error.message ?: "加载轻小说失败")
-                    }
-                }
-
+            _uiState.update { it.copy(isLoading = true, recommendationError = null, novelError = null) }
+            coroutineScope {
+                val recommendations = async { catalogRepository.getRecommendItems() }
+                val novels = async { catalogRepository.getNovelItems() }
+                recommendations.await().onSuccess { items -> _uiState.update { it.copy(recommendItems = items, recommendationError = null) } }
+                    .onFailure { error -> _uiState.update { it.copy(recommendationError = error.message ?: "加载推荐失败") } }
+                novels.await().onSuccess { items -> _uiState.update { it.copy(novelItems = items, novelError = null) } }
+                    .onFailure { error -> _uiState.update { it.copy(novelError = error.message ?: "加载轻小说失败") } }
+            }
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -73,7 +66,8 @@ data class CatalogUiState(
     val recommendItems: List<ContentItem> = emptyList(),
     val novelItems: List<ContentItem> = emptyList(),
     val selectedTab: Int = 0,
-    val error: String? = null
+    val recommendationError: String? = null,
+    val novelError: String? = null,
 )
 
 sealed interface CatalogAction {

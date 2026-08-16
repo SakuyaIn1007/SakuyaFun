@@ -51,7 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.model.search.SearchContentType
 import com.sakuya.model.search.SearchResult
 import com.sakuya.search.viewmodel.SearchAction
@@ -68,7 +68,7 @@ import com.sakuya.search.viewmodel.SearchViewModel
 fun SearchScreen(
     onBack: () -> Unit,
     onSearch: (String) -> Unit,
-    viewModel: SearchViewModel = viewModel(),
+    viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var query by remember { mutableStateOf("") }
@@ -98,7 +98,7 @@ internal fun SearchResultsContent(
     onBack: () -> Unit,
     onBookClick: (String) -> Unit = {},
     onDynamicClick: (String) -> Unit = {},
-    viewModel: SearchViewModel = viewModel(),
+    viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }

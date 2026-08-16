@@ -15,3 +15,10 @@ app:
     secret: ${JWT_SECRET:change-this-development-secret-to-at-least-32-bytes}
   seed:
     enabled: true
+
+# IDEA 以 dev Profile 启动后端时，直接连接本机已启动的 Wenku8 内部适配服务。
+# 账号密码只配置在 Python 服务进程环境中，绝不写入 Spring Boot 配置。
+wenku8:
+  adapter:
+    base-url: http://localhost:8000
+    enabled: true

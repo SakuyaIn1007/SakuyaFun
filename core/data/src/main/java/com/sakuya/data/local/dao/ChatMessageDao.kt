@@ -44,12 +44,12 @@ interface ChatMessageDao {
     @Query("DELETE FROM chat_messages")
     suspend fun clearAll()
 
-    /*跨表接收消息的事务
-    * 当App收到一条新聊天消息时，在底层其实需要同时执行两个动作：
-    * 1. 在消息表追加一条消息记录
-    * 2. 对应的会话表必须同步更新它的 lastMessage，timeLabel 以及未读数 unreadCount
-    *
-    * */
+    /**
+     * 消息与会话摘要的跨表写入事务。
+     * 执行流程：无论是本地 PENDING/FAILED、REST 发送确认还是 WebSocket 实时消息，均先写消息表，
+     * 再用同一消息更新 conversations 的 lastMessage、timeLabel 与 lastActiveTime。
+     * 对方消息才递增 unreadCount；isMine=true 的本地和已确认发送消息只更新摘要，防止误增未读。
+     */
     @Transaction
     suspend fun handleIncomingMessage(message: ChatMessageEntity){
         upsertMessage(message)

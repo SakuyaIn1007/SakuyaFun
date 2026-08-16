@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ import com.sakuya.reader.ui.components.ReaderBottomBar
 import com.sakuya.reader.ui.components.ReaderTopBar
 import com.sakuya.reader.ui.subpages.EpubReaderContent
 import com.sakuya.reader.ui.subpages.TxtReaderContent
+import com.sakuya.reader.ui.subpages.Wenku8FullReaderContent
 import com.sakuya.reader.viewmodel.ReaderAction
 import com.sakuya.reader.viewmodel.ReaderEffect
 import com.sakuya.reader.viewmodel.ReaderUiState
@@ -49,6 +52,7 @@ import java.io.File
 fun ReaderScreen(
     bookId: String?,
     filePath: String,
+    remoteChapter: Triple<String, String, String>? = null,
     onBack: () -> Unit = {},
     viewModel: ReaderViewModel = hiltViewModel()
 ) {
@@ -104,10 +108,12 @@ fun ReaderScreen(
             )
         }
     }
+    LaunchedEffect(remoteChapter) { remoteChapter?.let { viewModel.onAction(ReaderAction.OpenRemoteChapter(it.first, it.second, it.third)) } }
 
     ReaderContent(
         state = state,
-        bookTitle = state.document?.title ?: currentFileLabel,
+        // 远端正文加载失败时 document 为空，仍保留目录传入的标题，让返回栏和错误页可辨识。
+        bookTitle = state.document?.title ?: remoteChapter?.third ?: currentFileLabel,
         onBack = onBack,
         onAction = viewModel::onAction,
     )
@@ -173,17 +179,23 @@ fun ReaderContent(
                 CircularProgressIndicator()
             }
         } else if (state.errorMessage != null) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                contentAlignment = Alignment.Center
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             ) {
                 Text(
                     text = state.errorMessage,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyLarge
                 )
+                if (state.bookKey?.startsWith("wenku8:") == true) {
+                    Button(onClick = { onAction(ReaderAction.RetryRemoteRead) }, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("重试")
+                    }
+                }
             }
         } else {
             Box(
@@ -195,6 +207,14 @@ fun ReaderContent(
                     }
             ) {
                 when (val document = state.document) {
+                    is ReaderDocument.Wenku8Full -> Wenku8FullReaderContent(
+                        fullText = document.text,
+                        chapters = document.chapters,
+                        targetChapterId = state.targetChapterId,
+                        initialProgress = state.progress,
+                        fontSizeSp = state.fontSizeSp,
+                        onProgress = { onAction(ReaderAction.SetProgress(it)) },
+                    )
                     is ReaderDocument.Txt -> TxtReaderContent(
                         fullText = document.text,
                         fontSizeSp = state.fontSizeSp,
@@ -208,6 +228,17 @@ fun ReaderContent(
                         onProgress = { onAction(ReaderAction.SetProgress(it)) }
                     )
                     null -> Unit
+                }
+                state.remoteNotice?.let { notice ->
+                    Column(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(text = notice, color = MaterialTheme.colorScheme.tertiary)
+                        Button(onClick = { onAction(ReaderAction.RetryRemoteRead) }, modifier = Modifier.padding(top = 8.dp)) {
+                            Text("重试连续阅读")
+                        }
+                    }
                 }
             }
         }

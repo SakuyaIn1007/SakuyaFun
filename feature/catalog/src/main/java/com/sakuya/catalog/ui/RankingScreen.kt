@@ -48,6 +48,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.sakuya.catalog.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,7 +79,7 @@ private data class RankingFilters(
 private fun RankingContent(
     uiState: RankingUiState,
     onRetry: () -> Unit = {},
-    onBookClick: (bookId: String) -> Unit = {}
+    onBookClick: (ContentItem) -> Unit = {}
 ) {
     var board by remember { mutableStateOf(RankingBoard.POPULAR) }
     var filters by remember { mutableStateOf(RankingFilters()) }
@@ -107,7 +109,7 @@ private fun RankingContent(
 }
 
 @Composable
-fun RankingTabContent(onBookClick: (String) -> Unit = {}) {
+fun RankingTabContent(onBookClick: (ContentItem) -> Unit = {}) {
     val viewModel: RankingViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     RankingContent(
@@ -151,7 +153,7 @@ private fun RankingList(
     items: List<RankingItem>,
     onBoardSelected: (RankingBoard) -> Unit,
     onFilterClick: () -> Unit,
-    onBookClick: (String) -> Unit
+    onBookClick: (ContentItem) -> Unit
 ) {
     LazyColumn(
         modifier = modifier
@@ -182,7 +184,7 @@ private fun RankingList(
         } else {
             items(items, key = { it.item.id }) { item ->
                 Column {
-                    RankingBookCard(item, onClick = { onBookClick(item.item.id) })
+                    RankingBookCard(item, onClick = { onBookClick(item.item) })
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 102.dp, end = 16.dp, top = 8.dp),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
@@ -345,7 +347,7 @@ private fun RankingBookCard(rankingItem: RankingItem, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RankingCover(item.title, rankingItem.rank)
+        RankingCover(item, rankingItem.rank)
         Spacer(Modifier.width(12.dp))
         Box(modifier = Modifier.weight(1f).height(104.dp)) {
             Column(modifier = Modifier.padding(end = 4.dp)) {
@@ -361,7 +363,7 @@ private fun RankingBookCard(rankingItem: RankingItem, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(Modifier.height(6.dp))
-                Text("${item.author} · ${item.publisher}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${item.author} · ${item.publisher.orEmpty()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Row(
                 modifier = Modifier.align(Alignment.BottomStart),
@@ -383,7 +385,7 @@ private fun RankingBookCard(rankingItem: RankingItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun RankingCover(title: String, rank: Int) {
+private fun RankingCover(item: ContentItem, rank: Int) {
     val colors = when (rank % 4) {
         0 -> listOf(Color(0xFF667EEA), Color(0xFF764BA2))
         1 -> listOf(Color(0xFFE06341), Color(0xFFF4A261))
@@ -397,8 +399,16 @@ private fun RankingCover(title: String, rank: Int) {
             .background(Brush.linearGradient(colors)),
         contentAlignment = Alignment.Center
     ) {
+        if (!item.coverRequestUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = item.coverRequestUrl,
+                contentDescription = "${item.title} 封面",
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
         Text(
-            text = title.take(2),
+            text = item.title.take(2),
             color = Color.White.copy(alpha = 0.78f),
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold

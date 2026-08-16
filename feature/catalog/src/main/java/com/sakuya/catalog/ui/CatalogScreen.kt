@@ -46,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakuya.catalog.model.ContentItem
@@ -60,7 +62,7 @@ import com.sakuya.ui.theme.SakuyaInAndroidTheme
 @Composable
 fun CatalogScreen(
     onNavigateToSearch: () -> Unit = {},
-    onNavigateToBookDetail: (bookId: String) -> Unit = {},
+    onNavigateToBookDetail: (ContentItem) -> Unit = {},
     onNavigateToSchedule: () -> Unit = {},
     onNavigateToAward: () -> Unit = {}
 ) {
@@ -70,6 +72,7 @@ fun CatalogScreen(
     CatalogContent(
         uiState = uiState,
         onTabSelected = { viewModel.selectTab(it) },
+        onRetry = viewModel::loadCatalogData,
         onNavigateToSearch = onNavigateToSearch,
         onBookClick = onNavigateToBookDetail,
         onNavigateToSchedule = onNavigateToSchedule,
@@ -85,7 +88,7 @@ fun CatalogScreen(
 @Composable
 fun NovelContent(
     items: List<ContentItem> = emptyList(),
-    onBookClick: (bookId: String) -> Unit = {},
+    onBookClick: (ContentItem) -> Unit = {},
 ) = CatalogNovelContent(items = items, onBookClick = onBookClick)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -93,8 +96,9 @@ fun NovelContent(
 fun CatalogContent(
     uiState: CatalogUiState = CatalogUiState(),
     onTabSelected: (Int) -> Unit = {},
+    onRetry: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
-    onBookClick: (bookId: String) -> Unit = {},
+    onBookClick: (ContentItem) -> Unit = {},
     onNavigateToSchedule: () -> Unit = {},
     onNavigateToAward: () -> Unit = {}
 ) {
@@ -127,14 +131,6 @@ fun CatalogContent(
                         CircularProgressIndicator()
                     }
                 } else {
-                    uiState.error?.let { error ->
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
                     AnimatedContent(
                         targetState = uiState.selectedTab,
                         transitionSpec = {
@@ -145,6 +141,8 @@ fun CatalogContent(
                         when (tab) {
                             0 -> CatalogRecommendContent(
                                 items = uiState.recommendItems,
+                                errorMessage = uiState.recommendationError,
+                                onRetry = onRetry,
                                 onBookClick = onBookClick,
                                 onScheduleClick = onNavigateToSchedule,
                                 onAwardClick = onNavigateToAward
@@ -166,7 +164,9 @@ fun CatalogContent(
 @Composable
 fun CatalogRecommendContent(
     items: List<ContentItem> = emptyList(),
-    onBookClick: (bookId: String) -> Unit = {},
+    errorMessage: String? = null,
+    onRetry: () -> Unit = {},
+    onBookClick: (ContentItem) -> Unit = {},
     onScheduleClick: () -> Unit = {},
     onAwardClick: () -> Unit = {}
 ) {
@@ -180,6 +180,9 @@ fun CatalogRecommendContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         item { CatalogQuickLinks(onScheduleClick, onAwardClick) }
+        if (items.isEmpty() && errorMessage != null) {
+            item { CatalogLoadError(message = errorMessage, onRetry = onRetry) }
+        }
         item { CatalogSectionTitle("热门推荐", "正在被读者关注的作品") }
         catalogBookGridRows(popularItems, startIndex = 0, onBookClick = onBookClick)
         item { CatalogSectionTitle("本季度新番原作", "追番前，先从原作开始") }
@@ -191,6 +194,15 @@ fun CatalogRecommendContent(
             onBookClick = onBookClick
         )
         item { Spacer(modifier = Modifier.height(16.dp)) }
+    }
+}
+
+/** 推荐接口失败时给出原位重试，不遮蔽已经加载的内容。 */
+@Composable
+private fun CatalogLoadError(message: String, onRetry: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(message, color = MaterialTheme.colorScheme.error)
+        Text("点击重试", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp).clickable(onClick = onRetry))
     }
 }
 
@@ -275,7 +287,7 @@ private fun CatalogSectionTitle(title: String, subtitle: String) {
 private fun LazyListScope.catalogBookGridRows(
     books: List<ContentItem>,
     startIndex: Int,
-    onBookClick: (bookId: String) -> Unit
+    onBookClick: (ContentItem) -> Unit
 ) {
     items((books.size + 1) / 2) { rowIndex ->
         val firstIndex = rowIndex * 2
@@ -310,13 +322,13 @@ private fun CatalogGridBook(
     item: ContentItem,
     index: Int,
     modifier: Modifier,
-    onBookClick: (bookId: String) -> Unit
+    onBookClick: (ContentItem) -> Unit
 ) {
     val coverColors = gridCoverColors[index % gridCoverColors.size]
     Row(
         modifier = modifier
             .height(96.dp)
-            .clickable { onBookClick(item.id) },
+            .clickable { onBookClick(item) },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -326,6 +338,14 @@ private fun CatalogGridBook(
                 .background(Brush.linearGradient(coverColors)),
             contentAlignment = Alignment.Center
         ) {
+            if (!item.coverRequestUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = item.coverRequestUrl,
+                    contentDescription = "${item.title} 封面",
+                    modifier = Modifier.matchParentSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Text(
                 text = item.title.take(2),
                 style = MaterialTheme.typography.headlineSmall,

@@ -24,7 +24,7 @@ import com.sakuya.ui.component.ContentCard
 @Composable
 fun LightNovelAwardContent(
     items: List<ContentItem>,
-    onBookClick: (bookId: String) -> Unit = {}
+    onBookClick: (ContentItem) -> Unit = {}
 ) {
     val topTwenty = items.distinctBy(ContentItem::id).take(20)
 
@@ -65,9 +65,10 @@ fun LightNovelAwardContent(
                 rating = item.rating,
                 tags = item.tags,
                 index = index,
+                coverUrl = item.coverRequestUrl,
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
-                    .clickable { onBookClick(item.id) }
+                    .clickable { onBookClick(item) }
             )
         }
 
