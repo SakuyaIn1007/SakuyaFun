@@ -28,6 +28,7 @@
             <option value="$PROJECT_DIR$/feature/dashboard" />
             <option value="$PROJECT_DIR$/feature/feed" />
             <option value="$PROJECT_DIR$/feature/friend" />
+            <option value="$PROJECT_DIR$/feature/notification" />
             <option value="$PROJECT_DIR$/feature/profile" />
             <option value="$PROJECT_DIR$/feature/profile-services" />
             <option value="$PROJECT_DIR$/feature/reader" />

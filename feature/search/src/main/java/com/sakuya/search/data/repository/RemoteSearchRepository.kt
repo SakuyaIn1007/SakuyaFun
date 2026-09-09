@@ -20,7 +20,8 @@ class RemoteSearchRepository(private val apiService: SearchApiService) : SearchR
         apiService.search(query.keyword, query.filter.contentType?.name?.lowercase(), page, pageSize)
             .toDomain { pageDto -> SearchPage(pageDto.items.map(SearchResultDto::toDomain), pageDto.nextPage) }
 
-    override suspend fun getHistory(): Result<List<String>> = apiService.getHistory().toDomain()
+    /** 旧实现仅保留编译兼容；当前 Hilt 绑定的 ContentRepository 使用 DataStore 管理历史。 */
+    override suspend fun getHistory(): Result<List<String>> = Result.success(emptyList())
     override suspend fun getHotKeywords(): Result<List<String>> = apiService.getHotKeywords().toDomain()
 
     /** 搜索历史由后端按用户维度维护时，可在 API 增加 POST/DELETE 后替换这两个实现。 */

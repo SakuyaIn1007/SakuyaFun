@@ -25,6 +25,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.authentication.viewmodel.AuthUiState
+import com.sakuya.ui.motion.MotionContent
+import com.sakuya.ui.motion.MotionVisibility
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
@@ -105,13 +107,13 @@ fun LoginContent(
                 .height(48.dp),
             enabled = !state.isLoading
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Text("登录")
+            MotionContent(targetState = state.isLoading) { isLoading ->
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                    )
+                } else Text("登录")
             }
         }
         TextButton(
@@ -125,14 +127,16 @@ fun LoginContent(
 
 @Composable
 internal fun AuthErrorText(message: String?) {
-    if (!message.isNullOrBlank()) {
+    MotionVisibility(visible = !message.isNullOrBlank()) {
+        Column {
         Spacer(modifier = Modifier.height(10.dp))
         Text(
-            text = message,
+            text = message.orEmpty(),
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.error
         )
+        }
     }
 }
 

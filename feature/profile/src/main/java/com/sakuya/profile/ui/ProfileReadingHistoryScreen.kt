@@ -57,7 +57,7 @@ private fun ReadingHistoryRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {

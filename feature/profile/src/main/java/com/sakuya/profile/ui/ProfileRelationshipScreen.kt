@@ -1,6 +1,7 @@
 package com.sakuya.profile.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import com.sakuya.profile.viewmodel.RelationshipEffect
 import com.sakuya.profile.viewmodel.RelationshipUiState
 import com.sakuya.profile.viewmodel.RelationshipViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.UpdateDot
 
 /**
  * ProfileRelationshipScreen.kt
@@ -48,6 +50,7 @@ import com.sakuya.ui.component.AppSecondaryTopBar
 fun ProfileRelationshipScreen(
     isFollowing: Boolean,
     onBack: () -> Unit,
+    onUserClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RelationshipViewModel = hiltViewModel(),
 ) {
@@ -65,8 +68,12 @@ fun ProfileRelationshipScreen(
         uiState = uiState,
         errorMessage = errorMessage,
         onToggleFollow = { viewModel.onAction(RelationshipAction.ToggleFollow(it)) },
+        onUserClick = onUserClick,
         onLoadMore = { viewModel.onAction(RelationshipAction.LoadMore) },
-        onRetry = { viewModel.onAction(RelationshipAction.Load(type)) },
+        onRetry = {
+            errorMessage = null
+            viewModel.onAction(RelationshipAction.Load(type))
+        },
         onBack = onBack,
         modifier = modifier,
     )
@@ -78,6 +85,7 @@ private fun RelationshipContent(
     uiState: RelationshipUiState,
     errorMessage: String?,
     onToggleFollow: (RelationshipUser) -> Unit,
+    onUserClick: (String) -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     onBack: () -> Unit,
@@ -94,6 +102,7 @@ private fun RelationshipContent(
                         user = user,
                         isOperating = uiState.operatingUserId == user.userId,
                         onToggleFollow = { onToggleFollow(user) },
+                        onUserClick = { onUserClick(user.userId) },
                     )
                 }
                 item {
@@ -115,14 +124,25 @@ private fun RelationshipEmptyState(errorMessage: String?, onRetry: () -> Unit) {
 
 /** 单行只根据领域 isFollowing 渲染，点击按钮后由 ViewModel 按服务端结果回写列表。 */
 @Composable
-private fun RelationshipUserRow(user: RelationshipUser, isOperating: Boolean, onToggleFollow: () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun RelationshipUserRow(
+    user: RelationshipUser,
+    isOperating: Boolean,
+    onToggleFollow: () -> Unit,
+    onUserClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onUserClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(Modifier.size(42.dp).background(Color(user.avatarColor), CircleShape), contentAlignment = Alignment.Center) {
             Text(user.initial, color = Color.White, style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(user.name, style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment=Alignment.CenterVertically){Text(user.name, style = MaterialTheme.typography.titleSmall);if(user.hasUnseenPosts){Spacer(Modifier.width(6.dp));UpdateDot()}}
             Text(user.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
         }
         Button(

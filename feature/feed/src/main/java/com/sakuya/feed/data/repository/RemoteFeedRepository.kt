@@ -41,14 +41,22 @@ class RemoteFeedRepository(
     override fun observeCachedFeed(stream: FeedStream): Flow<List<DynamicPost>> =
         feedCacheDao.observeByStream(stream.name).map { items -> items.map { it.toDomain(gson) } }
 
+    /**
+     * 推荐流与关注流共用后端分页端点，只通过 stream 参数区分；关注筛选必须由服务端按当前登录用户执行。
+     * 首次分页成功后原子替换对应流缓存，请求失败时不写库，从而保留上一次可用的离线内容。
+     */
     override suspend fun getFeed(stream: FeedStream, page: Int, pageSize: Int): Result<FeedPage<DynamicPost>> =
-        apiService.getFeed(stream.name.lowercase(), page, pageSize).toDomainPage { it.toDomain() }
+        apiService.getFeed(stream.toApiStream(), page, pageSize).toDomainPage { it.toDomain() }
             .onSuccess { result ->
                 val entities = result.items.mapIndexed { index, post ->
                     post.toCacheEntity(stream, page * pageSize + index, gson)
                 }
                 if (page == 0) feedCacheDao.replaceStream(stream.name, entities) else feedCacheDao.upsertAll(entities)
             }
+
+    /** 作者主页的分页结果直接返回页面状态，避免用第三种 key 污染两条首页流缓存。 */
+    override suspend fun getAuthorFeed(authorId: String, page: Int, pageSize: Int): Result<FeedPage<DynamicPost>> =
+        apiService.getAuthorFeed(authorId, page, pageSize).toDomainPage { it.toDomain() }
 
     override suspend fun getPost(postId: String): Result<DynamicPost> =
         apiService.getPost(postId).toDomain { it.toDomain() }
@@ -75,6 +83,12 @@ class RemoteFeedRepository(
 
     override suspend fun report(postId: String, report: FeedReport): Result<Unit> =
         apiService.report(postId, FeedReportRequest(report.reason.name.lowercase(), report.description)).toDomain()
+}
+
+/** 显式固定服务端查询值，避免枚举重命名或区域化大小写规则悄悄改变公开 API 契约。 */
+internal fun FeedStream.toApiStream(): String = when (this) {
+    FeedStream.FOLLOWING -> "following"
+    FeedStream.RECOMMENDED -> "recommended"
 }
 
 private fun FeedPostDto.toDomain() = DynamicPost(

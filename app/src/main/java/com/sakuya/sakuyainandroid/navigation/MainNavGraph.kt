@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.sakuya.dashboard.ui.DashboardScreen
+import com.sakuya.sakuyainandroid.ui.DashboardScreen
 import com.sakuya.authentication.navigation.authNavGraph
 import com.sakuya.bookdetail.navigation.bookDetailNavGraph
 import com.sakuya.conversation.navigation.conversationNavGraph
@@ -25,6 +25,7 @@ import com.sakuya.navigation.READER_BASE_ROUTE
 import com.sakuya.profile.navigation.profileNavGraph
 import com.sakuya.reader.navigation.readerNavGraph
 import com.sakuya.search.navigation.searchNavGraph
+import com.sakuya.notification.notificationNavGraph
 
 fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
     composable(DASHBOARD_ROUTE) {
@@ -51,6 +52,7 @@ fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
     libraryNavGraph(navController)
     profileNavGraph(navController)
     friendNavGraph(navController)
+    notificationNavGraph(navController)
     readerNavGraph(navController)
     bookDetailNavGraph(
         navController = navController,

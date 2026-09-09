@@ -1,16 +1,17 @@
 package com.sakuya.conversation.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sakuya.common.mvi.BaseMviViewModel
 import com.sakuya.conversation.data.repository.ChatRepository
-import com.sakuya.conversation.model.ChatMessage
-import com.sakuya.conversation.model.ChatMessageDraft
-import com.sakuya.conversation.model.ChatSendStatus
+import com.sakuya.model.chat.ChatAttachment
+import com.sakuya.model.chat.ChatMessage
+import com.sakuya.model.chat.ChatMessageDraft
+import com.sakuya.model.chat.ChatMessageReply
+import com.sakuya.model.chat.ChatMessageType
+import com.sakuya.model.chat.ChatSendStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import java.util.UUID
@@ -18,12 +19,33 @@ import java.util.UUID
 data class ChatUiState(
     val conversationId: String = "",
     val title: String = "",
+    val focusMessageId: String = "",
     val messages: List<ChatMessage> = emptyList(),
     val inputText: String = "",
+    val draftAttachments: List<ChatAttachment> = emptyList(),
+    val replyingTo: ChatMessageReply? = null,
+    val isUploadingAttachment: Boolean = false,
     val isLoading: Boolean = false,
     val isSending: Boolean = false,
-    val errorMessage: String? = null
+    val historyErrorMessage: String? = null,
 )
+
+/** 聊天页所有用户意图的统一入口；一次性错误通过 [ChatEffect] 回传页面。 */
+sealed interface ChatAction {
+    data class InputChanged(val value: String) : ChatAction
+    data class AttachmentSelected(val uri: Uri) : ChatAction
+    data class RemoveDraftAttachment(val attachmentId: String) : ChatAction
+    data class ReplyTo(val message: ChatMessage) : ChatAction
+    data object CancelReply : ChatAction
+    data object SendMessage : ChatAction
+    data class RetryMessage(val message: ChatMessage) : ChatAction
+    data object RetryHistory : ChatAction
+}
+
+/** 一次性提示（附件上传失败、发送失败等）；历史加载失败因需要持久重试入口，保留在 UiState。 */
+sealed interface ChatEffect {
+    data class ShowError(val message: String) : ChatEffect
+}
 
 /**
  * ChatViewModel.kt
@@ -31,25 +53,25 @@ data class ChatUiState(
  * 1. 统一管理聊天页的输入、Room 消息列表与发送状态。
  * 2. 先订阅 Room 历史记录，再在后台同步 REST 历史和接收 WebSocket 实时消息。
  * 3. 将发送中的本地消息持久化；发送失败后保留失败状态并提供重试入口。
- * 执行流程：页面进入后确保会话存在并立即观察 Room；网络数据只写入 Room，
- * WebSocket 连接失败由底层静默重连，不改变页面的离线历史展示。
+ * 执行流程：页面通过 onAction 提交意图 -> 更新单一不可变 UiState -> 一次性错误经 effect 下发。
+ * 架构说明：MVI 风格，状态只通过 updateState 修改；网络失败不清空 Room 缓存展示。
  */
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val chatRepository: ChatRepository
-) : ViewModel() {
+) : BaseMviViewModel<ChatUiState, ChatAction, ChatEffect>(
+    initialState = ChatUiState(
+        conversationId = savedStateHandle["conversationId"] ?: "",
+        title = savedStateHandle["title"] ?: "",
+        focusMessageId = savedStateHandle["focusMessageId"] ?: "",
+        isLoading = (savedStateHandle["conversationId"] as? String).orEmpty().isNotBlank(),
+    )
+) {
 
     private val conversationId: String = savedStateHandle["conversationId"] ?: ""
     private val title: String = savedStateHandle["title"] ?: ""
-
-    private val _uiState = MutableStateFlow(
-        ChatUiState(
-            conversationId = conversationId,
-            title = title
-        )
-    )
-    val uiState = _uiState.asStateFlow()
+    private val focusMessageId: String = savedStateHandle["focusMessageId"] ?: ""
 
     init {
         /**
@@ -57,20 +79,57 @@ class ChatViewModel @Inject constructor(
          * 这保证从好友页直接进入聊天时，历史消息不会因外键缺少父记录而写入失败。
          */
         viewModelScope.launch {
+            if (conversationId.isBlank()) {
+                updateState { it.copy(isLoading = false, historyErrorMessage = "会话参数无效，请返回后重试") }
+                return@launch
+            }
             chatRepository.ensureConversation(conversationId, title)
             observeLocalMessages()
             loadHistoryMessages()
+            if (focusMessageId.isNotBlank()) loadMessageContext(focusMessageId)
             observeRealtimeMessages()
             chatRepository.connect()
         }
     }
 
+    override fun onAction(action: ChatAction) {
+        when (action) {
+            is ChatAction.InputChanged -> updateState { it.copy(inputText = action.value) }
+            is ChatAction.AttachmentSelected -> selectAttachment(action.uri)
+            is ChatAction.RemoveDraftAttachment -> removeDraftAttachment(action.attachmentId)
+            is ChatAction.ReplyTo -> replyTo(action.message)
+            ChatAction.CancelReply -> updateState { it.copy(replyingTo = null) }
+            ChatAction.SendMessage -> sendMessage()
+            is ChatAction.RetryMessage -> retryMessage(action.message)
+            ChatAction.RetryHistory -> retryHistory()
+        }
+    }
+
     private fun loadHistoryMessages() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            updateState { it.copy(isLoading = true, historyErrorMessage = null) }
             chatRepository.syncHistoryMessages(conversationId)
-            _uiState.update { it.copy(isLoading = false) }
+                .onSuccess { updateState { state -> state.copy(isLoading = false, historyErrorMessage = null) } }
+                .onFailure { error ->
+                    updateState { state ->
+                        state.copy(
+                            isLoading = false,
+                            historyErrorMessage = error.message?.takeIf(String::isNotBlank) ?: "聊天记录加载失败，请重试",
+                        )
+                    }
+                }
         }
+    }
+
+    /** 历史同步失败后的显式重试入口；Room 已有缓存会保留，不会在重试前清空。 */
+    private fun retryHistory() {
+        if (currentState.isLoading || conversationId.isBlank()) return
+        loadHistoryMessages()
+    }
+
+    /** 搜索结果回跳时补齐目标消息上下文，Room 发射后页面会显示该历史片段。 */
+    private fun loadMessageContext(messageId: String) {
+        viewModelScope.launch { chatRepository.syncMessageContext(conversationId, messageId) }
     }
 
     /**
@@ -80,7 +139,7 @@ class ChatViewModel @Inject constructor(
     private fun observeLocalMessages() {
         viewModelScope.launch {
             chatRepository.observeMessages(conversationId).collect { messages ->
-                _uiState.update { it.copy(messages = messages) }
+                updateState { it.copy(messages = messages) }
             }
         }
     }
@@ -95,17 +154,49 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    /** 输入变化只更新表单状态，发送逻辑集中在 sendMessage 以便统一维护乐观消息状态。 */
-    fun onInputChanged(value: String) {
-        _uiState.update { it.copy(inputText = value, errorMessage = null) }
+    /** 图片或文件选择后先上传，成功元数据进入草稿；失败通过 effect 提示且不产生失效附件。 */
+    private fun selectAttachment(uri: Uri) {
+        val state = currentState
+        if (state.isUploadingAttachment || state.draftAttachments.size >= MAX_ATTACHMENTS) return
+        viewModelScope.launch {
+            updateState { it.copy(isUploadingAttachment = true) }
+            chatRepository.uploadAttachment(conversationId, uri).onSuccess { attachment ->
+                updateState { current ->
+                    current.copy(
+                        draftAttachments = (current.draftAttachments + attachment).distinctBy(ChatAttachment::id).take(MAX_ATTACHMENTS),
+                        isUploadingAttachment = false,
+                    )
+                }
+            }.onFailure { error ->
+                updateState { it.copy(isUploadingAttachment = false) }
+                sendEffect(ChatEffect.ShowError(error.message ?: "附件上传失败"))
+            }
+        }
+    }
+
+    private fun removeDraftAttachment(attachmentId: String) {
+        val attachment = currentState.draftAttachments.firstOrNull { it.id == attachmentId } ?: return
+        updateState { state -> state.copy(draftAttachments = state.draftAttachments.filterNot { it.id == attachmentId }) }
+        viewModelScope.launch {
+            chatRepository.discardAttachment(conversationId, attachment.id).onFailure { error ->
+                sendEffect(ChatEffect.ShowError(error.message ?: "附件清理失败"))
+            }
+        }
+    }
+
+    /** 长按消息建立回复快照；发送时只提交原消息 ID，服务端重新生成可信展示快照。 */
+    private fun replyTo(message: ChatMessage) {
+        val preview = message.content.ifBlank { if (message.attachments.firstOrNull()?.type?.name == "IMAGE") "[图片]" else "[文件]" }
+        updateState { it.copy(replyingTo = ChatMessageReply(message.id, if (message.isMine) "我" else message.avatarText.ifBlank { "对方" }, preview.take(120))) }
     }
 
     /**
      * 先插入 PENDING 消息，再用服务端返回值替换；失败时保留消息并标记 FAILED，避免用户输入丢失。
      */
-    fun sendMessage() {
-        val content = _uiState.value.inputText.trim()
-        if (content.isEmpty()) return
+    private fun sendMessage() {
+        val draftState = currentState
+        val content = draftState.inputText.trim()
+        if ((content.isEmpty() && draftState.draftAttachments.isEmpty()) || draftState.isUploadingAttachment) return
         viewModelScope.launch {
             val pendingMessage = ChatMessage(
                 id = "local-${UUID.randomUUID()}",
@@ -115,9 +206,16 @@ class ChatViewModel @Inject constructor(
                 isMine = true,
                 avatarText = "我",
                 timestamp = System.currentTimeMillis(),
+                type = when {
+                    draftState.draftAttachments.isEmpty() -> ChatMessageType.TEXT
+                    draftState.draftAttachments.all { it.type.name == "IMAGE" } -> ChatMessageType.IMAGE
+                    else -> ChatMessageType.FILE
+                },
+                attachments = draftState.draftAttachments,
+                replyTo = draftState.replyingTo,
                 sendStatus = ChatSendStatus.PENDING,
             )
-            _uiState.update { it.copy(inputText = "", isSending = true, errorMessage = null) }
+            updateState { it.copy(inputText = "", draftAttachments = emptyList(), replyingTo = null, isSending = true) }
             sendPendingMessage(pendingMessage)
         }
     }
@@ -126,10 +224,10 @@ class ChatViewModel @Inject constructor(
      * 重试只针对 Room 中已失败的本地消息，保留原有内容、附件和回复关系。
      * 执行流程：先将状态恢复为 PENDING，再复用发送流程；成功删除临时记录，失败重新标记 FAILED。
      */
-    fun retryMessage(message: ChatMessage) {
+    private fun retryMessage(message: ChatMessage) {
         if (message.sendStatus != ChatSendStatus.FAILED) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isSending = true, errorMessage = null) }
+            updateState { it.copy(isSending = true) }
             sendPendingMessage(message.copy(sendStatus = ChatSendStatus.PENDING))
         }
     }
@@ -143,15 +241,15 @@ class ChatViewModel @Inject constructor(
                 content = pendingMessage.content,
                 attachments = pendingMessage.attachments,
                 replyTo = pendingMessage.replyTo,
-            )
+            ),
+            clientMessageId = pendingMessage.id,
         ).onSuccess {
             chatRepository.removeLocalMessage(pendingMessage.id)
-            _uiState.update { it.copy(isSending = false) }
+            updateState { it.copy(isSending = false) }
         }.onFailure { error ->
             chatRepository.saveLocalMessage(pendingMessage.copy(sendStatus = ChatSendStatus.FAILED))
-            _uiState.update {
-                it.copy(isSending = false, errorMessage = error.message ?: "消息发送失败")
-            }
+            updateState { it.copy(isSending = false) }
+            sendEffect(ChatEffect.ShowError(error.message ?: "消息发送失败"))
         }
     }
 
@@ -159,4 +257,6 @@ class ChatViewModel @Inject constructor(
         super.onCleared()
         chatRepository.disconnect()
     }
+
+    private companion object { const val MAX_ATTACHMENTS = 3 }
 }

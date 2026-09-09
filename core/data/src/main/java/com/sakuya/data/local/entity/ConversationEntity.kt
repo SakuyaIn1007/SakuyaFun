@@ -14,5 +14,7 @@ data class ConversationEntity(
     val unreadCount: Int = 0,
     val avatarText: String?,
     val isPinned: Boolean = false,
+    /** 仅表示当前账号对此会话的免打扰偏好，服务端同步后可离线保留。 */
+    val isMuted: Boolean = false,
     val lastActiveTime: Long,
 )

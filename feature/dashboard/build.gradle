@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.compose)
+    alias(libs.plugins.devtools.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -15,8 +17,10 @@ android {
 }
 
 dependencies {
-    implementation project(':feature:feed')
-    implementation project(':core:ui')
+    // 聚合页 UI 已上移至 app 模块，本模块只保留首页提示状态，不再依赖其他 feature 模块。
     implementation project(':core:model')
+    implementation project(':core:data')
+    implementation libs.hilt.android
+    ksp libs.hilt.compiler
     implementation libs.bundles.feature.ui
 }

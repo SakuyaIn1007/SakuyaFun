@@ -38,7 +38,9 @@ data class ProfileDto(
     val email: String? = null,
     val pokeText: String? = null,
     val ringtoneName: String? = null,
-    val privacySettings: PrivacySettingsDto? = null
+    val privacySettings: PrivacySettingsDto? = null,
+    val followingCount: Long = 0,
+    val followerCount: Long = 0,
 )
 
 data class PrivacySettingsDto(

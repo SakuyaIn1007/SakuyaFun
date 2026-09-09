@@ -144,7 +144,9 @@ private fun ProfileDto.toDomainModel() = UserProfile(
     email = email,
     pokeText = pokeText,
     ringtoneName = ringtoneName,
-    privacySettings = privacySettings?.toDomainModel() ?: PrivacySettings()
+    privacySettings = privacySettings?.toDomainModel() ?: PrivacySettings(),
+    followingCount = followingCount,
+    followerCount = followerCount,
 )
 
 private fun PrivacySettingsDto.toDomainModel() = PrivacySettings(
@@ -186,7 +188,9 @@ private fun UserEntity.toDomainModel() = UserProfile(
         canBeAddedByStrangers = canBeAddedByStrangers,
         showProfileToStrangers = showProfileToStrangers,
         muteMessagesFromUnknown = muteMessagesFromUnknown
-    )
+    ),
+    followingCount = 0,
+    followerCount = 0,
 )
 
 private fun UserProfile.toUpdateRequest() = UpdateProfileRequest(

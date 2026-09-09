@@ -13,6 +13,7 @@ import com.sakuya.navigation.PROFILE_FAVOURITES_ROUTE
 import com.sakuya.navigation.PROFILE_ME
 import com.sakuya.navigation.PROFILE_PRIVACY_ROUTE
 import com.sakuya.navigation.PROFILE_SETTINGS_ROUTE
+import com.sakuya.navigation.PROFILE_NOTIFICATION_SETTINGS_ROUTE
 
 import com.sakuya.profileservices.data.GroupedWallet
 import com.sakuya.profileservices.data.WalletItem
@@ -21,6 +22,8 @@ import com.sakuya.profileservices.ui.AlbumMainScreen
 import com.sakuya.profileservices.ui.CardsScreen
 import com.sakuya.profileservices.ui.FavouritesScreen
 import com.sakuya.profileservices.ui.SettingsScreen
+import com.sakuya.profileservices.ui.NotificationSettingsScreen
+import androidx.compose.runtime.*
 import com.sakuya.profileservices.viewmodel.SettingsViewModel
 import java.util.Date
 
@@ -51,9 +54,17 @@ fun NavGraphBuilder.profileServicesNavGraph(navController: NavHostController) {
             onBack = { navController.popBackStack() },
             onProfileClick = { navController.navigate(PROFILE_ME) },
             onPrivacyClick = { navController.navigate(PROFILE_PRIVACY_ROUTE) },
+            onNotificationClick = { navController.navigate(PROFILE_NOTIFICATION_SETTINGS_ROUTE) },
             onSwitchAccount = { viewModel.logout(goLogin) },
             onLogout = { viewModel.logout(goLogin) },
         )
+    }
+    composable(PROFILE_NOTIFICATION_SETTINGS_ROUTE) {
+        val viewModel: SettingsViewModel = hiltViewModel()
+        val preferences by viewModel.notificationPreferences.collectAsState()
+        val error by viewModel.notificationError.collectAsState()
+        LaunchedEffect(Unit) { viewModel.loadNotificationPreferences() }
+        NotificationSettingsScreen(preferences,error,{navController.popBackStack()},viewModel::updateNotificationPreferences)
     }
 }
 

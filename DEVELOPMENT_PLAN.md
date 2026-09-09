@@ -6,7 +6,7 @@
 |------|------|
 | 名称 | SakuyaInAndroid |
 | 类型 | Android 原生应用 (Kotlin + Jetpack Compose) |
-| 架构 | 多模块 (Multi-Module) + MVVM |
+| 架构 | 多模块 (Multi-Module) + MVI（conversation/feed 模块）+ MVVM（其余模块） |
 | DI | Hilt |
 | 网络 | Retrofit + OkHttp + Gson |
 | 导航 | Jetpack Navigation Compose |
@@ -20,26 +20,34 @@
 
 ```
 sakuyainandroid/
-├── app/                          # 主入口模块
-│   └── MainActivity / MainScreen / MainActivityViewModel / SiaApplication / ToplevelNavItem
+├── app/                          # 主入口 + app 层聚合 UI（DashboardScreen 等跨 feature 编排页）
 ├── core/
-│   ├── common/                   # 公共工具 (仅 DateUtils)
-│   ├── data/                     # 网络层基础设施 (TokenStorage, AuthInterceptor, CoreNetworkModule)
+│   ├── common/                   # 公共工具 + MVI 基础设施 (MviViewModel / BaseMviViewModel)
+│   ├── data/                     # 网络层基础设施、Room、通知、离线同步 (TokenStorage, AuthInterceptor, DAOs)
 │   ├── designsystem/             # 图标资源 (SakuyaIcons)
-│   ├── di/                       # 全局 DI 绑定 (StorageModule)
-│   ├── model/                    # 通用数据模型 (BaseResponse, ApiException, GenderExt)
-│   ├── navigation/               # ⚠️ 空壳模块，无任何代码
+│   ├── di/                       # 全局 DI 绑定 (DatabaseModule, StorageModule)
+│   ├── model/                    # 全部领域/共享模型 (feed、chat、friend、profile、group、notification、search)
+│   ├── navigation/               # 跨 feature 的路由常量与 pattern
 │   └── ui/                       # UI 组件库 (TopBar, GradientText, Outline, Theme)
 ├── feature/
-│   ├── authentication/           # 登录/注册 (完整：VM + Repository + ApiService + DI)
-│   ├── conversation/             # 会话列表 + 聊天界面 (仅 UI，无 VM)
-│   ├── friend/                   # 好友列表 (仅 UI，无 VM)
-│   ├── home/                     # 首页 (仅 UI，硬编码数据，无 VM)
-│   ├── library/                  # 收藏库 (有 VM，但使用 Mock 数据)
-│   ├── profile/                  # 个人中心/个人资料编辑 (较完整)
-│   ├── profile-services/         # 钱包/收藏/相册/设置等子页面 (仅 UI)
-│   └── settings/                 # ⚠️ 空壳模块，无任何代码
+│   ├── authentication/           # 登录/注册
+│   ├── conversation/             # 会话列表 + 聊天 + 聊天详情 + 记录搜索（MVI）
+│   ├── friend/                   # 好友/群组
+│   ├── feed/                     # 动态时间线/详情/发布 + 他人主页与关注列表（MVI）
+│   ├── dashboard/                # 首页提示状态（聚合 UI 已上移 app）
+│   ├── notification/             # 通知页
+│   ├── catalog/ bookshelf/ reader/ bookdetail/ search/  # 书库与阅读相关
+│   └── profile/ profile-services/ settings/
+└── services/wenku8-adapter/      # 轻小说适配服务
 ```
+
+### 模块依赖规则
+
+1. **feature 之间禁止互相依赖**：跨业务跳转一律经 `core:navigation` 的路由字符串（NavHost 在 app 层装配）。
+2. **共享模型只放 `core:model`**：chat/friend/feed 相关的领域模型与公共 DTO 统一下沉（如 `com.sakuya.model.chat`、`com.sakuya.model.profile`），feature 内仅保留自身的私有 DTO 与映射。
+3. **core 不反向依赖 feature**；`core:model` 保持纯 Kotlin，无 Android 依赖。
+4. **跨 feature 编排 UI 放 app 模块**：需要同时渲染多个 feature 的页面（如首页嵌入动态时间线）上移至 app，避免产生 feature→feature 编译依赖。
+5. **MVI 约定（conversation/feed）**：意图统一经 `onAction(Action)` 进入；可重放的页面状态只存单一不可变 `UiState`；Snackbar/导航等一次性事件走 `effect`（Channel 语义）；持久页面条件（如列表错误+重试入口）保留在 UiState。基础设施见 `core:common` 的 `BaseMviViewModel`。
 
 ---
 

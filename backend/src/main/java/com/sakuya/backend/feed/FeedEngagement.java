@@ -46,4 +46,6 @@ public class FeedEngagement {
         this.userId = userId;
         this.type = type;
     }
+
+    public UUID getId() { return id; }
 }

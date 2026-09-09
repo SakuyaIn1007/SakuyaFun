@@ -29,13 +29,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sakuya.search.viewmodel.Wenku8DetailViewModel
-import com.sakuya.data.BuildConfig
+import com.sakuya.data.content.resolveContentUrl
 import coil.compose.AsyncImage
 
 /**
  * Wenku8DetailScreen.kt
- * 职责说明：展示带来源标识的 Wenku8 小说信息和分卷目录；不提供加入本地或云端书架的入口。
- * 执行流程：ViewModel 加载详情/目录 -> 用户点击章节 -> 导航层创建远端章节阅读会话。
+ * 职责说明：展示后端内容库中的小说信息和分卷目录，不根据具体导入来源改变 UI。
+ * 执行流程：ViewModel 加载统一详情/目录 -> 用户点击章节 -> 导航层创建远端章节阅读会话。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,14 +62,14 @@ fun Wenku8DetailScreen(onBack: () -> Unit, onChapterClick: (String, String) -> U
                 val novel = state.novel
                 if (novel != null) {
                     AsyncImage(
-                        model = "${BuildConfig.API_BASE_URL}wenku8/novels/${novel.id}/cover",
+                        model = resolveContentUrl(novel.coverUrl),
                         contentDescription = "${novel.title} 封面",
                         modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
                 }
                 Text(novel?.title.orEmpty(), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 16.dp))
-                Text("Wenku8 · ${novel?.author.orEmpty()}${novel?.status?.let { " · $it" }.orEmpty()}", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))
+                Text("${novel?.author.orEmpty()}${novel?.status?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()}", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))
                 if (novel?.copyright == true) Text("该作品受版权限制，部分章节可能不可阅读。", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
                 if (!novel?.tags.isNullOrEmpty()) Text(novel!!.tags.joinToString(" · "), color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = 8.dp))
                 Text(novel?.description.orEmpty(), modifier = Modifier.padding(vertical = 16.dp))

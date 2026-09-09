@@ -11,11 +11,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sakuya.data.notification.UpdateBadgeRepository
+import com.sakuya.model.notification.NotificationUnreadCategory
+import com.sakuya.model.notification.UpdateBadgeState
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val updateBadges:UpdateBadgeRepository,
 ) : ViewModel() {
+    val updateState=updateBadges.state.stateIn(viewModelScope,SharingStarted.WhileSubscribed(5_000),UpdateBadgeState())
 
     private val _userProfile = MutableStateFlow(UserProfile.Companion.empty())
     val userProfile: StateFlow<UserProfile> = _userProfile
@@ -24,7 +31,11 @@ class ProfileViewModel @Inject constructor(
 
     init {
         loadUserProfile()
+        viewModelScope.launch{updateBadges.refresh()}
     }
+
+    /** 我的动态成功展示后只清除互动分类，新粉丝和关注动态提示继续保留。 */
+    fun markDynamicUpdatesRead(){viewModelScope.launch{updateBadges.markCategoryRead(NotificationUnreadCategory.FEED_INTERACTION)}}
 
     fun loadUserProfile() {
         viewModelScope.launch {

@@ -40,6 +40,7 @@ public class Wenku8GatewayService {
         );
     }
     public String coverPath(String id) { return "/novels/" + id(id) + "/cover"; }
+    public byte[] cover(String id) { return client.getBytes(coverPath(id)); }
     private String id(String value) { if (value == null || !value.matches("[A-Za-z0-9_-]{1,80}")) throw new BusinessException(400, "小说或章节标识不合法"); return value; }
     @SuppressWarnings("unchecked") private List<Map<String, Object>> list(Object value) { return value instanceof List<?> list ? (List<Map<String, Object>>) list : List.of(); }
     private Integer integer(Object value) { return value instanceof Number number ? number.intValue() : null; }

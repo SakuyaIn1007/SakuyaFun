@@ -2,6 +2,7 @@ package com.sakuya.backend.profile;
 
 import com.sakuya.backend.common.*;
 import com.sakuya.backend.user.*;
+import com.sakuya.backend.social.FollowRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.io.IOException;
@@ -17,15 +18,15 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RestController
 @RequestMapping("/profile")
 public class ProfileController {
-    private final UserRepository users; private final Path uploadDir;
-    public ProfileController(UserRepository users, @Value("${app.upload-dir}") String uploadDir) { this.users = users; this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize(); }
-    @GetMapping ApiResponse<ProfileDto> get(Authentication auth) { return ApiResponse.ok(ProfileDto.from(current(auth))); }
+    private final UserRepository users; private final FollowRepository follows; private final Path uploadDir;
+    public ProfileController(UserRepository users,FollowRepository follows,@Value("${app.upload-dir}") String uploadDir) { this.users = users;this.follows=follows; this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize(); }
+    @GetMapping ApiResponse<ProfileDto> get(Authentication auth) { User user=current(auth);return ApiResponse.ok(ProfileDto.from(user,follows)); }
     @PutMapping @Transactional ApiResponse<ProfileDto> update(Authentication auth, @Valid @RequestBody UpdateProfileRequest r) {
         User u = current(auth); u.setAvatarUrl(r.avatarUrl()); u.setNickname(r.nickname()); u.setSignature(r.signature()); u.setGender(r.gender());
         u.setBirthday(r.birthday()); u.setRegionCode(r.regionCode()); u.setPhoneNumber(r.phoneNumber()); u.setEmail(r.email());
         u.setPokeText(r.pokeText()); u.setRingtoneName(r.ringtoneName());
         if (r.privacySettings() != null) { u.setCanBeAddedByStrangers(r.privacySettings().canBeAddedByStrangers()); u.setShowProfileToStrangers(r.privacySettings().showProfileToStrangers()); u.setMuteMessagesFromUnknown(r.privacySettings().muteMessagesFromUnknown()); if (r.privacySettings().showFollowLists() != null) u.setShowFollowLists(r.privacySettings().showFollowLists()); }
-        return ApiResponse.ok(ProfileDto.from(u));
+        return ApiResponse.ok(ProfileDto.from(u,follows));
     }
     @PostMapping("/upload/avatar") ApiResponse<String> avatar(Authentication auth, @RequestPart(value="image", required=false) MultipartFile image, @RequestPart(value="file", required=false) MultipartFile file) throws IOException {
         MultipartFile upload = image != null ? image : file;
@@ -53,7 +54,7 @@ public class ProfileController {
         @Size(max = 80) String ringtoneName,
         UpdatePrivacySettingsDto privacySettings
     ) {}
-    public record ProfileDto(String userId, String avatarUrl, String nickname, String signature, Integer gender, String birthday, String regionCode, String phoneNumber, String email, String pokeText, String ringtoneName, PrivacySettingsDto privacySettings) {
-        static ProfileDto from(User u) { return new ProfileDto(u.getId().toString(),u.getAvatarUrl(),u.getNickname(),u.getSignature(),u.getGender(),u.getBirthday(),u.getRegionCode(),u.getPhoneNumber(),u.getEmail(),u.getPokeText(),u.getRingtoneName(),new PrivacySettingsDto(u.isCanBeAddedByStrangers(),u.isShowProfileToStrangers(),u.isMuteMessagesFromUnknown(),u.isShowFollowLists())); }
+    public record ProfileDto(String userId, String avatarUrl, String nickname, String signature, Integer gender, String birthday, String regionCode, String phoneNumber, String email, String pokeText, String ringtoneName, PrivacySettingsDto privacySettings,long followingCount,long followerCount) {
+        static ProfileDto from(User u,FollowRepository follows) { return new ProfileDto(u.getId().toString(),u.getAvatarUrl(),u.getNickname(),u.getSignature(),u.getGender(),u.getBirthday(),u.getRegionCode(),u.getPhoneNumber(),u.getEmail(),u.getPokeText(),u.getRingtoneName(),new PrivacySettingsDto(u.isCanBeAddedByStrangers(),u.isShowProfileToStrangers(),u.isMuteMessagesFromUnknown(),u.isShowFollowLists()),follows.countByFollowerId(u.getId()),follows.countByFollowingId(u.getId())); }
     }
 }

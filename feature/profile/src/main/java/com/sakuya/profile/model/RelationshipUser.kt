@@ -12,6 +12,7 @@ data class RelationshipUser(
     val description: String,
     val avatarColor: Long,
     val isFollowing: Boolean,
+    val hasUnseenPosts: Boolean = false,
 )
 
 data class RelationshipPage(

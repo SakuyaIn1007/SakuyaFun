@@ -16,6 +16,15 @@ import com.sakuya.data.local.entity.FeedCacheEntity
 import com.sakuya.data.local.entity.LibraryBookEntity
 import com.sakuya.data.local.entity.ReadingProgressEntity
 import com.sakuya.data.local.entity.UserEntity
+import com.sakuya.data.local.entity.NotificationEntity
+import com.sakuya.data.local.dao.NotificationDao
+import com.sakuya.data.local.dao.OnlineBookmarkDao
+import com.sakuya.data.local.dao.OnlineReadingProgressDao
+import com.sakuya.data.local.entity.OnlineBookmarkEntity
+import com.sakuya.data.local.entity.OnlineReadingProgressEntity
+import com.sakuya.data.local.dao.OfflineDownloadDao
+import com.sakuya.data.local.entity.OfflineChapterEntity
+import com.sakuya.data.local.entity.OfflineDownloadEntity
 
 
 @Database(
@@ -27,8 +36,13 @@ import com.sakuya.data.local.entity.UserEntity
         ReadingProgressEntity::class,
         BookmarkEntity::class,
         FeedCacheEntity::class,
+        NotificationEntity::class,
+        OnlineReadingProgressEntity::class,
+        OnlineBookmarkEntity::class,
+        OfflineDownloadEntity::class,
+        OfflineChapterEntity::class,
     ],
-    version = 8,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -39,4 +53,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun userDao(): UserDao
     abstract fun feedCacheDao(): FeedCacheDao
+    abstract fun notificationDao(): NotificationDao
+    abstract fun onlineReadingProgressDao(): OnlineReadingProgressDao
+    abstract fun onlineBookmarkDao(): OnlineBookmarkDao
+    abstract fun offlineDownloadDao(): OfflineDownloadDao
 }

@@ -1,6 +1,6 @@
 package com.sakuya.conversation.mapper
 
-import com.sakuya.conversation.model.Conversation
+import com.sakuya.model.chat.Conversation
 import com.sakuya.data.local.entity.ConversationEntity
 
 fun ConversationEntity.toDomainModel(): Conversation {

@@ -1,6 +1,10 @@
 package com.sakuya.feed.data.remote
 
 import com.sakuya.model.network.BaseResponse
+import com.sakuya.model.profile.PublicAuthorConversationDto
+import com.sakuya.model.profile.PublicProfileDto
+import com.sakuya.model.profile.RelationshipPageDto
+import com.sakuya.model.profile.RelationshipUserDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -36,9 +40,30 @@ interface FeedApiService {
     @GET("profiles/{userId}/followers")
     suspend fun getFollowerUsers(@Path("userId") userId: String, @Query("page") page: Int, @Query("pageSize") pageSize: Int): Response<BaseResponse<RelationshipPageDto>>
 
+    /**
+     * 复用好友模块已有的直聊接口：服务端会返回当前双方已有会话，或在首次私信时创建会话。
+     * 该最小契约放在 feed 自身的数据边界内，避免主页功能直接依赖 friend/conversation 的实现类型。
+     */
+    @POST("friends/{userId}/conversation")
+    suspend fun getOrCreateDirectConversation(
+        @Path("userId") userId: String,
+    ): Response<BaseResponse<PublicAuthorConversationDto>>
+
+    /**
+     * 分页读取动态流：stream=following 由后端按当前用户的关注关系筛选，stream=recommended 保持推荐流行为。
+     * page 从 0 开始；业务错误保留在 BaseResponse 中，由 Repository 统一转成 Result.failure。
+     */
     @GET("feed")
     suspend fun getFeed(
         @Query("stream") stream: String,
+        @Query("page") page: Int,
+        @Query("pageSize") pageSize: Int,
+    ): Response<BaseResponse<FeedPageDto<FeedPostDto>>>
+
+    /** 作者主页使用独立分页端点，不改变推荐流或关注流的缓存和排序。 */
+    @GET("feed/authors/{authorId}")
+    suspend fun getAuthorFeed(
+        @Path("authorId") authorId: String,
         @Query("page") page: Int,
         @Query("pageSize") pageSize: Int,
     ): Response<BaseResponse<FeedPageDto<FeedPostDto>>>
@@ -89,35 +114,6 @@ interface FeedApiService {
         @Body request: FeedReportRequest,
     ): Response<BaseResponse<Unit>>
 }
-
-/**
- * PublicProfileDto.kt
- * 职责说明：承接他人主页接口，字段与服务端 /profiles/{userId} 响应保持一致。
- * 执行流程：PublicAuthorViewModel 拉取 DTO -> 转为页面状态 -> Compose 根据状态渲染三项统计。
- */
-data class PublicProfileDto(
-    /** 用户唯一标识，用于关注、粉丝和关注列表请求。 */ val userId: String,
-    /** 头像地址；为空时页面使用昵称首字母头像。 */ val avatarUrl: String = "",
-    /** 公开昵称。 */ val nickname: String,
-    /** 公开个性签名。 */ val signature: String? = null,
-    /** 该用户主动关注的人数。 */ val followingCount: Long = 0,
-    /** 关注该用户的人数。 */ val followerCount: Long = 0,
-    /** 该用户收到的动态点赞与收藏总数。 */ val likesAndFavoritesCount: Long = 0,
-    /** 当前登录用户是否已关注该用户。 */ val isFollowing: Boolean = false,
-)
-
-/** 关注操作的最小返回结构；列表页和主页底部按钮共用。 */
-data class RelationshipUserDto(
-    val userId: String,
-    val name: String = "",
-    val initial: String = "?",
-    val description: String? = null,
-    val avatarColor: Long = 0L,
-    val isFollowing: Boolean,
-)
-
-/** users 为当前页用户，nextPage 为空时表示没有更多分页数据。 */
-data class RelationshipPageDto(val users: List<RelationshipUserDto>, val nextPage: Int? = null)
 
 data class FeedPageDto<T>(val items: List<T>, val nextPage: Int? = null)
 

@@ -32,7 +32,7 @@ fun ProfileInfoItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable{onClick()}
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -31,6 +31,7 @@ fun SettingsScreen(
     onBack: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
     onSwitchAccount: () -> Unit = {},
     onLogout: () -> Unit = {},
     onUnavailableClick: () -> Unit = {},
@@ -39,6 +40,7 @@ fun SettingsScreen(
         onBack = onBack,
         onProfileClick = onProfileClick,
         onPrivacyClick = onPrivacyClick,
+        onNotificationClick = onNotificationClick,
         onSwitchAccount = onSwitchAccount,
         onLogout = onLogout,
         onUnavailableClick = onUnavailableClick,
@@ -52,6 +54,7 @@ fun SettingsContent(
     onBack: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
     onSwitchAccount: () -> Unit = {},
     onLogout: () -> Unit = {},
     onUnavailableClick: () -> Unit = {},
@@ -109,8 +112,7 @@ fun SettingsContent(
             item {
                 SettingItemRow(
                     title = "新消息通知",
-                    subtitle = "暂未开放",
-                    onClick = onUnavailableClick
+                    onClick = onNotificationClick
                 )
             }
             item { SettingItemDivider() } // 同组内部的细分割线喵
@@ -188,7 +190,7 @@ fun SettingItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface) // 设置项内部通常用亮色背景喵
+            .background(MaterialTheme.colorScheme.surface) // 设置项使用主题 Surface，深浅模式保持一致层级。
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -233,7 +235,7 @@ fun SettingActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
             .padding(vertical = 16.dp),
         horizontalArrangement = Arrangement.Center, // 文字居中排布，更有仪式感喵

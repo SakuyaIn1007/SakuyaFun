@@ -44,6 +44,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,6 +58,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,10 +92,15 @@ import com.sakuya.feed.viewmodel.FeedDetailAction
 import com.sakuya.feed.viewmodel.FeedDetailEffect
 import com.sakuya.feed.viewmodel.FeedPostActionState
 import com.sakuya.feed.viewmodel.FeedDetailViewModel
+import com.sakuya.feed.viewmodel.PublicAuthorAction
+import com.sakuya.feed.viewmodel.PublicAuthorEffect
+import com.sakuya.feed.viewmodel.PublicAuthorViewModel
 import com.sakuya.model.feed.FeedComment
 import com.sakuya.model.feed.DynamicPost
 import com.sakuya.model.feed.RelatedNovel
 import com.sakuya.ui.component.DynamicTagRow
+import com.sakuya.ui.motion.MotionSpec
+import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
@@ -100,13 +111,16 @@ fun FeedDetailScreen(
     onAuthorClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: FeedDetailViewModel = hiltViewModel(),
+    authorViewModel: PublicAuthorViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val authorUiState by authorViewModel.uiState.collectAsState()
     val post = uiState.post
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var selectedSection by remember { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val resolvedPostId = postId ?: "recommended-1"
 
     // 详情页每次接收新的路由参数时重载动态与评论，避免复用 ViewModel 后展示旧内容。
@@ -116,6 +130,16 @@ fun FeedDetailScreen(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             if (effect is FeedDetailEffect.ShowError) errorMessage = effect.message
+        }
+    }
+    // 正文加载完成后再按作者 ID 请求公开资料，关注按钮因此始终以服务端关系状态为准。
+    LaunchedEffect(post?.userId) {
+        post?.userId?.takeIf(String::isNotBlank)?.let { authorViewModel.onAction(PublicAuthorAction.LoadProfile(it)) }
+    }
+    // 关注失败沿用他人主页的 Snackbar 反馈，不用本地回滚状态掩盖服务端错误。
+    LaunchedEffect(authorViewModel) {
+        authorViewModel.effect.collect { effect ->
+            if (effect is PublicAuthorEffect.ShowError) snackbarHostState.showSnackbar(effect.message)
         }
     }
 
@@ -144,6 +168,13 @@ fun FeedDetailScreen(
             onSubmitComment = { viewModel.onAction(FeedDetailAction.SubmitComment) },
             onToggleLike = { viewModel.onAction(FeedDetailAction.ToggleLike) },
             onToggleFavorite = { viewModel.onAction(FeedDetailAction.ToggleFavorite) },
+            isFollowing = authorUiState.profile
+                ?.takeIf { it.userId == post.userId }
+                ?.isFollowing == true,
+            isFollowStateReady = authorUiState.profile?.userId == post.userId && !authorUiState.isLoading,
+            isOperatingFollow = authorUiState.isOperatingFollow,
+            onToggleFollow = { authorViewModel.onAction(PublicAuthorAction.ToggleFollow) },
+            snackbarHostState = snackbarHostState,
             modifier = modifier,
         )
     }
@@ -173,6 +204,11 @@ private fun FeedDetailLoadedContent(
     onSubmitComment: () -> Unit,
     onToggleLike: () -> Unit,
     onToggleFavorite: () -> Unit,
+    isFollowing: Boolean,
+    isFollowStateReady: Boolean,
+    isOperatingFollow: Boolean,
+    onToggleFollow: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {
     val titleItemIndex =
@@ -194,6 +230,10 @@ private fun FeedDetailLoadedContent(
                 onSectionSelected = onSectionSelected,
                 onBack = onBack,
                 onShare = onShare,
+                isFollowing = isFollowing,
+                isFollowStateReady = isFollowStateReady,
+                isOperatingFollow = isOperatingFollow,
+                onToggleFollow = onToggleFollow,
             )
         },
         bottomBar = {
@@ -209,6 +249,7 @@ private fun FeedDetailLoadedContent(
                 onToggleFavorite = onToggleFavorite,
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         if (selectedSection == 0) {
@@ -226,6 +267,10 @@ private fun FeedDetailLoadedContent(
                 onSubmitComment = onSubmitComment,
                 onToggleLike = onToggleLike,
                 onToggleFavorite = onToggleFavorite,
+                isFollowing = isFollowing,
+                isFollowStateReady = isFollowStateReady,
+                isOperatingFollow = isOperatingFollow,
+                onToggleFollow = onToggleFollow,
                 modifier = Modifier.padding(innerPadding),
             )
         } else {
@@ -242,6 +287,10 @@ private fun DynamicDetailTopBar(
     onSectionSelected: (Int) -> Unit,
     onBack: () -> Unit,
     onShare: () -> Unit,
+    isFollowing: Boolean,
+    isFollowStateReady: Boolean,
+    isOperatingFollow: Boolean,
+    onToggleFollow: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -255,7 +304,14 @@ private fun DynamicDetailTopBar(
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
         }
         if (showAuthor) {
-            DetailTopBarAuthor(post = post, modifier = Modifier.weight(1f))
+            DetailTopBarAuthor(
+                post = post,
+                isFollowing = isFollowing,
+                isFollowStateReady = isFollowStateReady,
+                isOperatingFollow = isOperatingFollow,
+                onToggleFollow = onToggleFollow,
+                modifier = Modifier.weight(1f),
+            )
         } else {
             DetailSectionTabs(
                 selectedSection = selectedSection,
@@ -336,7 +392,14 @@ private fun DetailSectionTabs(
 }
 
 @Composable
-private fun DetailTopBarAuthor(post: DynamicPost, modifier: Modifier = Modifier) {
+private fun DetailTopBarAuthor(
+    post: DynamicPost,
+    isFollowing: Boolean,
+    isFollowStateReady: Boolean,
+    isOperatingFollow: Boolean,
+    onToggleFollow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier.size(28.dp).clip(CircleShape).background(Color(post.authorColor)),
@@ -346,7 +409,12 @@ private fun DetailTopBarAuthor(post: DynamicPost, modifier: Modifier = Modifier)
         }
         Spacer(Modifier.width(8.dp))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-        FollowButton()
+        FollowButton(
+            isFollowing = isFollowing,
+            isStateReady = isFollowStateReady,
+            isOperating = isOperatingFollow,
+            onClick = onToggleFollow,
+        )
     }
 }
 
@@ -365,6 +433,10 @@ private fun DynamicDetailContent(
     onSubmitComment: () -> Unit,
     onToggleLike: () -> Unit,
     onToggleFavorite: () -> Unit,
+    isFollowing: Boolean,
+    isFollowStateReady: Boolean,
+    isOperatingFollow: Boolean,
+    onToggleFollow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -383,7 +455,17 @@ private fun DynamicDetailContent(
                 )
             }
         }
-        item { DetailAuthorRow(post, onAuthorClick, Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
+        item {
+            DetailAuthorRow(
+                post = post,
+                onAuthorClick = onAuthorClick,
+                isFollowing = isFollowing,
+                isFollowStateReady = isFollowStateReady,
+                isOperatingFollow = isOperatingFollow,
+                onToggleFollow = onToggleFollow,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+        }
         item {
             Text(
                 text = post.title,
@@ -496,24 +578,36 @@ private fun FeedInteractionIcon(
     contentDescription: String,
     onClick: () -> Unit,
 ) {
+    val motionPreferences = rememberMotionPreferences()
+    val tint by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+        animationSpec = tween(if (motionPreferences.animationsEnabled) MotionSpec.QUICK_DURATION_MILLIS else 0),
+        label = "feed-interaction-color",
+    )
+    val selectionScale by animateFloatAsState(
+        targetValue = if (selected) MotionSpec.INTERACTIVE_SCALE else 1f,
+        animationSpec = tween(if (motionPreferences.animationsEnabled) MotionSpec.QUICK_DURATION_MILLIS else 0),
+        label = "feed-interaction-scale",
+    )
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(36.dp)) {
             if (icon != null) {
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.scale(selectionScale),
+                    tint = tint,
                 )
             } else {
                 CommentBubbleIcon(
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    color = tint,
                 )
             }
         }
         Text(
             text = count.toString(),
             style = MaterialTheme.typography.labelSmall,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+            color = tint,
         )
     }
 }
@@ -615,27 +709,51 @@ private fun RelatedNovelCard(
     }
 }
 
+/**
+ * DetailAuthorRow.kt
+ * 职责说明：展示动态作者入口，并把关注点击交给详情页复用的 PublicAuthorViewModel。
+ * 执行流程：作者资料接口提供初始关注状态 -> 点击后按钮进入禁用状态 -> 服务端成功值回写 UI，失败由页面 Snackbar 提示。
+ */
 @Composable
-private fun DetailAuthorRow(post: DynamicPost, onAuthorClick: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun DetailAuthorRow(
+    post: DynamicPost,
+    onAuthorClick: (String) -> Unit,
+    isFollowing: Boolean,
+    isFollowStateReady: Boolean,
+    isOperatingFollow: Boolean,
+    onToggleFollow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(post.authorColor)).clickable { onAuthorClick(post.userId) }, contentAlignment = Alignment.Center) {
             Text(post.authorInitial, color = Color.White, style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.width(10.dp))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).clickable { onAuthorClick(post.userId) })
-        FollowButton()
+        FollowButton(
+            isFollowing = isFollowing,
+            isStateReady = isFollowStateReady,
+            isOperating = isOperatingFollow,
+            onClick = onToggleFollow,
+        )
     }
 }
 
+/** 关注按钮只渲染上层状态，不再用 remember 制造与服务端关系不一致的本地状态。 */
 @Composable
-private fun FollowButton() {
-    var isFollowing by remember { mutableStateOf(false) }
+private fun FollowButton(
+    isFollowing: Boolean,
+    isStateReady: Boolean,
+    isOperating: Boolean,
+    onClick: () -> Unit,
+) {
     Button(
-        onClick = { isFollowing = !isFollowing },
+        onClick = onClick,
+        enabled = isStateReady && !isOperating,
         colors = ButtonDefaults.buttonColors(containerColor = if (isFollowing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary),
         contentPadding = ButtonDefaults.ContentPadding,
     ) {
-        Text(if (isFollowing) "已关注" else "关注")
+        Text(if (isOperating) "处理中" else if (isFollowing) "已关注" else "关注")
     }
 }
 
@@ -697,6 +815,11 @@ private fun FeedDetailLoadedContentPreview() {
             onSubmitComment = {},
             onToggleLike = {},
             onToggleFavorite = {},
+            isFollowing = false,
+            isFollowStateReady = true,
+            isOperatingFollow = false,
+            onToggleFollow = {},
+            snackbarHostState = remember { SnackbarHostState() },
         )
     }
 }

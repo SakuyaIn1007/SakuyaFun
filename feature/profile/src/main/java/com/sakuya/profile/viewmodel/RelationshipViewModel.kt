@@ -3,6 +3,7 @@ package com.sakuya.profile.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sakuya.profile.data.repository.RelationshipRepository
+import com.sakuya.profile.data.repository.UserRepository
 import com.sakuya.profile.model.RelationshipListType
 import com.sakuya.profile.model.RelationshipUser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,11 +13,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sakuya.data.notification.UpdateBadgeRepository
+import com.sakuya.model.notification.NotificationUnreadCategory
 
 /**
  * RelationshipViewModel.kt
  * 职责说明：管理关注/粉丝分页列表和 Follow/Unfollow 操作状态。
- * 执行流程：列表类型或分页 Action -> Repository -> UiState；单个用户操作以 operatingUserId 防止重复提交。
+ * 执行流程：首次读取当前用户 ID -> 列表类型或分页 Action -> Repository -> UiState；
+ * 单个用户操作以 operatingUserId 防止重复提交。
  */
 data class RelationshipUiState(
     val type: RelationshipListType = RelationshipListType.FOLLOWING,
@@ -36,12 +40,17 @@ sealed interface RelationshipAction {
 sealed interface RelationshipEffect { data class ShowError(val message: String) : RelationshipEffect }
 
 @HiltViewModel
-class RelationshipViewModel @Inject constructor(private val repository: RelationshipRepository) : ViewModel() {
+class RelationshipViewModel @Inject constructor(
+    private val repository: RelationshipRepository,
+    private val userRepository: UserRepository,
+    private val updateBadges:UpdateBadgeRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(RelationshipUiState())
     val uiState = _uiState.asStateFlow()
     private val _effect = MutableSharedFlow<RelationshipEffect>()
     val effect = _effect.asSharedFlow()
     private var nextPage = 0
+    private var currentUserId: String? = null
 
     fun onAction(action: RelationshipAction) {
         when (action) {
@@ -56,7 +65,12 @@ class RelationshipViewModel @Inject constructor(private val repository: Relation
     /** 首次加载替换旧列表，加载更多只追加新页，保证切换关注/粉丝时不会残留上一类数据。 */
     private fun load(type: RelationshipListType, page: Int, refresh: Boolean) = viewModelScope.launch {
         _uiState.value = if (refresh) RelationshipUiState(type = type, isLoading = true) else _uiState.value.copy(isLoadingMore = true)
-        repository.getUsers(type, page, PAGE_SIZE).onSuccess { result ->
+        val userId = currentUserId ?: userRepository.getUserProfile().getOrElse { error ->
+            _uiState.value = _uiState.value.copy(isLoading = false, isLoadingMore = false)
+            _effect.emit(RelationshipEffect.ShowError(error.message ?: "当前用户信息加载失败"))
+            return@launch
+        }.userId.also { currentUserId = it }
+        repository.getUsers(userId, type, page, PAGE_SIZE).onSuccess { result ->
             nextPage = result.nextPage ?: page
             _uiState.value = _uiState.value.copy(
                 users = if (refresh) result.users else _uiState.value.users + result.users,
@@ -64,6 +78,7 @@ class RelationshipViewModel @Inject constructor(private val repository: Relation
                 isLoadingMore = false,
                 canLoadMore = result.nextPage != null,
             )
+            if(refresh&&type==RelationshipListType.FOLLOWERS)updateBadges.markCategoryRead(NotificationUnreadCategory.NEW_FOLLOWER)
         }.onFailure { error ->
             _uiState.value = _uiState.value.copy(isLoading = false, isLoadingMore = false)
             _effect.emit(RelationshipEffect.ShowError(error.message ?: "加载关系列表失败"))
@@ -77,6 +92,7 @@ class RelationshipViewModel @Inject constructor(private val repository: Relation
             _uiState.value = _uiState.value.copy(users = _uiState.value.users.map { current ->
                 if (current.userId == updatedUser.userId) updatedUser else current
             })
+            updateBadges.refreshFollowing()
         }.onFailure { error -> _effect.emit(RelationshipEffect.ShowError(error.message ?: "更新关注状态失败")) }
         _uiState.value = _uiState.value.copy(operatingUserId = null)
     }

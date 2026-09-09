@@ -13,9 +13,11 @@ fun SearchResultsScreen(
     onBack: () -> Unit,
     onBookClick: (String) -> Unit = {},
     onDynamicClick: (String) -> Unit = {},
+    onUserClick: (String) -> Unit = {},
 ) = SearchResultsContent(
     query = query,
     onBack = onBack,
     onBookClick = onBookClick,
     onDynamicClick = onDynamicClick,
+    onUserClick = onUserClick,
 )

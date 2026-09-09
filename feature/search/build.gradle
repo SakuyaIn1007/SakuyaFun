@@ -21,5 +21,8 @@ dependencies {
     implementation project(':core:navigation')
     implementation libs.bundles.feature.ui
     implementation libs.androidx.navigation.compose
+    implementation libs.datastore.preferences
     ksp libs.hilt.compiler
+    testImplementation libs.junit
+    testImplementation libs.kolinx.coroutines.test
 }

@@ -52,6 +52,9 @@ import com.sakuya.profile.viewmodel.ProfileAction
 import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.component.DynamicPostCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.model.notification.UpdateBadgeState
+import com.sakuya.ui.component.UpdateDot
+import androidx.compose.material3.BadgedBox
 
 @Composable
 fun ProfileScreen(
@@ -64,6 +67,8 @@ fun ProfileScreen(
     onOpenFollowers: () -> Unit = {},
     onOpenFavourites: () -> Unit = {},
     onOpenHistory: () -> Unit = {},
+    updateState:UpdateBadgeState=UpdateBadgeState(),
+    onDynamicViewed:()->Unit={},
 ) {
     ProfileContent(
         profile,
@@ -75,6 +80,8 @@ fun ProfileScreen(
         onOpenFollowers = onOpenFollowers,
         onOpenFavourites = onOpenFavourites,
         onOpenHistory = onOpenHistory,
+        updateState=updateState,
+        onDynamicViewed=onDynamicViewed,
     )
 }
 
@@ -90,6 +97,8 @@ fun ProfileContent(
     onOpenFollowers: () -> Unit = {},
     onOpenFavourites: () -> Unit = {},
     onOpenHistory: () -> Unit = {},
+    updateState:UpdateBadgeState=UpdateBadgeState(),
+    onDynamicViewed:()->Unit={},
 ) {
     var selectedSection by remember { mutableIntStateOf(0) }
     Column(
@@ -97,7 +106,7 @@ fun ProfileContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        ProfileSectionBar(selectedSection, { selectedSection = it }) {
+        ProfileSectionBar(selectedSection, { selectedSection = it;if(it==1)onDynamicViewed() },updateState.showProfileDynamic) {
             onAction(ProfileAction.OnSettingsClick)
         }
         ProfileHeader(
@@ -107,6 +116,7 @@ fun ProfileContent(
             onOpenFollowers = onOpenFollowers,
             onOpenFavourites = onOpenFavourites,
             onOpenHistory = onOpenHistory,
+            updateState=updateState,
         )
         Spacer(Modifier.height(12.dp))
         Box(Modifier.weight(1f)) {
@@ -162,15 +172,17 @@ private fun ProfileDynamicContent(profile: UserProfile, onOpenDynamic: () -> Uni
 private fun ProfileSectionBar(
     selectedSection: Int,
     onSectionSelected: (Int) -> Unit,
+    showDynamicUpdate:Boolean,
     onSettingsClick: () -> Unit
 ) {
     PrimaryTabRow(
         tabs = listOf("书架", "动态"),
         selectedIndex = selectedSection,
         onTabSelected = onSectionSelected,
+        badgeIndices=if(showDynamicUpdate)setOf(1)else emptySet(),
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)
     ) {
@@ -189,11 +201,12 @@ fun ProfileHeader(
     onOpenFollowers: () -> Unit = {},
     onOpenFavourites: () -> Unit = {},
     onOpenHistory: () -> Unit = {},
+    updateState:UpdateBadgeState=UpdateBadgeState(),
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -253,20 +266,22 @@ fun ProfileHeader(
             tint = MaterialTheme.colorScheme.outline
         )
         }
-        ProfileStats(onOpenFollowing, onOpenFollowers, onOpenFavourites, onOpenHistory)
+        ProfileStats(profile,onOpenFollowing,onOpenFollowers,onOpenFavourites,onOpenHistory,updateState)
     }
 }
 
 @Composable
 private fun ProfileStats(
+    profile:UserProfile,
     onOpenFollowing: () -> Unit,
     onOpenFollowers: () -> Unit,
     onOpenFavourites: () -> Unit,
     onOpenHistory: () -> Unit,
+    updateState:UpdateBadgeState,
 ) {
     val stats = listOf(
-        Triple("0", "关注", onOpenFollowing),
-        Triple("0", "粉丝", onOpenFollowers),
+        Triple(profile.followingCount.toString(), "关注", onOpenFollowing),
+        Triple(profile.followerCount.toString(), "粉丝", onOpenFollowers),
         Triple("0", "收藏", onOpenFavourites),
         Triple("0", "历史浏览", onOpenHistory),
     )
@@ -280,7 +295,9 @@ private fun ProfileStats(
             ) {
                 Text(count, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(Modifier.height(1.dp))
-                Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                BadgedBox(badge={if((label=="关注"&&updateState.showFollowing)||(label=="粉丝"&&updateState.showFollowers))UpdateDot()}){
+                    Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                }
             }
         }
     }
@@ -318,7 +335,7 @@ fun ProfileFunctionItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
             .padding(vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -13,6 +13,7 @@ import com.sakuya.navigation.SEARCH_RESULTS_ARG_QUERY
 import com.sakuya.navigation.SEARCH_RESULTS_BASE_ROUTE
 import com.sakuya.navigation.SEARCH_RESULTS_ROUTE
 import com.sakuya.navigation.feedDetailRoute
+import com.sakuya.navigation.feedAuthorRoute
 import com.sakuya.navigation.WENKU8_DETAIL_BASE_ROUTE
 import com.sakuya.navigation.WENKU8_DETAIL_ARG_ID
 import com.sakuya.navigation.WENKU8_DETAIL_ROUTE
@@ -44,6 +45,7 @@ fun NavGraphBuilder.searchNavGraph(navController: NavHostController) {
             onBack = { navController.popBackStack() },
             onBookClick = { bookId -> navController.navigate("$WENKU8_DETAIL_BASE_ROUTE?$WENKU8_DETAIL_ARG_ID=${Uri.encode(bookId)}") },
             onDynamicClick = { postId -> navController.navigate(feedDetailRoute(postId)) },
+            onUserClick = { userId -> navController.navigate(feedAuthorRoute(userId)) },
         )
     }
     composable(route = WENKU8_DETAIL_ROUTE, arguments = listOf(navArgument(WENKU8_DETAIL_ARG_ID) { type = NavType.StringType })) {

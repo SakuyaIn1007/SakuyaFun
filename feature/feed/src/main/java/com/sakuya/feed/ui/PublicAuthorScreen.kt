@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -25,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -48,13 +50,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sakuya.feed.data.remote.PublicProfileDto
+import com.sakuya.model.profile.PublicProfileDto
+import com.sakuya.feed.viewmodel.PublicAuthorAction
+import com.sakuya.feed.viewmodel.PublicAuthorEffect
 import com.sakuya.feed.viewmodel.PublicAuthorViewModel
+import com.sakuya.model.feed.DynamicPost
+import com.sakuya.ui.component.DynamicPostCard
 
 /**
  * PublicAuthorScreen.kt
- * 职责说明：展示他人公开主页、三项纵向统计与关注操作。
- * 执行流程：进入页面加载 /profiles/{userId} -> 状态驱动头像、统计和按钮 -> 用户点击关注后由 ViewModel 回写状态。
+ * 职责说明：展示他人公开主页、作者动态和聚合统计，并承接关注与私信入口。
+ * 执行流程：进入页面加载公开资料和动态首页 -> 列表触底加载更多 -> 点击动态交给导航层打开详情。
  * 说明：关注与粉丝数字使用“数值在上、标签在下”的布局，与我的页面保持一致。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,13 +70,22 @@ fun PublicAuthorScreen(
     viewModel: PublicAuthorViewModel = hiltViewModel(),
     onOpenFollowing: (String) -> Unit = {},
     onOpenFollowers: (String) -> Unit = {},
+    onOpenConversation: (conversationId: String, title: String) -> Unit = { _, _ -> },
+    onPostClick: (String) -> Unit = {},
     onBack: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var tab by remember { mutableIntStateOf(0) }
-    LaunchedEffect(userId) { viewModel.load(userId) }
-    LaunchedEffect(state.errorMessage) { state.errorMessage?.let { message -> snackbar.showSnackbar(message) } }
+    LaunchedEffect(userId) { viewModel.onAction(PublicAuthorAction.Load(userId)) }
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is PublicAuthorEffect.ShowError -> snackbar.showSnackbar(effect.message)
+                is PublicAuthorEffect.OpenConversation -> onOpenConversation(effect.conversationId, effect.title)
+            }
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -84,21 +99,96 @@ fun PublicAuthorScreen(
         },
         bottomBar = {
             Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedButton(onClick = { }, modifier = Modifier.weight(1f)) { Text("私信") }
-                Button(onClick = viewModel::toggleFollow, modifier = Modifier.weight(1f), enabled = state.profile != null && !state.isOperatingFollow) {
+                OutlinedButton(
+                    onClick = { viewModel.onAction(PublicAuthorAction.OpenConversation) },
+                    modifier = Modifier.weight(1f),
+                    enabled = state.profile != null && !state.isOpeningConversation,
+                ) {
+                    if (state.isOpeningConversation) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("正在打开")
+                    } else {
+                        Text("私信")
+                    }
+                }
+                Button(onClick = { viewModel.onAction(PublicAuthorAction.ToggleFollow) }, modifier = Modifier.weight(1f), enabled = state.profile != null && !state.isOperatingFollow) {
                     Text(if (state.isOperatingFollow) "处理中" else if (state.profile?.isFollowing == true) "已关注" else "关注")
                 }
             }
         },
     ) { padding ->
         val profile = state.profile
-        Column(Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background)) {
-            if (profile == null && state.isLoading) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            else if (profile != null) {
-                AuthorHeader(profile)
-                AuthorStats(profile, onRelationshipClick = { label -> if (label == "关注") onOpenFollowing(profile.userId) else if (label == "粉丝") onOpenFollowers(profile.userId) })
-                AuthorContent(tab)
-            } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("暂时无法加载该用户主页") }
+        when {
+            profile == null && state.isLoading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            profile == null -> AuthorLoadFailure(onRetry = { viewModel.onAction(PublicAuthorAction.Load(userId)) }, modifier = Modifier.padding(padding))
+            else -> AuthorLoadedContent(
+                profile = profile,
+                tab = tab,
+                state = state,
+                onOpenFollowing = onOpenFollowing,
+                onOpenFollowers = onOpenFollowers,
+                onPostClick = onPostClick,
+                onRetryPosts = { viewModel.onAction(PublicAuthorAction.RetryPosts) },
+                onLoadMorePosts = { viewModel.onAction(PublicAuthorAction.LoadMorePosts) },
+                modifier = Modifier.padding(padding),
+            )
+        }
+    }
+}
+
+/**
+ * 主页已加载内容使用单一 LazyColumn，避免作者信息与动态列表嵌套滚动导致分页触发不稳定。
+ */
+@Composable
+private fun AuthorLoadedContent(
+    profile: PublicProfileDto,
+    tab: Int,
+    state: com.sakuya.feed.viewmodel.PublicAuthorUiState,
+    onOpenFollowing: (String) -> Unit,
+    onOpenFollowers: (String) -> Unit,
+    onPostClick: (String) -> Unit,
+    onRetryPosts: () -> Unit,
+    onLoadMorePosts: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        item { AuthorHeader(profile) }
+        item {
+            AuthorStats(
+                profile,
+                onRelationshipClick = { label ->
+                    if (label == "关注") onOpenFollowing(profile.userId) else if (label == "粉丝") onOpenFollowers(profile.userId)
+                },
+            )
+        }
+        if (tab == 0) {
+            item { Text("他发布的动态", Modifier.padding(20.dp), style = MaterialTheme.typography.titleMedium) }
+            when {
+                state.isLoadingPosts && state.posts.isEmpty() -> item { AuthorPostsLoading() }
+                state.posts.isEmpty() -> item {
+                    AuthorPostsMessage(
+                        message = state.postsErrorMessage ?: "暂时还没有发布动态",
+                        actionLabel = state.postsErrorMessage?.let { "重新加载" },
+                        onAction = onRetryPosts,
+                    )
+                }
+                else -> {
+                    items(state.posts, key = DynamicPost::id) { post ->
+                        DynamicPostCard(post = post, onClick = { onPostClick(post.id) })
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+                    }
+                    item {
+                        when {
+                            state.isLoadingMorePosts -> Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                            state.postsErrorMessage != null -> AuthorPostsMessage(state.postsErrorMessage, "重试", onRetryPosts)
+                            state.canLoadMorePosts -> LaunchedEffect(state.posts.size) { onLoadMorePosts() }
+                        }
+                    }
+                }
+            }
+        } else {
+            item { AuthorDataContent(profile) }
         }
     }
 }
@@ -143,11 +233,47 @@ private fun AuthorStats(profile: PublicProfileDto, onRelationshipClick: (String)
 }
 
 @Composable
-private fun AuthorContent(tab: Int) {
-    LazyColumn(Modifier.fillMaxSize()) {
-        item {
-            Text(if (tab == 0) "他发布的动态" else "数据统计", Modifier.padding(20.dp), style = MaterialTheme.typography.titleMedium)
-            Text(if (tab == 0) "动态内容将随动态模块接口加载。" else "喜欢与收藏的数据将在动态模块落库后展示。", Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outline)
+private fun AuthorDataContent(profile: PublicProfileDto) {
+    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text("数据统计", style = MaterialTheme.typography.titleMedium)
+        AuthorDataRow("已发布动态", profile.postCount)
+        AuthorDataRow("累计获赞与收藏", profile.likesAndFavoritesCount)
+        AuthorDataRow("关注数", profile.followingCount)
+        AuthorDataRow("粉丝数", profile.followerCount)
+    }
+}
+
+@Composable
+private fun AuthorDataRow(label: String, value: Long) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(formatMetric(value), style = MaterialTheme.typography.titleLarge)
+    }
+}
+
+@Composable
+private fun AuthorPostsLoading() {
+    Box(Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+}
+
+@Composable
+private fun AuthorPostsMessage(message: String, actionLabel: String?, onAction: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(message, color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.Center)
+        actionLabel?.let { Button(onClick = onAction) { Text(it) } }
+    }
+}
+
+@Composable
+private fun AuthorLoadFailure(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("暂时无法加载该用户主页", color = MaterialTheme.colorScheme.outline)
+            Button(onClick = onRetry) { Text("重新加载") }
         }
     }
 }

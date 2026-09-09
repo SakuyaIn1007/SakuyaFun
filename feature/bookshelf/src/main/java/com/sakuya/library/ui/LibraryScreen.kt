@@ -7,12 +7,8 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -81,6 +77,10 @@ import com.sakuya.library.viewmodel.LibraryAction
 import com.sakuya.library.viewmodel.LibraryEffect
 import com.sakuya.library.viewmodel.LibraryViewModel
 import com.sakuya.ui.component.MediumContentCard
+import com.sakuya.ui.motion.MotionContent
+import com.sakuya.ui.motion.MotionSpec
+import com.sakuya.ui.motion.MotionVisibility
+import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,13 +183,7 @@ fun LibraryContent(
                     detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
         ) {
-            AnimatedContent(
-                targetState = selectedTab,
-                transitionSpec = {
-                    (fadeIn() + slideInHorizontally { it / 4 }) togetherWith
-                    (fadeOut() + slideOutHorizontally { -it / 4 })
-                }
-            ) { tab ->
+            MotionContent(targetState = selectedTab) { tab ->
                 when (tab) {
                     0 -> LibraryContentList(
                         items = bookItems.filterByQuery(searchQuery),
@@ -285,7 +279,8 @@ private fun LibraryTabBar(
                         .padding(start = 4.dp, end = 2.dp)
                 )
                 Spacer(Modifier.weight(1f))
-                if (isEditing) {
+                MotionVisibility(visible = isEditing) {
+                    Row {
                     IconButton(onClick = { onAction(LibraryAction.ToggleEdit) }, modifier = Modifier.size(40.dp)) {
                         Icon(Icons.Default.Close, "取消")
                     }
@@ -296,6 +291,7 @@ private fun LibraryTabBar(
                     ) {
                         Icon(Icons.Default.Delete, "删除选中书籍",
                             tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline)
+                    }
                     }
                 }
                 Box {
@@ -378,6 +374,7 @@ private fun LibraryContentList(
     selectedItemIds: Set<String>,
     onAction: (LibraryAction) -> Unit
 ) {
+    val motionPreferences = rememberMotionPreferences()
     if (items.isEmpty()) {
         Box(
             modifier = Modifier
@@ -409,7 +406,8 @@ private fun LibraryContentList(
         items(items, key = { it.id }) { item ->
             val isSelected = item.id in selectedItemIds
             Box(
-                modifier = Modifier.combinedClickable(
+                modifier = (if (motionPreferences.animationsEnabled) Modifier.animateItem() else Modifier)
+                    .combinedClickable(
                     onClick = {
                         if (isEditing) onAction(LibraryAction.ToggleItemSelected(item.id))
                         else onAction(LibraryAction.OpenBook(item))
@@ -443,14 +441,17 @@ private fun SelectionCircle(
     selected: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val motionPreferences = rememberMotionPreferences()
+    val backgroundColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+        animationSpec = tween(if (motionPreferences.animationsEnabled) MotionSpec.QUICK_DURATION_MILLIS else 0),
+        label = "library-selection-color",
+    )
     Box(
         modifier = modifier
             .size(24.dp)
             .background(
-                color = if (selected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+                color = backgroundColor,
                 shape = CircleShape
             )
             .border(

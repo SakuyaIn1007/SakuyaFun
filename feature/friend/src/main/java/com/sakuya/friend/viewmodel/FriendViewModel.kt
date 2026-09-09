@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sakuya.friend.data.repository.FriendRepository
 import com.sakuya.friend.data.remote.FriendRequestItem
-import com.sakuya.friend.model.Friend
+import com.sakuya.model.friend.Friend
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,10 +12,13 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sakuya.data.notification.UpdateBadgeRepository
+import com.sakuya.model.notification.NotificationUnreadCategory
 
 @HiltViewModel
 class FriendViewModel @Inject constructor(
-    private val repository: FriendRepository
+    private val repository: FriendRepository,
+    private val updateBadges:UpdateBadgeRepository,
 ) : ViewModel() {
 
     private val _friends = MutableStateFlow<List<Friend>>(emptyList())
@@ -43,6 +46,7 @@ class FriendViewModel @Inject constructor(
             repository.getFriends()
                 .onSuccess { list ->
                     _friends.value = list
+                    updateBadges.markCategoryRead(NotificationUnreadCategory.FRIEND_RELATION)
                 }
                 .onFailure { error ->
                     _effect.emit(FriendEffect.ShowError(error.message ?: "加载好友列表失败"))
@@ -89,6 +93,7 @@ class FriendViewModel @Inject constructor(
             repository.getFriendRequests()
                 .onSuccess { requests ->
                     _friendRequests.value = requests
+                    updateBadges.markCategoryRead(NotificationUnreadCategory.FRIEND_RELATION)
                 }
                 .onFailure { error ->
                     _effect.emit(FriendEffect.ShowError(error.message ?: "加载好友请求失败"))

@@ -19,9 +19,6 @@ interface SearchApiService {
         @Query("pageSize") pageSize: Int,
     ): Response<BaseResponse<SearchPageDto>>
 
-    @GET("search/history")
-    suspend fun getHistory(): Response<BaseResponse<List<String>>>
-
     @GET("search/hot-keywords")
     suspend fun getHotKeywords(): Response<BaseResponse<List<String>>>
 }

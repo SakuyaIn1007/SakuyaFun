@@ -45,7 +45,7 @@ fun NavGraphBuilder.readerNavGraph(navController: NavHostController) {
         val novelId = entry.arguments?.getString(READER_ARG_BOOK_ID).orEmpty()
         val chapterId = entry.arguments?.getString(READER_ARG_CHAPTER_ID).orEmpty()
         val title = entry.arguments?.getString(READER_ARG_TITLE).orEmpty()
-        // 目录保留在返回栈中；阅读器只记录 wenku8:{novelId} 连续进度，chapterId 仅作为本次定位目标。
-        ReaderScreen(bookId = "wenku8:$novelId", filePath = "", remoteChapter = Triple(novelId, chapterId, title), onBack = { navController.popBackStack() })
+        // 目录保留在返回栈中；ViewModel 会将旧 wenku8:* 进度迁移到稳定 content:* 键。
+        ReaderScreen(bookId = "content:$novelId", filePath = "", remoteChapter = Triple(novelId, chapterId, title), onBack = { navController.popBackStack() })
     }
 }

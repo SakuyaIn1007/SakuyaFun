@@ -20,13 +20,20 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.sakuya.data.reading.OnlineReadingStateRepository
 
 @Singleton
+/**
+ * LibraryRepository.kt
+ * 职责说明：协调云端书架、本地导入书籍及两类阅读进度，向书架页面提供统一列表。
+ * 执行流程：书架元数据从 API 写入 Room；本地书使用旧进度表，在线书按当前 ownerId 读取云同步缓存。
+ */
 class LibraryRepository @Inject constructor(
     private val libraryBookDao: LibraryBookDao,
     private val readingProgressDao: ReadingProgressDao,
     private val bookmarkDao: BookmarkDao,
-    private val apiService: LibraryApiService
+    private val apiService: LibraryApiService,
+    private val onlineReading: OnlineReadingStateRepository,
 ) {
     private val _syncStatus = MutableStateFlow(LibrarySyncStatus.SYNCED)
     val syncStatus = _syncStatus.asStateFlow()
@@ -50,13 +57,16 @@ class LibraryRepository @Inject constructor(
     fun observeBooks(): Flow<List<LibraryItem>> {
         return combine(
             libraryBookDao.observeBooks(),
-            readingProgressDao.observeProgress()
-        ){books, progressList ->
+            readingProgressDao.observeProgress(),
+            onlineReading.observeProgresses(),
+        ){books, progressList, onlineProgress ->
             val progressMap = progressList.associateBy { it.bookKey }
+            val onlineMap = onlineProgress.associateBy { it.bookId }
             books.map { book->
+                val remote = onlineMap[book.id]
                 book.toLibraryItem(
-                    progress = progressMap[book.id]?.progress ?: 0f,
-                    lastReadAt = progressMap[book.id]?.updatedAt?.formatTime(),
+                    progress = remote?.progress ?: progressMap[book.id]?.progress ?: 0f,
+                    lastReadAt = remote?.modifiedAt?.formatTime() ?: progressMap[book.id]?.updatedAt?.formatTime(),
                 )
 
             }
@@ -122,14 +132,18 @@ class LibraryRepository @Inject constructor(
     fun observeRecentBooks(): Flow<List<LibraryItem>> {
         return combine(
             libraryBookDao.observeBooks(),
-            readingProgressDao.observeRecentProgress()
-        ){ books, progressList ->
+            readingProgressDao.observeRecentProgress(),
+            onlineReading.observeProgresses(),
+        ){ books, progressList, onlineProgress ->
             val bookMap = books.associateBy { it.id }
-
-            progressList.mapNotNull { progress ->
-                val book = bookMap[progress.bookKey]
-                book?.toLibraryItem(progress = progress.progress, lastReadAt = progress.updatedAt.formatTime())
+            val local = progressList.mapNotNull { progress ->
+                bookMap[progress.bookKey]?.let { book -> Triple(progress.updatedAt, book, progress.progress) }
             }
+            val remote = onlineProgress.mapNotNull { progress ->
+                bookMap[progress.bookId]?.let { book -> Triple(progress.modifiedAt, book, progress.progress) }
+            }
+            (local + remote).sortedByDescending { it.first }.distinctBy { it.second.id }
+                .map { (updatedAt, book, progress) -> book.toLibraryItem(progress, updatedAt.formatTime()) }
         }
     }
 
@@ -138,14 +152,19 @@ class LibraryRepository @Inject constructor(
     }
 
     suspend fun removeBook(id: String) {
+        val existing = libraryBookDao.getBook(id)
         val response = apiService.removeBook(id)
         val body = response.body()
         if (!response.isSuccessful || body == null || !body.isSuccess()) {
             error(body?.message ?: "删除云端书架项目失败（HTTP ${response.code()}）")
         }
         libraryBookDao.deleteBook(id)
-        readingProgressDao.deleteProgress(id)
-        bookmarkDao.deleteBookmarkByBookId(id)
+        if (existing?.filePath.isNullOrBlank()) {
+            onlineReading.deleteBook(id)
+        } else {
+            readingProgressDao.deleteProgress(id)
+            bookmarkDao.deleteBookmarkByBookId(id)
+        }
     }
 
     private fun LibraryBookEntity.toLibraryItem(progress: Float, lastReadAt: String? = null): LibraryItem {

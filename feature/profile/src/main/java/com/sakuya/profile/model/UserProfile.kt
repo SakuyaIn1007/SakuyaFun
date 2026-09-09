@@ -14,7 +14,9 @@ data class UserProfile(
     var email: String? = "",
     var pokeText: String? = "",
     var ringtoneName: String? = "",
-    var privacySettings: PrivacySettings
+    var privacySettings: PrivacySettings,
+    val followingCount: Long = 0,
+    val followerCount: Long = 0,
 ){
     companion object{
         fun empty() = UserProfile(

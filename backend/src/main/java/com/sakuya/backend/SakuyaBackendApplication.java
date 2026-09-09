@@ -9,9 +9,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import com.sakuya.backend.catalog.Wenku8CatalogSyncProperties;
+import com.sakuya.backend.content.ContentManagementProperties;
+import com.sakuya.backend.content.ContentStorageProperties;
 
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
-@EnableConfigurationProperties({Wenku8Properties.class, ReleaseManagementProperties.class, Wenku8CatalogSyncProperties.class})
+@EnableConfigurationProperties({
+    Wenku8Properties.class, ReleaseManagementProperties.class, Wenku8CatalogSyncProperties.class,
+    ContentManagementProperties.class, ContentStorageProperties.class
+})
 @EnableAsync
 @EnableScheduling
 public class SakuyaBackendApplication {

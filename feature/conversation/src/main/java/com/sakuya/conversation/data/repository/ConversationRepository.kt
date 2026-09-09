@@ -2,7 +2,7 @@ package com.sakuya.conversation.data.repository
 
 import com.sakuya.conversation.data.remote.ConversationApiService
 import com.sakuya.conversation.data.remote.ConversationDto
-import com.sakuya.conversation.model.Conversation
+import com.sakuya.model.chat.Conversation
 import com.sakuya.data.local.dao.ConversationDao
 import com.sakuya.data.local.entity.ConversationEntity
 import com.sakuya.model.network.BaseResponse

@@ -9,8 +9,9 @@ spring:
     open-in-view: false
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      # EPUB 通常包含封面与插图，管理端上传上限可按部署环境继续收紧。
+      max-file-size: ${CONTENT_UPLOAD_MAX_FILE_SIZE:100MB}
+      max-request-size: ${CONTENT_UPLOAD_MAX_REQUEST_SIZE:100MB}
   jackson:
     default-property-inclusion: non_null
 
@@ -19,15 +20,34 @@ server:
   forward-headers-strategy: framework
 
 app:
+  notifications:
+    dispatch-delay-ms: ${NOTIFICATION_DISPATCH_DELAY_MS:15000}
+    firebase:
+      enabled: ${FIREBASE_ENABLED:false}
+      credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
   jwt:
     secret: ${JWT_SECRET}
     expiration: 7d
   upload-dir: ${UPLOAD_DIR:./uploads}
+  # 聊天媒体不映射到公开静态目录，下载必须经过会话成员鉴权；未发送草稿会定期清理。
+  chat-media-dir: ${CHAT_MEDIA_DIR:${UPLOAD_DIR:./uploads}/chat}
+  chat-media-cleanup-delay-ms: ${CHAT_MEDIA_CLEANUP_DELAY_MS:3600000}
   seed:
     enabled: false
   # 仅部署端配置；为空时 POST/PUT/DELETE /admin/novel-releases 一律拒绝。
   release-management:
     token: ${RELEASE_MANAGEMENT_TOKEN:}
+  content-management:
+    token: ${CONTENT_MANAGEMENT_TOKEN:}
+    read-mode: ${CONTENT_READ_MODE:DB_FIRST_WITH_ADAPTER_FALLBACK}
+  content-storage:
+    type: ${CONTENT_STORAGE_TYPE:local}
+    local-dir: ${CONTENT_STORAGE_LOCAL_DIR:./content-store}
+    endpoint: ${CONTENT_STORAGE_ENDPOINT:}
+    region: ${CONTENT_STORAGE_REGION:us-east-1}
+    bucket: ${CONTENT_STORAGE_BUCKET:sakuya-content}
+    access-key: ${CONTENT_STORAGE_ACCESS_KEY:}
+    secret-key: ${CONTENT_STORAGE_SECRET_KEY:}
 
 # 内部验证默认关闭；部署 Python 适配服务后以 WENKU8_ADAPTER_ENABLED=true 显式开启。
 wenku8:

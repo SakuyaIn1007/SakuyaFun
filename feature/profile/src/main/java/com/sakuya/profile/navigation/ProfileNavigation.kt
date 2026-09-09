@@ -50,6 +50,7 @@ import com.sakuya.navigation.READER_ARG_BOOK_ID
 import com.sakuya.navigation.READER_ARG_PATH
 import com.sakuya.navigation.READER_BASE_ROUTE
 import com.sakuya.navigation.PROFILE_SIGNATURE
+import com.sakuya.navigation.feedAuthorRoute
 import com.sakuya.model.extentions.Gender
 import com.sakuya.profile.ui.AvatarEditContent
 import com.sakuya.profile.ui.ProfileEditScreen
@@ -73,6 +74,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
     composable(PROFILE_ROUTE) {
         val viewModel: ProfileViewModel = hiltViewModel()
         val profile by viewModel.userProfile.collectAsState()
+        val updateState by viewModel.updateState.collectAsState()
         val context = LocalContext.current
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->
@@ -130,13 +132,23 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
             onOpenFollowers = { navController.navigate(PROFILE_FOLLOWERS_ROUTE) },
             onOpenFavourites = { navController.navigate(PROFILE_FAVOURITES_ROUTE) },
             onOpenHistory = { navController.navigate(PROFILE_READING_HISTORY) },
+            updateState=updateState,
+            onDynamicViewed=viewModel::markDynamicUpdatesRead,
         )
     }
     composable(PROFILE_FOLLOWING_ROUTE) {
-        ProfileRelationshipScreen(isFollowing = true, onBack = { navController.popBackStack() })
+        ProfileRelationshipScreen(
+            isFollowing = true,
+            onBack = { navController.popBackStack() },
+            onUserClick = { userId -> navController.navigate(feedAuthorRoute(userId)) },
+        )
     }
     composable(PROFILE_FOLLOWERS_ROUTE) {
-        ProfileRelationshipScreen(isFollowing = false, onBack = { navController.popBackStack() })
+        ProfileRelationshipScreen(
+            isFollowing = false,
+            onBack = { navController.popBackStack() },
+            onUserClick = { userId -> navController.navigate(feedAuthorRoute(userId)) },
+        )
     }
 //
     composable(PROFILE_ME){

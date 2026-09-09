@@ -42,6 +42,16 @@ public class Book {
     private boolean copyrightRestricted;
     private String coverPath;
     private Instant sourceSyncedAt;
+    /** 内容库发布状态；已有书目默认保持可见，导入中的新书完成全部文件后再发布。 */
+    @Column(nullable = false, columnDefinition = "boolean default true") private boolean published = true;
+    @Column(name = "rights_status", nullable = false, length = 24) private String rightsStatus = "AUTHORIZED";
+    @Column(name = "license_note", length = 500) private String licenseNote = "";
+    @Column(name = "full_content_object_key", length = 512) private String fullContentObjectKey;
+    @Column(name = "cover_object_key", length = 512) private String coverObjectKey;
+    @Column(name = "full_content_sha256", length = 64) private String fullContentSha256;
+    @Column(name = "full_content_byte_size") private long fullContentByteSize;
+    @Column(name = "cover_sha256", length = 64) private String coverSha256;
+    @Column(name = "cover_byte_size") private long coverByteSize;
 
     protected Book() { }
 
@@ -75,6 +85,14 @@ public class Book {
         this.sourceSyncedAt = syncedAt;
     }
 
+    /** 人工管理和通用 Provider 共用的元数据更新入口，不修改稳定书籍 ID。 */
+    public void updateCatalogMetadata(String title, String author, String publisher, float rating,
+            List<String> tags, String description, String status) {
+        this.title = title; this.author = author; this.publisher = publisher == null ? "" : publisher;
+        this.rating = rating; this.tags.clear(); this.tags.addAll(tags == null ? List.of() : tags);
+        this.description = description == null ? "" : description; this.status = status;
+    }
+
     public String getId() { return id; }
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
@@ -89,4 +107,28 @@ public class Book {
     public boolean isCopyrightRestricted() { return copyrightRestricted; }
     public String getCoverPath() { return coverPath; }
     public Instant getSourceSyncedAt() { return sourceSyncedAt; }
+    public boolean isPublished() { return published; }
+    public String getRightsStatus() { return rightsStatus == null ? "UNKNOWN" : rightsStatus; }
+    public String getLicenseNote() { return licenseNote == null ? "" : licenseNote; }
+    public String getFullContentObjectKey() { return fullContentObjectKey; }
+    public String getCoverObjectKey() { return coverObjectKey; }
+    public String getFullContentSha256() { return fullContentSha256; }
+    public long getFullContentByteSize() { return fullContentByteSize; }
+    public String getCoverSha256() { return coverSha256; }
+    public long getCoverByteSize() { return coverByteSize; }
+    /** 管理与导入服务统一更新内容发布信息，版权不明确时不能把正文暴露给客户端。 */
+    public void updateContentPublication(boolean published, String rightsStatus, String licenseNote,
+            String fullContentObjectKey, String coverObjectKey) {
+        this.published = published;
+        this.rightsStatus = rightsStatus == null ? "UNKNOWN" : rightsStatus;
+        this.licenseNote = licenseNote == null ? "" : licenseNote;
+        this.fullContentObjectKey = fullContentObjectKey;
+        this.coverObjectKey = coverObjectKey;
+    }
+    public void updateFullContentObject(String key, String sha256, long byteSize) {
+        fullContentObjectKey = key; fullContentSha256 = sha256; fullContentByteSize = byteSize;
+    }
+    public void updateCoverObject(String key, String sha256, long byteSize) {
+        coverObjectKey = key; coverSha256 = sha256; coverByteSize = byteSize;
+    }
 }

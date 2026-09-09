@@ -32,6 +32,9 @@ import com.sakuya.feed.viewmodel.FeedTimelineViewModel
 import com.sakuya.model.feed.DynamicPost
 import com.sakuya.model.feed.FeedStream
 import com.sakuya.ui.component.DynamicPostCard
+import com.sakuya.ui.motion.MotionContent
+import com.sakuya.ui.motion.StaticLoadingSkeleton
+import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 /**
@@ -78,23 +81,31 @@ private fun FeedTimelineContent(
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    when {
-        uiState.isLoading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        uiState.isOfflineWithoutCache -> FeedMessageState(
+    val motionPreferences = rememberMotionPreferences()
+    MotionContent(
+        targetState = when {
+            uiState.isLoading -> FeedTimelineVisualState.Loading
+            uiState.isOfflineWithoutCache -> FeedTimelineVisualState.Offline
+            uiState.posts.isEmpty() -> FeedTimelineVisualState.Empty
+            else -> FeedTimelineVisualState.Content
+        },
+    ) { visualState ->
+    when (visualState) {
+        FeedTimelineVisualState.Loading ->
+        StaticLoadingSkeleton(modifier = modifier.fillMaxSize())
+        FeedTimelineVisualState.Offline -> FeedMessageState(
             message = "当前无网络连接",
             actionLabel = "重新加载",
             onAction = onRefresh,
             modifier = modifier,
         )
-        uiState.posts.isEmpty() -> FeedMessageState(
+        FeedTimelineVisualState.Empty -> FeedMessageState(
             message = errorMessage ?: "暂时还没有动态",
             actionLabel = if (errorMessage == null) null else "重新加载",
             onAction = onRefresh,
             modifier = modifier,
         )
-        else -> LazyColumn(
+        FeedTimelineVisualState.Content -> LazyColumn(
             modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         ) {
             if (uiState.isShowingCachedContent) {
@@ -107,7 +118,12 @@ private fun FeedTimelineContent(
                 }
             }
             items(uiState.posts, key = DynamicPost::id) { post ->
-                DynamicPostCard(post = post, onClick = { onPostClick(post.id) }, onAuthorClick = { onAuthorClick(post.userId) })
+                DynamicPostCard(
+                    post = post,
+                    onClick = { onPostClick(post.id) },
+                    onAuthorClick = { onAuthorClick(post.userId) },
+                    modifier = if (motionPreferences.animationsEnabled) Modifier.animateItem() else Modifier,
+                )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
             }
             item {
@@ -123,7 +139,11 @@ private fun FeedTimelineContent(
             }
         }
     }
+    }
 }
+
+/** 动态流页面可见状态，只用于 UI 过渡，不映射到 ViewModel 或网络状态。 */
+private enum class FeedTimelineVisualState { Loading, Offline, Empty, Content }
 
 @Composable
 private fun FeedMessageState(

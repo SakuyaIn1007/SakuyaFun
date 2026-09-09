@@ -28,6 +28,18 @@ public class Wenku8AdapterClient {
     public Map<String, Object> get(String path) { return get(path, Duration.ofSeconds(90)); }
     /** 全文接口单独使用可配置的长超时，普通搜索/目录仍维持 90 秒上限。 */
     public Map<String, Object> getFullContent(String path) { return get(path, Duration.ofSeconds(properties.fullContentTimeoutSeconds())); }
+    /** 封面等二进制资产只供后台导入，客户端不会接触适配器地址。 */
+    public byte[] getBytes(String path) {
+        if (!properties.enabled() || properties.normalizedBaseUrl().isBlank()) throw new BusinessException(503, "Wenku8 内部验证服务未启用");
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(properties.normalizedBaseUrl() + path))
+                .timeout(Duration.ofSeconds(30)).GET().build();
+            HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) return response.body();
+            throw new BusinessException(response.statusCode() == 404 ? 404 : 503, "Wenku8 封面暂不可用");
+        } catch (BusinessException error) { throw error;
+        } catch (Exception error) { throw new BusinessException(503, "无法读取 Wenku8 封面"); }
+    }
 
     /**
      * 使用 InputStream 解析内部 JSON，避免整本正文在 HTTP Body 字符串和 Jackson 之间产生两份大对象副本。

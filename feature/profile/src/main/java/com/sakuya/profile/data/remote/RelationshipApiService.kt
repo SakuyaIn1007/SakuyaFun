@@ -1,7 +1,10 @@
 package com.sakuya.profile.data.remote
 
 import com.sakuya.model.network.BaseResponse
+import com.sakuya.model.profile.RelationshipPageDto
+import com.sakuya.model.profile.RelationshipUserDto
 import retrofit2.Response
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -13,25 +16,23 @@ import retrofit2.http.Query
  * 执行流程：RelationshipRepository 调用该服务并将 DTO 转为 RelationshipUser，UI 不接触网络字段。
  */
 interface RelationshipApiService {
-    @GET("profile/following")
-    suspend fun getFollowing(@Query("page") page: Int, @Query("pageSize") pageSize: Int): Response<BaseResponse<RelationshipPageDto>>
+    @GET("profiles/{userId}/following")
+    suspend fun getFollowing(
+        @Path("userId") userId: String,
+        @Query("page") page: Int,
+        @Query("pageSize") pageSize: Int,
+    ): Response<BaseResponse<RelationshipPageDto>>
 
-    @GET("profile/followers")
-    suspend fun getFollowers(@Query("page") page: Int, @Query("pageSize") pageSize: Int): Response<BaseResponse<RelationshipPageDto>>
+    @GET("profiles/{userId}/followers")
+    suspend fun getFollowers(
+        @Path("userId") userId: String,
+        @Query("page") page: Int,
+        @Query("pageSize") pageSize: Int,
+    ): Response<BaseResponse<RelationshipPageDto>>
 
-    @POST("profile/following/{userId}")
+    @POST("profiles/{userId}/follow")
     suspend fun follow(@Path("userId") userId: String): Response<BaseResponse<RelationshipUserDto>>
 
-    @POST("profile/following/{userId}/cancel")
+    @DELETE("profiles/{userId}/follow")
     suspend fun unfollow(@Path("userId") userId: String): Response<BaseResponse<RelationshipUserDto>>
 }
-
-data class RelationshipPageDto(val users: List<RelationshipUserDto>, val nextPage: Int? = null)
-data class RelationshipUserDto(
-    val userId: String,
-    val name: String,
-    val initial: String,
-    val description: String,
-    val avatarColor: Long,
-    val isFollowing: Boolean,
-)

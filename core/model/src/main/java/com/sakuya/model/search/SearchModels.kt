@@ -17,6 +17,7 @@ data class SearchFilter(
 enum class SearchContentType(val label: String) {
     DYNAMIC("动态"),
     NOVEL("轻小说"),
+    USER("用户"),
 }
 
 data class SearchResult(

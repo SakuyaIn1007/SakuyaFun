@@ -5,7 +5,7 @@ import com.sakuya.friend.data.remote.FriendDto
 import com.sakuya.friend.data.remote.FriendRequestDto
 import com.sakuya.friend.data.remote.FriendRequestItem
 import com.sakuya.friend.data.remote.DirectConversationDto
-import com.sakuya.friend.model.Friend
+import com.sakuya.model.friend.Friend
 import com.sakuya.model.network.BaseResponse
 import kotlinx.coroutines.CancellationException
 import retrofit2.Response

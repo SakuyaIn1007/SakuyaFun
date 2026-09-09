@@ -1,5 +1,6 @@
 package com.sakuya.reader.data
 
+import com.sakuya.data.content.ContentChapterAnchorDto
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -13,11 +14,11 @@ class Wenku8ChapterAnchorMapperTest {
     fun mapsOnlyInRangeAnchorsAndOrdersThemByOffset() {
         val anchors = mapReadableAnchors(
             values = listOf(
-                Wenku8ChapterAnchorDto(chapterId = "second", title = "第二章", offset = 20),
-                Wenku8ChapterAnchorDto(chapterId = "missing", title = "缺失", offset = -1),
-                Wenku8ChapterAnchorDto(chapterId = "outside", title = "越界", offset = 40),
-                Wenku8ChapterAnchorDto(chapterId = "first", title = "第一章", volumeTitle = "第一卷", offset = 0),
-                Wenku8ChapterAnchorDto(chapterId = "", title = "无效", offset = 5),
+                ContentChapterAnchorDto(chapterId = "second", title = "第二章", offset = 20),
+                ContentChapterAnchorDto(chapterId = "missing", title = "缺失", offset = -1),
+                ContentChapterAnchorDto(chapterId = "outside", title = "越界", offset = 40),
+                ContentChapterAnchorDto(chapterId = "first", title = "第一章", volumeTitle = "第一卷", offset = 0),
+                ContentChapterAnchorDto(chapterId = "", title = "无效", offset = 5),
             ),
             textLength = 40,
         )

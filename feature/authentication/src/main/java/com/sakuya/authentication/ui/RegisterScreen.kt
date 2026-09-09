@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.authentication.viewmodel.AuthUiState
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.motion.MotionContent
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
@@ -117,13 +118,13 @@ fun RegisterContent(
                     .height(48.dp),
                 enabled = !state.isLoading
             ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("注册")
+                MotionContent(targetState = state.isLoading) { isLoading ->
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp,
+                        )
+                    } else Text("注册")
                 }
             }
         }

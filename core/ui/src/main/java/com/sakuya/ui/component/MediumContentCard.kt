@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.designsystem.icon.SakuyaIcons
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun MediumContentCard(
@@ -40,7 +41,11 @@ fun MediumContentCard(
     fileType: String,
     modifier: Modifier = Modifier
 ) {
-    val colors = listOf(Color(0xFF8EA7D8), Color(0xFF657EBA), Color(0xFF526BA8))
+    val colors = listOf(
+        MaterialTheme.colorScheme.primaryContainer,
+        MaterialTheme.colorScheme.secondaryContainer,
+        MaterialTheme.colorScheme.primary,
+    )
     val safeProgress = progress.coerceIn(0f, 1f)
 
     Column(
@@ -59,12 +64,12 @@ fun MediumContentCard(
                     .padding(horizontal = 8.dp)
                     .aspectRatio(0.75f)
                     .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(4.dp),
+                        elevation = 4.dp,
+                        shape = MaterialTheme.shapes.extraSmall,
                         ambientColor = Color.White.copy(alpha = 0.12f),
                         spotColor = Color.Black.copy(alpha = 0.42f)
                     )
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(Brush.verticalGradient(colors))
             ) {
                 CoverFrame(modifier = Modifier.matchParentSize())
@@ -93,12 +98,12 @@ fun MediumContentCard(
                     .padding(start = 8.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp)),
-                color = MaterialTheme.colorScheme.outline,
-                trackColor = Color.White.copy(alpha = 0.12f)
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             Text(
                 text = "${(safeProgress * 100).toInt()}%",
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1
             )
@@ -115,13 +120,13 @@ fun MediumContentCard(
             Icon(
                 painter = painterResource(SakuyaIcons.Folder),
                 contentDescription = "文件标",
-                tint = MaterialTheme.colorScheme.outline,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(20.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = title,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

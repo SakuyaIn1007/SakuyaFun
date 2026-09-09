@@ -39,23 +39,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sakuya.conversation.model.Conversation
+import com.sakuya.model.chat.Conversation
 import com.sakuya.conversation.viewmodel.ConversationAction
 import com.sakuya.conversation.viewmodel.ConversationViewModel
 import com.sakuya.ui.component.AppPrimaryTopBar
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.component.UpdateDot
 
 @Composable
 fun ConversationScreen(
     viewModel: ConversationViewModel = hiltViewModel()
 ) {
-    val conversations by viewModel.conversations.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     ConversationContent(
-        conversations = conversations,
-        isLoading = isLoading,
+        conversations = uiState.conversations,
+        isLoading = uiState.isLoading,
+        notificationUnreadCount = uiState.notificationUnreadCount,
+        showFriendUpdate = uiState.updateBadgeState.showFriendRelation,
         onAction = viewModel::onAction
     )
 }
@@ -64,6 +66,8 @@ fun ConversationScreen(
 fun ConversationContent(
     conversations: List<Conversation>,
     isLoading: Boolean,
+    notificationUnreadCount: Int = 0,
+    showFriendUpdate:Boolean=false,
     onAction: (ConversationAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -92,17 +96,19 @@ fun ConversationContent(
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.inverseOnSurface,
+                color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
             ) {
                 Column(modifier = Modifier.padding(top = 24.dp)) {
                     ConversationEntryCard(
                         title = "新通知",
+                        unreadCount = notificationUnreadCount,
                         onClick = { onAction(ConversationAction.OnNoticeClick) }
                     )
                     Outline(dp = 76.dp)
                     ConversationEntryCard(
                         title = "好友",
+                        showUpdateDot=showFriendUpdate,
                         onClick = { onAction(ConversationAction.OnFriendClick) }
                     )
                     Outline(dp = 76.dp)
@@ -155,12 +161,14 @@ fun ConversationContent(
 private fun ConversationEntryCard(
     modifier: Modifier = Modifier,
     title: String,
+    unreadCount: Int = 0,
+    showUpdateDot:Boolean=false,
     onClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -173,6 +181,8 @@ private fun ConversationEntryCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+        if (unreadCount > 0) Badge(modifier = Modifier.padding(end = 8.dp)) { Text(if (unreadCount > 99) "99+" else unreadCount.toString()) }
+        else if(showUpdateDot)UpdateDot(Modifier.padding(end=8.dp))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "箭头",
@@ -190,7 +200,7 @@ private fun ConversationRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.inverseOnSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

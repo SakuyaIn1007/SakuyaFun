@@ -1,6 +1,7 @@
 package com.sakuya.backend.wenku8;
 
 import com.sakuya.backend.common.ApiResponse;
+import com.sakuya.backend.content.ContentFallbackFacade;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -26,21 +27,17 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Validated @RestController @RequestMapping("/wenku8")
 public class Wenku8Controller {
-    private final Wenku8GatewayService service;
-    private final Wenku8Properties properties;
-    public Wenku8Controller(Wenku8GatewayService service, Wenku8Properties properties) { this.service = service; this.properties = properties; }
-    @GetMapping("/novels/search") public ApiResponse<Wenku8GatewayService.SearchPage> search(@RequestParam @NotBlank String keyword, @RequestParam(defaultValue = "0") @Min(0) @Max(100) int page) { return ApiResponse.ok(service.search(keyword, page)); }
-    @GetMapping("/novels/{id}") public ApiResponse<Map<String, Object>> novel(@PathVariable String id) { return ApiResponse.ok(service.novel(id)); }
-    @GetMapping("/novels/list") public ApiResponse<Wenku8GatewayService.SearchPage> list(@RequestParam(defaultValue = "lastupdate") String sort) { return ApiResponse.ok(service.list(sort)); }
-    @GetMapping("/novels/{id}/chapters") public ApiResponse<Map<String, Object>> chapters(@PathVariable String id) { return ApiResponse.ok(service.chapters(id)); }
+    private final ContentFallbackFacade content;
+    public Wenku8Controller(ContentFallbackFacade content) { this.content = content; }
+    @GetMapping("/novels/search") public ApiResponse<Object> search(@RequestParam @NotBlank String keyword, @RequestParam(defaultValue = "0") @Min(0) @Max(100) int page) { return ApiResponse.ok(content.search(keyword, page, 20)); }
+    @GetMapping("/novels/{id}") public ApiResponse<Object> novel(@PathVariable String id) { return ApiResponse.ok(content.novel(id)); }
+    @GetMapping("/novels/list") public ApiResponse<Object> list(@RequestParam(defaultValue = "lastupdate") String sort) { return ApiResponse.ok(content.search("", 0, 20)); }
+    @GetMapping("/novels/{id}/chapters") public ApiResponse<Object> chapters(@PathVariable String id) { return ApiResponse.ok(content.chapters(id)); }
     /** 全文响应可能较大；服务层使用大响应超时和流式解析，Controller 只负责认证后的 DTO 输出。 */
-    @GetMapping("/novels/{id}/full-content") public ApiResponse<Wenku8GatewayService.FullContentDocument> fullContent(@PathVariable String id) { return ApiResponse.ok(service.fullContent(id)); }
-    @GetMapping("/chapters/{chapterId}/content") public ApiResponse<Map<String, Object>> content(@RequestParam @NotBlank String novelId, @PathVariable String chapterId) { return ApiResponse.ok(service.content(novelId, chapterId)); }
+    @GetMapping("/novels/{id}/full-content") public ApiResponse<Object> fullContent(@PathVariable String id) { return ApiResponse.ok(content.fullContent(id)); }
+    @GetMapping("/chapters/{chapterId}/content") public ApiResponse<Object> content(@RequestParam @NotBlank String novelId, @PathVariable String chapterId) { return ApiResponse.ok(content.chapter(chapterId, novelId)); }
     /** Android 使用同一受认证网关加载封面；后端代理字节流，内部适配服务地址不会暴露给客户端。 */
     @GetMapping("/novels/{id}/cover") public void cover(@PathVariable String id, HttpServletResponse response) throws IOException, InterruptedException {
-        String path = service.coverPath(id);
-        if (!properties.enabled() || properties.normalizedBaseUrl().isBlank()) { response.sendError(503, "Wenku8 内部验证服务未启用"); return; }
-        HttpResponse<byte[]> upstream = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build().send(HttpRequest.newBuilder(URI.create(properties.normalizedBaseUrl() + path)).timeout(Duration.ofSeconds(30)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
-        response.setStatus(upstream.statusCode()); response.setContentType(upstream.headers().firstValue("Content-Type").orElse("image/jpeg")); response.getOutputStream().write(upstream.body());
+        var cover = content.cover(id); response.setContentType(cover.contentType()); response.getOutputStream().write(cover.bytes());
     }
 }

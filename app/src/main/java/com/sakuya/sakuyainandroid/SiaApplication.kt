@@ -6,8 +6,14 @@ import android.os.StrictMode
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.sakuya.data.remote.AuthenticatedImageLoaderEntryPoint
+import com.sakuya.data.notification.NotificationChannels
 import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.android.EntryPointAccessors
+import com.sakuya.data.notification.NotificationEntryPoint
+import com.sakuya.data.reading.ReadingSyncCoordinator
+import com.sakuya.data.offline.OfflineDownloadCoordinator
+import kotlinx.coroutines.*
+import javax.inject.Inject
 
 @HiltAndroidApp
 /**
@@ -16,10 +22,19 @@ import dagger.hilt.android.EntryPointAccessors
  * 执行流程：Compose 图片组件委托 Coil -> Coil 从本类取得 ImageLoader -> OkHttp 自动附加当前登录令牌。
  */
 class SiaApplication : Application(), ImageLoaderFactory {
+    @Inject lateinit var readingSyncCoordinator: ReadingSyncCoordinator
+    @Inject lateinit var offlineDownloadCoordinator: OfflineDownloadCoordinator
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override fun onCreate() {
         super.onCreate()
 //启动严苛模式
         setStrictModePolicy()
+        NotificationChannels.create(this)
+        // 升级或系统恢复后补偿设备注册；失败不影响应用启动，后续 Token 刷新仍会重试。
+        val notificationEntryPoint = EntryPointAccessors.fromApplication(this, NotificationEntryPoint::class.java)
+        applicationScope.launch { notificationEntryPoint.pushRegistrationManager().registerCurrentToken() }
+        readingSyncCoordinator.start()
+        offlineDownloadCoordinator.start()
 //        Sync.initialize(context = this)
     }
 

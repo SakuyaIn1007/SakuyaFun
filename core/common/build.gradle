@@ -40,6 +40,7 @@ dependencies {
 
 
     api libs.datastore.preferences
+    api libs.androidx.lifecycle.viewmodel.compose
     api libs.retrofit2
     api libs.retrofit2.converter.gson
     api libs.okhttp3

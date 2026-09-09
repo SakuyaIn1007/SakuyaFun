@@ -55,7 +55,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.model.search.SearchContentType
 import com.sakuya.model.search.SearchResult
 import com.sakuya.search.viewmodel.SearchAction
-import com.sakuya.search.viewmodel.SearchEffect
 import com.sakuya.search.viewmodel.SearchUiState
 import com.sakuya.search.viewmodel.SearchViewModel
 
@@ -80,14 +79,17 @@ fun SearchScreen(
         }
         Unit
     }
+    LaunchedEffect(viewModel) { viewModel.onAction(SearchAction.LoadDiscovery) }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
         SearchEntryTopBar(query, { query = it }, onBack, submitSearch)
         SearchDiscovery(
             history = uiState.history,
             hotKeywords = uiState.hotKeywords,
+            errorMessage = uiState.discoveryErrorMessage,
             onKeywordClick = onSearch,
             onClearHistory = { viewModel.onAction(SearchAction.ClearHistory) },
+            onRetry = { viewModel.onAction(SearchAction.LoadDiscovery) },
         )
     }
 }
@@ -98,26 +100,22 @@ internal fun SearchResultsContent(
     onBack: () -> Unit,
     onBookClick: (String) -> Unit = {},
     onDynamicClick: (String) -> Unit = {},
+    onUserClick: (String) -> Unit = {},
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var errorMessage by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(query) { viewModel.onAction(SearchAction.LoadResults(query)) }
-    LaunchedEffect(viewModel) {
-        viewModel.effect.collect { effect ->
-            if (effect is SearchEffect.ShowError) errorMessage = effect.message
-        }
-    }
     SearchResultsPageContent(
         query = query,
         uiState = uiState,
-        errorMessage = errorMessage,
+        errorMessage = uiState.errorMessage,
         onBack = onBack,
         onTypeSelected = { viewModel.onAction(SearchAction.SelectType(it)) },
         onBookClick = onBookClick,
         onDynamicClick = onDynamicClick,
+        onUserClick = onUserClick,
         onLoadMore = { viewModel.onAction(SearchAction.LoadMore) },
-        onRetry = { viewModel.onAction(SearchAction.LoadResults(query)) },
+        onRetry = { viewModel.onAction(SearchAction.Retry) },
     )
 }
 
@@ -134,6 +132,7 @@ private fun SearchResultsPageContent(
     onTypeSelected: (SearchContentType?) -> Unit,
     onBookClick: (String) -> Unit,
     onDynamicClick: (String) -> Unit,
+    onUserClick: (String) -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
 ) {
@@ -151,6 +150,7 @@ private fun SearchResultsPageContent(
             errorMessage = errorMessage,
             onBookClick = onBookClick,
             onDynamicClick = onDynamicClick,
+            onUserClick = onUserClick,
             onLoadMore = onLoadMore,
             onRetry = onRetry,
         )
@@ -173,7 +173,7 @@ private fun SearchEntryTopBar(query: String, onQueryChange: (String) -> Unit, on
                 Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                 Spacer(Modifier.width(8.dp))
                 Box(Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text("搜索动态或轻小说", color = MaterialTheme.colorScheme.outline, fontSize = 15.sp)
+                    if (query.isEmpty()) Text("搜索小说、动态或用户", color = MaterialTheme.colorScheme.outline, fontSize = 15.sp)
                     innerTextField()
                 }
             }
@@ -184,7 +184,7 @@ private fun SearchEntryTopBar(query: String, onQueryChange: (String) -> Unit, on
 @Composable
 private fun SearchResultFilterRow(selectedType: SearchContentType?, onTypeSelected: (SearchContentType?) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-        listOf(null to "综合", SearchContentType.DYNAMIC to "内容", SearchContentType.NOVEL to "轻小说").forEach { (type, title) ->
+        listOf(null to "综合", SearchContentType.DYNAMIC to "动态", SearchContentType.NOVEL to "轻小说", SearchContentType.USER to "用户").forEach { (type, title) ->
             Text(
                 text = title, style = MaterialTheme.typography.labelLarge,
                 fontWeight = if (selectedType == type) FontWeight.SemiBold else FontWeight.Normal,
@@ -196,8 +196,26 @@ private fun SearchResultFilterRow(selectedType: SearchContentType?, onTypeSelect
 }
 
 @Composable
-private fun SearchDiscovery(history: List<String>, hotKeywords: List<String>, onKeywordClick: (String) -> Unit, onClearHistory: () -> Unit) {
+private fun SearchDiscovery(
+    history: List<String>,
+    hotKeywords: List<String>,
+    errorMessage: String?,
+    onKeywordClick: (String) -> Unit,
+    onClearHistory: () -> Unit,
+    onRetry: () -> Unit,
+) {
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+        if (errorMessage != null) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(errorMessage, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                    TextButton(onClick = onRetry) { Text("重试") }
+                }
+            }
+        }
         item { SearchKeywordSection("搜索历史", history, onKeywordClick, onClearHistory) }
         item { SearchKeywordSection("搜索发现", hotKeywords, onKeywordClick) }
     }
@@ -225,10 +243,11 @@ private fun SearchResultList(
     errorMessage: String?,
     onBookClick: (String) -> Unit,
     onDynamicClick: (String) -> Unit,
+    onUserClick: (String) -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
 ) {
-    // 结果点击按内容类型分流：轻小说由书籍详情处理，动态由 FeedRoutes 对应的详情页处理。
+    // 结果点击按类型分流：小说进入书籍详情，动态进入 Feed 详情，用户进入公开主页。
     when {
         uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         uiState.results.isEmpty() -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -236,17 +255,24 @@ private fun SearchResultList(
             if (errorMessage != null) Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("重试") }
         }
         else -> LazyColumn(Modifier.fillMaxSize()) {
-            items(uiState.results, key = SearchResult::id) { result ->
+            items(uiState.results, key = { "${it.type}:${it.id}" }) { result ->
                 SearchResultItem(result) {
                     when (result.type) {
                         SearchContentType.NOVEL -> onBookClick(result.id)
                         SearchContentType.DYNAMIC -> onDynamicClick(result.id)
+                        SearchContentType.USER -> onUserClick(result.id)
                     }
                 }
             }
             item {
                 LaunchedEffect(uiState.results.size) { if (uiState.canLoadMore) onLoadMore() }
-                if (uiState.isLoadingMore) Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                when {
+                    uiState.isLoadingMore -> Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                    errorMessage != null -> Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(errorMessage, color = MaterialTheme.colorScheme.outline)
+                        Button(onClick = onRetry, modifier = Modifier.padding(top = 10.dp)) { Text("重试") }
+                    }
+                }
             }
         }
     }
@@ -258,13 +284,17 @@ private fun SearchResultItem(result: SearchResult, onClick: () -> Unit) {
         Text(result.type.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(44.dp).padding(top = 2.dp))
         Column(Modifier.weight(1f)) {
             Text(result.title, style = MaterialTheme.typography.titleSmall)
-            Text(result.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-            Text(result.tags.joinToString(" · ") { "#$it" }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))
+            if (result.summary.isNotBlank()) {
+                Text(result.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+            }
+            if (result.tags.isNotEmpty()) {
+                Text(result.tags.joinToString(" · ") { "#$it" }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))
+            }
         }
     }
 }
 
-/** Preview 搜索结果页，覆盖轻小说与动态两类可点击结果。 */
+/** Preview 搜索结果页，覆盖轻小说、动态与用户三类可点击结果。 */
 @Preview(showBackground = true)
 @Composable
 private fun SearchResultsPagePreview() {
@@ -274,6 +304,7 @@ private fun SearchResultsPagePreview() {
             results = listOf(
                 SearchResult("novel/1", "紫罗兰永恒花园", "晓佳奈 · 为理解爱而书写信件的故事。", SearchContentType.NOVEL, listOf("奇幻", "成长")),
                 SearchResult("dynamic?2", "我的夏日阅读清单", "想把阅读的速度放慢一点，留些空白给散步和发呆。", SearchContentType.DYNAMIC, listOf("待读书单")),
+                SearchResult("user-1", "月见草", "正在记录阅读日常", SearchContentType.USER),
             ),
             canLoadMore = false,
         ),
@@ -282,6 +313,7 @@ private fun SearchResultsPagePreview() {
         onTypeSelected = {},
         onBookClick = {},
         onDynamicClick = {},
+        onUserClick = {},
         onLoadMore = {},
         onRetry = {},
     )

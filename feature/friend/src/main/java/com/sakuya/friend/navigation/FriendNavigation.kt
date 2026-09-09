@@ -17,7 +17,7 @@ import com.sakuya.friend.viewmodel.FriendEffect
 import com.sakuya.friend.viewmodel.FriendViewModel
 import com.sakuya.navigation.FRIEND_ADD_ROUTE
 import com.sakuya.navigation.FRIEND_ROUTE
-import com.sakuya.navigation.FNOTICE_ROUTE
+import com.sakuya.navigation.FRIEND_REQUESTS_ROUTE
 import com.sakuya.navigation.GROUP_ROUTE
 import com.sakuya.navigation.chatRoute
 
@@ -73,7 +73,7 @@ fun NavGraphBuilder.friendNavGraph(navController: NavHostController) {
             onBack = { navController.popBackStack() }
         )
     }
-    composable(FNOTICE_ROUTE) {
+    composable(FRIEND_REQUESTS_ROUTE) {
         val viewModel: FriendViewModel = hiltViewModel()
         val requests by viewModel.friendRequests.collectAsState()
         val isLoading by viewModel.isLoading.collectAsState()

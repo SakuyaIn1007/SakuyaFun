@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.compose)
 }
 
+// 开发仓库不保存 Firebase 配置；部署者放入 google-services.json 后才启用资源生成插件。
+if (file("google-services.json").exists()) {
+    apply plugin: "com.google.gms.google-services"
+}
+
 android {
     namespace 'com.sakuya.sakuyainandroid'
     compileSdk 35
@@ -65,6 +70,7 @@ dependencies {
     implementation project(':feature:search')
     implementation project(':feature:feed')
     implementation project(':feature:dashboard')
+    implementation project(':feature:notification')
     implementation project(':core:navigation')
 
     implementation libs.androidx.compose.ui.test.junit4

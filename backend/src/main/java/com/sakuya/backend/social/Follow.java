@@ -44,4 +44,5 @@ public class Follow {
 
     public UUID getFollowerId() { return followerId; }
     public UUID getFollowingId() { return followingId; }
+    public Instant getCreatedAt() { return createdAt; }
 }

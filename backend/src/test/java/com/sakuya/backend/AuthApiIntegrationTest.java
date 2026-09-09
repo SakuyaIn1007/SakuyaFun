@@ -50,6 +50,32 @@ class AuthApiIntegrationTest {
   String readConversations=mvc.perform(get("/conversations").header("Authorization","Bearer "+alice)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
   org.junit.jupiter.api.Assertions.assertEquals(0,conversationUnreadCount(readConversations,conversationId));
  }
+ /**
+  * 覆盖聊天详情、会话偏好和当前会话全文检索的授权边界。
+  * 执行流程：创建单聊并发送可检索消息 -> 更新 alice 自己的偏好 -> 搜索及读取上下文 ->
+  * 使用非成员令牌验证详情被拒绝；随后创建群聊，验证群名片和退出后访问限制。
+  */
+ @Test void chatDetailSearchAndMemberPreferencesRespectMembership() throws Exception {
+  String alice=token("alice"), bob=token("bob"), sakuya=token("sakuya");
+  String bobId=json.readTree(mvc.perform(get("/profile").header("Authorization","Bearer "+bob)).andReturn().getResponse().getContentAsString()).path("data").path("userId").asText();
+  String directBody=mvc.perform(post("/friends/"+bobId+"/conversation").header("Authorization","Bearer "+alice)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+  String directId=json.readTree(directBody).path("data").path("id").asText();
+  String messageBody=mvc.perform(post("/conversations/"+directId+"/messages").header("Authorization","Bearer "+alice).contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"可检索的历史消息\",\"messageType\":\"text\"}")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+  String messageId=json.readTree(messageBody).path("data").path("id").asText();
+  mvc.perform(get("/conversations/"+directId).header("Authorization","Bearer "+alice)).andExpect(status().isOk()).andExpect(jsonPath("$.data.type").value("direct"));
+  mvc.perform(patch("/conversations/"+directId+"/preferences").header("Authorization","Bearer "+alice).contentType(MediaType.APPLICATION_JSON).content("{\"pinned\":true,\"muted\":true}"))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.preferences.pinned").value(true)).andExpect(jsonPath("$.data.preferences.muted").value(true));
+  mvc.perform(get("/conversations/"+directId+"/messages/search?keyword=检索").header("Authorization","Bearer "+alice)).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].id").value(messageId));
+  mvc.perform(get("/conversations/"+directId+"/messages/context?messageId="+messageId).header("Authorization","Bearer "+alice)).andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString(messageId)));
+  mvc.perform(get("/conversations/"+directId).header("Authorization","Bearer "+sakuya)).andExpect(status().isForbidden());
+  String groupBody=mvc.perform(post("/conversations").header("Authorization","Bearer "+alice).contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"测试群\",\"userIds\":[\""+bobId+"\"]}"))
+   .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+  String groupId=json.readTree(groupBody).path("data").path("id").asText();
+  mvc.perform(patch("/conversations/"+groupId+"/preferences").header("Authorization","Bearer "+alice).contentType(MediaType.APPLICATION_JSON).content("{\"memberNickname\":\"群内爱丽丝\"}"))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.preferences.memberNickname").value("群内爱丽丝"));
+  mvc.perform(delete("/conversations/"+groupId+"/membership").header("Authorization","Bearer "+alice)).andExpect(status().isOk());
+  mvc.perform(get("/conversations/"+groupId).header("Authorization","Bearer "+alice)).andExpect(status().isForbidden());
+ }
  @Test void cloudLibraryReturnsReadableContentUrl() throws Exception {
   String alice=token("alice");
   String added=mvc.perform(post("/library/sword-art-online").header("Authorization","Bearer "+alice)).andExpect(status().isOk()).andExpect(jsonPath("$.data.filePath").isNotEmpty()).andReturn().getResponse().getContentAsString();
@@ -86,7 +112,8 @@ class AuthApiIntegrationTest {
   String bobId=json.readTree(mvc.perform(get("/profile").header("Authorization","Bearer "+bob)).andReturn().getResponse().getContentAsString()).path("data").path("userId").asText();
   mvc.perform(get("/profiles/"+bobId).header("Authorization","Bearer "+alice)).andExpect(status().isOk())
    .andExpect(jsonPath("$.data.userId").value(bobId)).andExpect(jsonPath("$.data.followingCount").isNumber())
-   .andExpect(jsonPath("$.data.followerCount").isNumber()).andExpect(jsonPath("$.data.likesAndFavoritesCount").value(0));
+   .andExpect(jsonPath("$.data.followerCount").isNumber()).andExpect(jsonPath("$.data.postCount").isNumber())
+   .andExpect(jsonPath("$.data.likesAndFavoritesCount").isNumber());
   mvc.perform(post("/profiles/"+bobId+"/follow").header("Authorization","Bearer "+alice)).andExpect(status().isOk())
    .andExpect(jsonPath("$.data.userId").value(bobId)).andExpect(jsonPath("$.data.isFollowing").value(true));
   mvc.perform(get("/profiles/"+bobId+"/followers?page=0&pageSize=20").header("Authorization","Bearer "+alice)).andExpect(status().isOk())
@@ -129,6 +156,39 @@ class AuthApiIntegrationTest {
 
   mvc.perform(get("/feed?stream=recommended&page=0&pageSize=50").header("Authorization","Bearer "+viewer.token()))
    .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString(unfollowedPost)));
+ }
+ /**
+  * 覆盖作者主页动态分页与真实互动统计。
+  * 执行流程：作者发布两条动态 -> 其他用户点赞和收藏 -> 分页读取作者动态 -> 校验主页聚合值。
+  */
+ @Test void authorFeedAndProfileStatsOnlyUseTargetAuthorsPosts() throws Exception {
+  String suffix=java.util.UUID.randomUUID().toString().replace("-","").substring(0,10);
+  TestUser author=register("author"+suffix,"作者");
+  TestUser viewer=register("reader"+suffix,"读者");
+  TestUser other=register("other"+suffix,"其他作者");
+  String first=publish(author.token(),"作者动态一");
+  String second=publish(author.token(),"作者动态二");
+  String unrelated=publish(other.token(),"其他人动态");
+  mvc.perform(post("/feed/"+first+"/like").header("Authorization","Bearer "+viewer.token()).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+   .andExpect(status().isOk());
+  mvc.perform(post("/feed/"+first+"/favorite").header("Authorization","Bearer "+viewer.token()).contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":true}"))
+   .andExpect(status().isOk());
+
+  String firstPage=mvc.perform(get("/feed/authors/"+author.userId()+"?page=0&pageSize=1").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(1)).andExpect(jsonPath("$.data.nextPage").value(1))
+   .andReturn().getResponse().getContentAsString();
+  String secondPage=mvc.perform(get("/feed/authors/"+author.userId()+"?page=1&pageSize=1").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(1)).andExpect(jsonPath("$.data.nextPage").doesNotExist())
+   .andReturn().getResponse().getContentAsString();
+  java.util.Set<String> authorPostIds=java.util.Set.of(
+   json.readTree(firstPage).path("data").path("items").get(0).path("id").asText(),
+   json.readTree(secondPage).path("data").path("items").get(0).path("id").asText()
+  );
+  org.junit.jupiter.api.Assertions.assertEquals(java.util.Set.of(first,second),authorPostIds);
+  org.junit.jupiter.api.Assertions.assertFalse(authorPostIds.contains(unrelated));
+  mvc.perform(get("/profiles/"+author.userId()).header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.postCount").value(2))
+   .andExpect(jsonPath("$.data.likesAndFavoritesCount").value(2));
  }
  @Test void friendRequestOnlyBecomesFriendAfterServerAcceptance() throws Exception {
   String suffix=java.util.UUID.randomUUID().toString().replace("-","").substring(0,10);

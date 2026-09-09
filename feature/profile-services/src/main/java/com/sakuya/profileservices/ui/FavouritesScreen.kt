@@ -85,7 +85,7 @@ fun FavouritesItem(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults
             .elevatedCardColors
-                (containerColor = MaterialTheme.colorScheme.inverseOnSurface),
+                (containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }

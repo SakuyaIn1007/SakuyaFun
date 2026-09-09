@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import com.sakuya.ui.theme.SakuyaTheme
 
 private val coverGradients = listOf(
     listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
@@ -51,25 +52,26 @@ fun ContentCard(
     modifier: Modifier = Modifier
 ) {
     val gradient = coverGradients[index % coverGradients.size]
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(16.dp),
+                elevation = 1.dp,
+                shape = MaterialTheme.shapes.medium,
                 ambientColor = Color.Black.copy(alpha = 0.04f),
                 spotColor = Color.Black.copy(alpha = 0.06f)
             )
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(12.dp),
+            .clip(MaterialTheme.shapes.medium)
+            .background(SakuyaTheme.tokens.colors.elevatedSurface)
+            .padding(dimensions.spaceMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(width = 72.dp, height = 96.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(MaterialTheme.shapes.small)
                 .background(
                     brush = Brush.linearGradient(colors = gradient)
                 ),
@@ -91,7 +93,7 @@ fun ContentCard(
             )
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
 
         Column(
             modifier = Modifier.weight(1f)
@@ -110,7 +112,7 @@ fun ContentCard(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -124,7 +126,7 @@ fun ContentCard(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
                     modifier = Modifier.size(14.dp),
-                    tint = Color(0xFFFFB300)
+                    tint = SakuyaTheme.tokens.colors.warning
                 )
                 Spacer(modifier = Modifier.width(2.dp))
                 Text(
@@ -139,16 +141,14 @@ fun ContentCard(
                 tags.take(2).forEach { tag ->
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
-                            )
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = tag,
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                     Spacer(modifier = Modifier.width(6.dp))

@@ -1,7 +1,7 @@
 package com.sakuya.feed.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sakuya.common.mvi.BaseMviViewModel
 import com.sakuya.feed.data.repository.FeedRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -10,10 +10,6 @@ import com.sakuya.model.feed.FeedComment
 import com.sakuya.model.feed.FeedCommentDraft
 import com.sakuya.model.feed.FeedPage
 import com.sakuya.model.feed.FeedReport
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -25,6 +21,7 @@ import kotlinx.coroutines.launch
 /**
  * 动态详情页的状态与业务逻辑。
  * 执行流程：FeedDetailScreen 将路由参数封装为 Load Action -> Repository 获取正文和评论 -> UiState 或 Effect 回传页面。
+ * 架构说明：MVI 风格，统一经 onAction 接收意图，一次性提示经 effect 通道下发。
  */
 data class FeedDetailUiState(
     val post: DynamicPost? = null,
@@ -52,16 +49,14 @@ sealed interface FeedDetailEffect {
     data object ReportSubmitted : FeedDetailEffect
 }
 
-@HiltViewModel class FeedDetailViewModel @Inject constructor(private val repository: FeedRepository) : ViewModel() {
-    private val _uiState = MutableStateFlow(FeedDetailUiState())
-    val uiState = _uiState.asStateFlow()
-    private val _effect = MutableSharedFlow<FeedDetailEffect>()
-    val effect = _effect.asSharedFlow()
+@HiltViewModel class FeedDetailViewModel @Inject constructor(private val repository: FeedRepository) : BaseMviViewModel<FeedDetailUiState, FeedDetailAction, FeedDetailEffect>(
+    initialState = FeedDetailUiState(),
+) {
 
-    fun onAction(action: FeedDetailAction) {
+    override fun onAction(action: FeedDetailAction) {
         when (action) {
             is FeedDetailAction.Load -> load(action.postId)
-            is FeedDetailAction.UpdateComment -> _uiState.value = _uiState.value.copy(commentInput = action.content)
+            is FeedDetailAction.UpdateComment -> updateState { it.copy(commentInput = action.content) }
             FeedDetailAction.SubmitComment -> submitComment()
             FeedDetailAction.ToggleLike -> updateLike()
             FeedDetailAction.ToggleFavorite -> updateFavorite()
@@ -70,44 +65,48 @@ sealed interface FeedDetailEffect {
     }
 
     private fun load(postId: String) = viewModelScope.launch {
-        _uiState.value = FeedDetailUiState(isLoading = true)
+        updateState { FeedDetailUiState(isLoading = true) }
         val post = repository.getPost(postId)
         val comments = repository.getComments(postId, page = 0, pageSize = 20)
-        _uiState.value = FeedDetailUiState(
-            post = post.getOrNull(),
-            comments = comments.getOrDefault(FeedPage(emptyList())).items,
-            isLoading = false,
-        )
+        updateState {
+            FeedDetailUiState(
+                post = post.getOrNull(),
+                comments = comments.getOrDefault(FeedPage(emptyList())).items,
+                isLoading = false,
+            )
+        }
         (post.exceptionOrNull() ?: comments.exceptionOrNull())?.let { error ->
-            _effect.emit(FeedDetailEffect.ShowError(error.message ?: "动态详情加载失败"))
+            sendEffect(FeedDetailEffect.ShowError(error.message ?: "动态详情加载失败"))
         }
     }
 
     private fun submitComment() = performAction(FeedPostActionState.SUBMITTING_COMMENT) { post ->
-        repository.createComment(post.id, FeedCommentDraft(_uiState.value.commentInput)).onSuccess { comment ->
-            _uiState.value = _uiState.value.copy(
-                post = post.copy(commentCount = post.commentCount + 1),
-                comments = _uiState.value.comments + comment,
-                commentInput = "",
-            )
-            _effect.emit(FeedDetailEffect.CommentPublished)
+        repository.createComment(post.id, FeedCommentDraft(currentState.commentInput)).onSuccess { comment ->
+            updateState { state ->
+                state.copy(
+                    post = post.copy(commentCount = post.commentCount + 1),
+                    comments = state.comments + comment,
+                    commentInput = "",
+                )
+            }
+            sendEffect(FeedDetailEffect.CommentPublished)
         }.map { Unit }
     }
 
     private fun updateLike() = performAction(FeedPostActionState.LIKING) { post ->
         repository.setLiked(post.id, !post.isLiked).onSuccess { updated ->
-            _uiState.value = _uiState.value.copy(post = updated)
+            updateState { it.copy(post = updated) }
         }.map { Unit }
     }
 
     private fun updateFavorite() = performAction(FeedPostActionState.FAVORITING) { post ->
         repository.setFavorited(post.id, !post.isFavorited).onSuccess { updated ->
-            _uiState.value = _uiState.value.copy(post = updated)
+            updateState { it.copy(post = updated) }
         }.map { Unit }
     }
 
     private fun report(report: FeedReport) = performAction(FeedPostActionState.REPORTING) { post ->
-        repository.report(post.id, report).onSuccess { _effect.emit(FeedDetailEffect.ReportSubmitted) }.map { Unit }
+        repository.report(post.id, report).onSuccess { sendEffect(FeedDetailEffect.ReportSubmitted) }.map { Unit }
     }
 
     /** 所有互动操作收口在此：先写入进行中状态，失败时仅发送副作用，避免覆盖已展示的详情数据。 */
@@ -115,12 +114,12 @@ sealed interface FeedDetailEffect {
         actionState: FeedPostActionState,
         request: suspend (DynamicPost) -> Result<Unit>,
     ) = viewModelScope.launch {
-        val post = _uiState.value.post ?: return@launch
-        if (_uiState.value.actionState != FeedPostActionState.IDLE) return@launch
-        _uiState.value = _uiState.value.copy(actionState = actionState)
+        val post = currentState.post ?: return@launch
+        if (currentState.actionState != FeedPostActionState.IDLE) return@launch
+        updateState { it.copy(actionState = actionState) }
         request(post).onFailure { error ->
-            _effect.emit(FeedDetailEffect.ShowError(error.message ?: "动态操作失败"))
+            sendEffect(FeedDetailEffect.ShowError(error.message ?: "动态操作失败"))
         }
-        _uiState.value = _uiState.value.copy(actionState = FeedPostActionState.IDLE)
+        updateState { it.copy(actionState = FeedPostActionState.IDLE) }
     }
 }

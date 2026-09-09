@@ -14,7 +14,8 @@ class EpubLoaderTest {
         try {
             val result = loader.load(epubFile.inputStream())
             assertTrue(result.isNotEmpty())
-            assertTrue(result.any { it.contains("Hello World") })
+            assertTrue(result.any { it.content.contains("Hello World") })
+            assertEquals("Chapter 1", result.first().title)
         } finally {
             epubFile.delete()
         }
