@@ -25,7 +25,7 @@ class ChapterSplitterTest {
     @Test
     void 真实样本切分出预期章节数() throws Exception {
         ChapterSplitter.SplitResult result = ChapterSplitter.split(sample());
-        assertThat(result.chapterCount()).isEqualTo(19);
+        assertThat(result.chapterCount()).isEqualTo(22);
         assertThat(result.isDegraded()).isFalse();
     }
 
@@ -62,6 +62,40 @@ class ChapterSplitterTest {
         ChapterSplitter.SplitResult result = ChapterSplitter.split(text);
         assertThat(result.chapters()).extracting(ChapterSplitter.SplitChapter::volumeTitle)
             .containsExactly("恋爱插话集第一弹", "外传一 见习生的初恋");
+    }
+
+    /**
+     * 章节标题的自由形式必须被识别：标记法只能 bootstrap 出卷名，真正的章节边界靠卷名扩展。
+     * 这些标题里没有「第X章」「序章」等标记，旧实现会整章漏掉。
+     */
+    @Test
+    void 自由形式的章节标题也能切出() {
+        String text = "恋爱插话集第一弹 序\n正文。\n"
+            + "恋爱插话集第一弹 文学少女和恋爱的牛魔王\n正文。\n"
+            + "恋爱插话集第一弹 后记\n正文。";
+        ChapterSplitter.SplitResult result = ChapterSplitter.split(text);
+        assertThat(result.chapters()).extracting(ChapterSplitter.SplitChapter::title)
+            .containsExactly("序", "文学少女和恋爱的牛魔王", "后记");
+    }
+
+    /** 形如「卷名 + 子标题」的碎片不能另立为卷，否则同卷章节会归错卷。 */
+    @Test
+    void 卷名碎片不被另立为卷() {
+        String text = "外传三 见习生的毕业 后记\n正文。\n"
+            + "外传三 见习生的毕业 ★文学少女 见习生的寂寞\n正文。\n"
+            + "外传三 见习生的毕业 第二章 少年K\n正文。";
+        ChapterSplitter.SplitResult result = ChapterSplitter.split(text);
+        assertThat(result.chapters()).extracting(ChapterSplitter.SplitChapter::volumeTitle)
+            .containsOnly("外传三 见习生的毕业");
+        assertThat(result.chapterCount()).isEqualTo(3);
+    }
+
+    /** 不换行空格 U+00A0 缩进的正文行同样不能被误判。 */
+    @Test
+    void 不换行空格缩进的正文行不被误判() {
+        String text = "第一卷 测试卷 第一章 标题\n    正文，含 插图 二字。\n第一卷 测试卷 第二章 标题二\n正文。";
+        ChapterSplitter.SplitResult result = ChapterSplitter.split(text);
+        assertThat(result.chapterCount()).isEqualTo(2);
     }
 
     /** 以全角空格缩进的正文行不能被误判为章节标题。 */

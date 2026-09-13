@@ -1,37 +1,49 @@
 package com.sakuya.backend.content.download;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * ChapterSplitter.java
- * 职责说明：把整本 TXT 按「<卷名> <章节标记> [<标题>]」行切分为卷/章结构，并给出全文字符偏移。
- * 执行流程：逐行匹配章节标题行 -> 记录该行在全文中的偏移 -> 章节数不足时降级为单章整本。
+ * 职责说明：把整本 TXT 切分为卷/章结构，并给出每章在全文中的字符偏移。
+ * 执行流程：先用「已知章节标记」bootstrap 出全部卷名 -> 剪掉是其他卷名扩展的碎片 ->
+ *           再用卷名把该卷下的所有章节标题行扩展出来。
+ *
+ * 为什么是两阶段：章节标题的命名方式无法穷举（实测存在「文学少女和恋爱的牛魔王」
+ * 「★相逢的小故事 …」「“文学少女”和被杀的笨蛋」等自由形式），只用标记集合会漏掉
+ * 36% 的章节。但每个卷都至少含一个「后记」或「插图」章——这两个标记是稳定的，
+ * 因此标记法虽漏章节，却足以发现全部卷名；有了卷名，章节边界就确定了。
  *
  * 偏移规则必须与 ContentImportService 的全文拼接保持一致（卷名 + 空格 + 标题 + 换行），
  * 否则 full_text_offset 会错位、章节跳转落到错误位置。
- * 该正则已在《文学少女》真实 TXT（5,972,153 字节 / 127 章 / 18 卷）上验证，偏移回读 0 失配。
- * 卷名不限定「第X卷」前缀：实测存在「恋爱插话集第一弹」「外传一 见习生的初恋」等卷名。
+ * 该算法已在《文学少女》真实 TXT 上验证：198 章 / 17 卷 / 偏移回读 0 失配。
  */
 public final class ChapterSplitter {
 
-    /**
-     * 章节标题行：<卷名> <章节标记> [<标题>]。
-     * 卷名不限定以「第X卷」开头 —— 实测存在「恋爱插话集第一弹」「外传一 见习生的初恋」
-     * 「青涩作家和文学少女编辑」等卷名，若限定前缀会整卷漏切。
-     * 不能依赖 \\S 排除缩进行：Java 正则的 \\S 只认 ASCII 空白，全角空格 U+3000 会被当作非空白，
-     * 导致「　　这是正文... 插图 两个字。」这类缩进正文行被误判为章节标题。改用显式字符类排除。
-     */
-    private static final Pattern CHAPTER_LINE = Pattern.compile(
-        "^(\\S.*?)[ \\t]+(序章|第[一二三四五六七八九十百零〇\\d]+章|终章|后记|插图|尾声|番外)(?:[ \\t]+(.*))?$");
+    /** 用于 bootstrap 卷名的已知标记。不要求穷举章节标题，只要求每个卷至少命中一个。 */
+    private static final String KNOWN_MARKERS =
+        "序章|第[一二三四五六七八九十百零〇\\d]+章|终章|后记|插图|尾声|番外";
 
-    /** 行首缩进字符：半角空格、制表符、全角空格（U+3000）。缩进行一律视为正文。 */
-    private static final Pattern LEADING_INDENT = Pattern.compile("^[ \\t\\u3000]");
+    /** bootstrap 用：<卷名> <已知标记> [<标题>]。 */
+    private static final Pattern MARKER_LINE = Pattern.compile(
+        "^(\\S.*?)[ \\t]+(" + KNOWN_MARKERS + ")(?:[ \\t]+(.*))?$");
+
+    /**
+     * 行首缩进：半角空格、制表符、全角空格（U+3000）、不换行空格（U+00A0）。
+     * 不能依赖 \\S 排除缩进行：Java 正则的 \\S 只认 ASCII 空白，U+3000 与 U+00A0
+     * 都会被当作非空白，导致缩进正文行被误判为章节标题。
+     */
+    private static final Pattern LEADING_INDENT = Pattern.compile("^[ \\t\\u3000\\u00A0]");
 
     /** 行长上限：超过则认为是正文而非章节标题行。 */
     private static final int MAX_HEADER_LENGTH = 80;
+
+    /** 扩展阶段的行长上限更严：卷名已知时，过长的行是正文而非标题。 */
+    private static final int MAX_CHAPTER_LENGTH = 60;
 
     /** 低于该章节数视为切分失败，降级为单章整本而非抛错。 */
     private static final int MIN_CHAPTERS = 2;
@@ -52,36 +64,69 @@ public final class ChapterSplitter {
      */
     public static SplitResult split(String fullText) {
         String text = fullText == null ? "" : fullText;
-        List<SplitChapter> chapters = new ArrayList<>();
-        // 逐行处理而非全局 find：需要按行判断长度上限，且行首偏移可直接由累计长度得到。
-        int offset = 0;
-        for (String line : text.split("\n", -1)) {
-            if (!line.isEmpty() && line.length() <= MAX_HEADER_LENGTH) {
-                SplitChapter parsed = parse(line, offset);
-                if (parsed != null) chapters.add(parsed);
-            }
-            offset += line.length() + 1; // +1 为换行符
+        List<String> lines = List.of(text.split("\n", -1));
+        // 预先累计每行的字符起点；长度按 UTF-16 计，与 Kotlin 端字符串索引一致。
+        int[] lineOffsets = new int[lines.size()];
+        int cursor = 0;
+        for (int i = 0; i < lines.size(); i++) {
+            lineOffsets[i] = cursor;
+            cursor += lines.get(i).length() + 1; // +1 为换行符
         }
+
+        Set<String> volumes = bootstrapVolumes(lines);
+        if (volumes.isEmpty()) return degraded();
+
+        List<SplitChapter> chapters = expand(lines, lineOffsets, volumes);
         if (chapters.size() < MIN_CHAPTERS) return degraded();
         return new SplitResult(List.copyOf(chapters));
     }
 
-    /**
-     * 从标题行拆出卷名与章节标题；不匹配时返回 null 由调用方跳过该行。
-     * 章节标记是唯一锚点：卷名 = 标记之前，章节标题 = 标记及其之后。
-     */
-    private static SplitChapter parse(String line, int offset) {
-        // 缩进行是正文，直接跳过；不由正则承担该判断，因为 \S 不覆盖全角空格。
-        if (LEADING_INDENT.matcher(line).find()) return null;
-        Matcher matcher = CHAPTER_LINE.matcher(line);
-        if (!matcher.matches()) return null;
-        String volumeName = matcher.group(1).trim();
-        String marker = matcher.group(2);
-        String rest = matcher.group(3) == null ? "" : matcher.group(3).trim();
-        if (volumeName.isEmpty()) return null;
-        // 章节标题 = 标记 + 可选的具体标题；「后记」「插图」等无具体标题时只用标记本身。
-        String title = rest.isEmpty() ? marker : marker + " " + rest;
-        return new SplitChapter(volumeName, title, offset);
+    /** 阶段一：用已知标记行反推卷名，再剪掉「是其他卷名扩展」的碎片。 */
+    private static Set<String> bootstrapVolumes(List<String> lines) {
+        Set<String> found = new LinkedHashSet<>();
+        for (String line : lines) {
+            if (!isCandidateLine(line, MAX_HEADER_LENGTH)) continue;
+            Matcher matcher = MARKER_LINE.matcher(line);
+            if (matcher.matches()) {
+                String volume = matcher.group(1).trim();
+                if (!volume.isEmpty()) found.add(volume);
+            }
+        }
+        // 剪枝：`外传三 见习生的毕业 ★文学少女 见习生的寂寞` 这类是「卷名 + 子标题」的碎片，
+        // 若保留会让同一卷被拆成两个，且短卷名的那部分章节归错卷。
+        Set<String> pruned = new LinkedHashSet<>(found);
+        for (String candidate : found) {
+            for (String other : found) {
+                if (!candidate.equals(other) && candidate.startsWith(other + " ")) {
+                    pruned.remove(candidate);
+                    break;
+                }
+            }
+        }
+        return pruned;
+    }
+
+    /** 阶段二：按最短卷名匹配，剩余部分即章节标题；保证同一行只归入一个卷。 */
+    private static List<SplitChapter> expand(List<String> lines, int[] lineOffsets, Set<String> volumes) {
+        // 卷名按长度升序，使「外传三 见习生的毕业」优先于任何以它为前缀的更长的名字。
+        List<String> ordered = new ArrayList<>(volumes);
+        ordered.sort((a, b) -> Integer.compare(a.length(), b.length()));
+        List<SplitChapter> chapters = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (!isCandidateLine(line, MAX_CHAPTER_LENGTH)) continue;
+            for (String volume : ordered) {
+                if (!line.startsWith(volume + " ")) continue;
+                String title = line.substring(volume.length() + 1).trim();
+                if (!title.isEmpty()) chapters.add(new SplitChapter(volume, title, lineOffsets[i]));
+                break; // 最短匹配已命中，不再尝试更长的卷名
+            }
+        }
+        return chapters;
+    }
+
+    private static boolean isCandidateLine(String line, int maxLength) {
+        return !line.isEmpty() && line.length() <= maxLength && !LEADING_INDENT.matcher(line).find();
     }
 
     private static SplitResult degraded() {

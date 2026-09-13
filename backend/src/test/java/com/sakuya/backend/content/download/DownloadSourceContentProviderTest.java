@@ -49,9 +49,9 @@ class DownloadSourceContentProviderTest {
         List<ContentProvider.ProviderVolume> volumes = provider.volumes("1");
         assertThat(volumes).hasSize(2);
         assertThat(volumes.get(0).title()).isEqualTo("第一卷 渴望死亡的小丑");
-        // 样本切分 19 章（第一卷 8、第二卷 11）。样本每章正文被截到 300 字符，
-        // 其中的「插图」章内容是下一章开头的残留而非图片链接，因此不会被过滤，数字与切分数一致。
-        assertThat(volumes.get(0).chapters()).hasSize(8);
+        // 样本切分 22 章（第一卷 10、第二卷 12），其中每卷各含 1 个只有图片链接的「插图」章，
+        // 过滤后剩 9 与 11。
+        assertThat(volumes.get(0).chapters()).hasSize(9);
         assertThat(volumes.get(1).chapters()).hasSize(11);
     }
 
@@ -91,5 +91,33 @@ class DownloadSourceContentProviderTest {
     @Test
     void id为稳定的来源标识() {
         assertThat(providerWith(new byte[0]).id()).isEqualTo("WENKU8_CDN");
+    }
+
+    private DownloadSourceContentProvider providerWithResource(String resource) throws Exception {
+        try (InputStream in = DownloadSourceContentProviderTest.class.getResourceAsStream(resource)) {
+            if (in == null) throw new IllegalStateException("测试样本缺失：" + resource);
+            return providerWith(in.readAllBytes());
+        }
+    }
+
+    @Test
+    void 插图类章节被过滤() throws Exception {
+        DownloadSourceContentProvider provider = providerWithResource("/chapter-splitter/with-image-chapters.txt");
+        List<ContentProvider.ProviderChapter> all = provider.volumes("1").stream()
+            .flatMap(volume -> volume.chapters().stream()).toList();
+        // 样本共 4 个章节标记，其中「插图」正文仅为图片链接，必须被过滤后剩 3 个。
+        assertThat(all).extracting(ContentProvider.ProviderChapter::title).doesNotContain("插图");
+        assertThat(all).hasSize(3);
+    }
+
+    @Test
+    void 图片链接章节被识别为无正文() throws Exception {
+        DownloadSourceContentProvider provider = providerWithResource("/chapter-splitter/with-image-chapters.txt");
+        for (ContentProvider.ProviderVolume volume : provider.volumes("1")) {
+            for (ContentProvider.ProviderChapter chapter : volume.chapters()) {
+                String body = provider.chapterContent("1", chapter.externalChapterId());
+                assertThat(body).as("章节「%s」不应只含图片链接", chapter.title()).doesNotContain("<!--image-->");
+            }
+        }
     }
 }

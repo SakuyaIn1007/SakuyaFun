@@ -70,6 +70,10 @@ public class DownloadSourceContentProvider implements ContentProvider {
             List<ProviderChapter> chapters = new ArrayList<>();
             int chapterOrder = 0;
             for (ChapterSplitter.SplitChapter chapter : entry.getValue()) {
+                // 「插图」类章节只有图片链接、没有正文，而 importBook 对空正文会中断整本导入，
+                // 必须在 provider 层丢弃，否则一本书里出现一张插图就会导致整本无法入库。
+                String body = extractBody(text, result, chapter);
+                if (hasNoReadableText(body)) continue;
                 chapters.add(new ProviderChapter(String.valueOf(chapter.offset()), chapter.title(), chapterOrder++));
             }
             String volumeTitle = entry.getKey().isBlank() ? "" : entry.getKey();
@@ -110,5 +114,20 @@ public class DownloadSourceContentProvider implements ContentProvider {
         String block = text.substring(chapter.offset(), end);
         int newline = block.indexOf('\n');
         return newline >= 0 ? block.substring(newline + 1).trim() : block.trim();
+    }
+
+    /**
+     * 判断章节是否没有可阅读文本。
+     * 实测《文学少女》每卷都有一个「插图」章节，其内容形如
+     * {@code <!--image-->https://pic.example/1.jpg<!--image-->}，只有图片链接而无正文。
+     * 这类章节若进入导入流程，会因正文为空而中断整本入库，必须提前丢弃。
+     */
+    private boolean hasNoReadableText(String body) {
+        if (body.isBlank()) return true;
+        // 去掉全部图片标记与链接后若再无内容，则视为无可阅读文本。
+        String stripped = body.replace("<!--image-->", "")
+                              .replaceAll("https?://\\S+", "")
+                              .replaceAll("\\s", "");
+        return stripped.isEmpty();
     }
 }
