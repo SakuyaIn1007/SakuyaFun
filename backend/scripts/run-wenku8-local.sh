@@ -44,7 +44,9 @@ if ! "$python_bin" -c 'import uvicorn' >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "启动 Wenku8 适配器：$adapter_base_url（WENKU8_ENABLED=$WENKU8_ENABLED）"
+# 变量展开必须显式加花括号：macOS 自带 bash 3.2 不把全角括号等多字节字符当作变量名边界，
+# 写成不带花括号的裸展开时，全角括号的首字节会被并入变量名，触发 unbound variable 并中止脚本。
+echo "启动 Wenku8 适配器：${adapter_base_url}（WENKU8_ENABLED=${WENKU8_ENABLED}）"
 (
   cd "$adapter_dir"
   exec "$python_bin" -m uvicorn app.main:app --host "$adapter_host" --port "$adapter_port"
@@ -70,20 +72,20 @@ verify_status="$(curl --silent --show-error --output "$health_body" --write-out 
 if [[ "$WENKU8_ENABLED" == "true" ]]; then
   # 开启上游时必须真实完成登录校验；未提供凭据或登录失败都阻止 Spring Boot 启动。
   if [[ "$verify_status" != "200" ]]; then
-    echo "Wenku8 上游登录校验失败（HTTP $verify_status）；Spring Boot 未启动。响应：$(<"$health_body")" >&2
+    echo "Wenku8 上游登录校验失败（HTTP ${verify_status}）；Spring Boot 未启动。响应：$(<"$health_body")" >&2
     exit 1
   fi
   echo "Wenku8 上游登录校验通过。"
 else
   # 默认关闭时 verify=true 应被显式拒绝，证明此一键流程没有悄悄访问上游。
   if [[ "$verify_status" != "503" ]] || ! grep -q 'ADAPTER_DISABLED' "$health_body"; then
-    echo "安全关闭校验失败：预期 /health?verify=true 返回 503 ADAPTER_DISABLED，实际为 HTTP $verify_status。" >&2
+    echo "安全关闭校验失败：预期 /health?verify=true 返回 503 ADAPTER_DISABLED，实际为 HTTP ${verify_status}。" >&2
     exit 1
   fi
   echo "已确认 Wenku8 上游保持关闭（/health?verify=true -> ADAPTER_DISABLED）。"
 fi
 
-echo "启动 Spring Boot（WENKU8_ADAPTER_ENABLED=$WENKU8_ADAPTER_ENABLED）"
+echo "启动 Spring Boot（WENKU8_ADAPTER_ENABLED=${WENKU8_ADAPTER_ENABLED}）"
 cd "$repo_root"
 # 保持本脚本作为父进程，才能在 Spring Boot 退出或收到 Ctrl+C 时回收适配器进程。
 ./gradlew -p backend bootRun
