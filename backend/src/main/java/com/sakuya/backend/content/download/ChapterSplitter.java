@@ -64,14 +64,24 @@ public final class ChapterSplitter {
      */
     public static SplitResult split(String fullText) {
         String text = fullText == null ? "" : fullText;
-        List<String> lines = List.of(text.split("\n", -1));
-        // 预先累计每行的字符起点；长度按 UTF-16 计，与 Kotlin 端字符串索引一致。
-        int[] lineOffsets = new int[lines.size()];
+        // 按 \r?\n 切分，且行内容不含 \r：上游 TXT 的换行符不统一，实测既有 LF 也有 CRLF
+        // （抽样 3 本全是 CRLF，而《文学少女》是 LF）。若只按 \n 切，CRLF 文件的每行末尾
+        // 会残留 \r，使标题行正则的 $ 失配，导致整本降级为单章。
+        // 偏移必须相对原文计算，故行起点由原文位置直接得出，不受 \r 剥离影响。
+        List<String> lines = new ArrayList<>();
+        List<Integer> offsets = new ArrayList<>();
         int cursor = 0;
-        for (int i = 0; i < lines.size(); i++) {
-            lineOffsets[i] = cursor;
-            cursor += lines.get(i).length() + 1; // +1 为换行符
+        while (cursor <= text.length()) {
+            int newline = text.indexOf('\n', cursor);
+            int end = newline < 0 ? text.length() : newline;
+            int contentEnd = end > cursor && text.charAt(end - 1) == '\r' ? end - 1 : end;
+            offsets.add(cursor);
+            lines.add(text.substring(cursor, contentEnd));
+            if (newline < 0) break;
+            cursor = newline + 1;
         }
+        int[] lineOffsets = new int[offsets.size()];
+        for (int i = 0; i < lineOffsets.length; i++) lineOffsets[i] = offsets.get(i);
 
         Set<String> volumes = bootstrapVolumes(lines);
         if (volumes.isEmpty()) return degraded();
