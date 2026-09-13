@@ -27,8 +27,21 @@ public class DownloadSourceContentProvider implements ContentProvider {
     private final DownloadSourceClient client;
     private final BookRepository books;
 
-    /** 单次导入内的下载缓存，避免 volumes 与 chapterContent 重复下载同一本。 */
-    private final Map<String, String> downloadCache = new ConcurrentHashMap<>();
+    /**
+     * 导入过程中的下载缓存，避免 volumes 与 chapterContent 重复下载同一本。
+     *
+     * 必须有界：本类是单例 Bean，而整本 TXT 可达 5 MB 以上。若无上限，
+     * 遍历 73 本书会累积数百 MB 常驻内存。以容量 + 插入序淘汰最旧条目，
+     * 足以覆盖「同一本书的连续导入调用」这一实际访问模式。
+     */
+    private static final int CACHE_CAPACITY = 4;
+
+    private final Map<String, String> downloadCache = new LinkedHashMap<>(CACHE_CAPACITY, 0.75f, false) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return size() > CACHE_CAPACITY;
+        }
+    };
 
     public DownloadSourceContentProvider(DownloadSourceClient client, BookRepository books) {
         this.client = client;
@@ -140,9 +153,13 @@ public class DownloadSourceContentProvider implements ContentProvider {
         return new FullTextDocument(title == null ? "" : title, text, List.copyOf(anchors));
     }
 
-    private String cachedText(String externalBookId) {
-        return downloadCache.computeIfAbsent(externalBookId,
-            id -> new String(client.download(aidOf(id)), StandardCharsets.UTF_8));
+    /** LinkedHashMap 非线程安全，而回退链路可能被多个读取请求并发调用，故整体加锁。 */
+    private synchronized String cachedText(String externalBookId) {
+        String cached = downloadCache.get(externalBookId);
+        if (cached != null) return cached;
+        String text = new String(client.download(aidOf(externalBookId)), StandardCharsets.UTF_8);
+        downloadCache.put(externalBookId, text);
+        return text;
     }
 
     /** 截取某章正文：从本章偏移到下一章偏移，去掉首行的「卷名 标题」标题行。 */
