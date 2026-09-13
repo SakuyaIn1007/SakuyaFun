@@ -1,6 +1,8 @@
 package com.sakuya.backend.common;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     @ExceptionHandler(BusinessException.class)
     ResponseEntity<ApiResponse<Void>> business(BusinessException e) {
         HttpStatus status = switch (e.getCode()) {
@@ -38,8 +41,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(403).body(ApiResponse.error(403, "无权执行此操作"));
     }
 
+    /** 未预期异常会对外统一收敛为 500；必须留下堆栈，否则客户端只看到「服务器内部错误」时无从排查。 */
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Void>> unknown(Exception e) {
+        log.error("未处理的异常，已返回 500", e);
         return ResponseEntity.status(500).body(ApiResponse.error(500, "服务器内部错误"));
     }
 }

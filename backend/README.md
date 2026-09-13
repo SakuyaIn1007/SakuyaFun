@@ -58,6 +58,16 @@ JWT_SECRET='replace-with-a-random-secret-at-least-32-bytes' \
 
 启用 `mysql` 等非开发 Profile 后不会创建演示账号，并且必须通过环境变量提供 `JWT_SECRET`。生产环境还应使用反向代理提供 HTTPS/WSS。
 
+### 书目表列约束修复
+
+项目使用 `ddl-auto=update`，它只会新增列，不会把已有列收紧为 `NOT NULL`。`books` 表的 `cover_byte_size`、`full_content_byte_size` 早期就是如此被建成可空列的，而实体中对应字段是 Java `long`，一旦读到 `NULL` 就会让 `/library`、`/home/**`、`/books/{id}` 全部返回 500。**升级已有数据库后需要手动执行一次**：
+
+```bash
+mysql -uroot -p sakuya < backend/scripts/fix-book-byte-size-columns.sql
+```
+
+脚本可重复执行。全新初始化的数据库由实体上的 `nullable = false` 直接建出正确列，无需执行。
+
 ## 动态与好友通知推送
 
 通知历史、未读数和偏好由后端数据库保存；FCM 只是通知栏派发通道。未配置 Firebase 时，通知中心与相关 API 仍可正常开发和测试，Outbox 会由 Noop 通道安全消费。

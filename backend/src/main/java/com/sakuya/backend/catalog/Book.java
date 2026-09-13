@@ -49,9 +49,10 @@ public class Book {
     @Column(name = "full_content_object_key", length = 512) private String fullContentObjectKey;
     @Column(name = "cover_object_key", length = 512) private String coverObjectKey;
     @Column(name = "full_content_sha256", length = 64) private String fullContentSha256;
-    @Column(name = "full_content_byte_size") private long fullContentByteSize;
+    /** 字节数属于基本类型，列必须 NOT NULL；旧库曾以可空列建表，NULL 会让 Hibernate 加载实体时直接抛异常。 */
+    @Column(name = "full_content_byte_size", nullable = false, columnDefinition = "bigint default 0") private long fullContentByteSize;
     @Column(name = "cover_sha256", length = 64) private String coverSha256;
-    @Column(name = "cover_byte_size") private long coverByteSize;
+    @Column(name = "cover_byte_size", nullable = false, columnDefinition = "bigint default 0") private long coverByteSize;
 
     protected Book() { }
 
