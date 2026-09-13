@@ -11,11 +11,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import com.sakuya.backend.catalog.Wenku8CatalogSyncProperties;
 import com.sakuya.backend.content.ContentManagementProperties;
 import com.sakuya.backend.content.ContentStorageProperties;
+import com.sakuya.backend.content.download.DownloadSourceProperties;
 
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @EnableConfigurationProperties({
     Wenku8Properties.class, ReleaseManagementProperties.class, Wenku8CatalogSyncProperties.class,
-    ContentManagementProperties.class, ContentStorageProperties.class
+    ContentManagementProperties.class, ContentStorageProperties.class, DownloadSourceProperties.class
 })
 @EnableAsync
 @EnableScheduling

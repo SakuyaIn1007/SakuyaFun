@@ -56,6 +56,13 @@ wenku8:
     enabled: ${WENKU8_ADAPTER_ENABLED:false}
     # Python 全文接口默认可等待 180 秒；网关额外预留网络传输时间。
     full-content-timeout-seconds: ${WENKU8_FULL_CONTENT_TIMEOUT_SECONDS:195}
+  # CDN 下载源：按 aid 直接取整本 UTF-8 TXT，不经过需要 Cloudflare 验证的站点域名。
+  # 默认开启：它只在「本地无正文」时被调用，且不携带凭据、不产生登录行为。
+  download-source:
+    enabled: ${WENKU8_DOWNLOAD_SOURCE_ENABLED:true}
+    connect-timeout-seconds: ${WENKU8_DOWNLOAD_CONNECT_TIMEOUT_SECONDS:5}
+    read-timeout-seconds: ${WENKU8_DOWNLOAD_READ_TIMEOUT_SECONDS:30}
+    max-bytes: ${WENKU8_DOWNLOAD_MAX_BYTES:67108864}
   catalog:
     sync:
       # 适配服务未启用时任务会保留旧缓存并跳过外部写入；生产环境可通过环境变量关闭。
