@@ -61,3 +61,8 @@ backend/uploads/
 *.log
 logs/
 
+# IDE 本机状态：记录模拟器/设备绝对路径与窗口标签，随机器而异
+.idea/deploymentTargetSelector.xml
+.idea/claudeCodeEditorTabs.xml
+.idea/claudeCodeTabState.xml
+
