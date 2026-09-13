@@ -142,6 +142,32 @@ class ChapterSplitterTest {
         assertThat(titles.size()).isGreaterThan(Set.copyOf(titles).size());
     }
 
+    /**
+     * CRLF 换行必须正确处理：实测上游 TXT 既有 LF 也有 CRLF（抽样 3 本全是 CRLF），
+     * 若只按 \n 切，行尾残留的 \r 会让标题行正则失配，整本降级为单章。
+     */
+    @Test
+    void CRLF换行的文本同样可切() {
+        String lf = "第一卷 测试卷 第一章 标题\n正文。\n第一卷 测试卷 第二章 标题二\n正文。";
+        String crlf = lf.replace("\n", "\r\n");
+        ChapterSplitter.SplitResult result = ChapterSplitter.split(crlf);
+        assertThat(result.chapterCount()).isEqualTo(2);
+        assertThat(result.isDegraded()).isFalse();
+    }
+
+    /** CRLF 下偏移仍须指向标题行起点，且回读不受 \r 影响。 */
+    @Test
+    void CRLF下的偏移可正确回读() {
+        String crlf = "第一卷 测试卷 第一章 标题\r\n正文。\r\n第一卷 测试卷 第二章 标题二\r\n正文。";
+        ChapterSplitter.SplitResult result = ChapterSplitter.split(crlf);
+        for (ChapterSplitter.SplitChapter chapter : result.chapters()) {
+            String expected = chapter.volumeTitle() + " " + chapter.title();
+            assertThat(crlf.startsWith(expected, chapter.offset()))
+                .as("CRLF 下偏移 %d 处应为「%s」", chapter.offset(), expected)
+                .isTrue();
+        }
+    }
+
     @Test
     void 空文本降级为单章整本() {
         ChapterSplitter.SplitResult result = ChapterSplitter.split("");
