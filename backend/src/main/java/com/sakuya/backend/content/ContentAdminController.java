@@ -71,7 +71,8 @@ public class ContentAdminController {
     private BookResult result(Book book) { return new BookResult(book.getId(), book.getTitle(), book.isPublished(), book.getRightsStatus()); }
     public record BookRequest(@NotBlank @Size(max = 200) String title, @NotBlank @Size(max = 120) String author,
         @Size(max = 120) String publisher, float rating, List<String> tags, @Size(max = 10000) String description,
-        @Size(max = 80) String status, @NotBlank String rightsStatus, @Size(max = 500) String licenseNote, boolean published) { }
+        // rightsStatus 已退化为展示字段，不再参与任何判定，因此不强制填写。
+        @Size(max = 80) String status, @Size(max = 24) String rightsStatus, @Size(max = 500) String licenseNote, boolean published) { }
     public record SourceMappingRequest(@NotBlank String provider, @NotBlank String externalBookId, @NotBlank String bookId) { }
     public record ImportRequest(@NotBlank String provider, String mode) { }
     public record BookResult(String id, String title, boolean published, String rightsStatus) { }

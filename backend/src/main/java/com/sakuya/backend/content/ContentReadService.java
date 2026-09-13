@@ -40,7 +40,7 @@ public class ContentReadService {
     public NovelDto novel(String requestedId) { Book book = resolveBook(requestedId); ensurePublished(book); return novelDto(book); }
     @Transactional(readOnly = true)
     public ChapterIndexDto chapterIndex(String requestedId) {
-        Book book = resolveBook(requestedId); ensureReadable(book);
+        Book book = resolveBook(requestedId); ensurePublished(book);
         List<ContentChapter> allChapters = chapters.findByBookIdOrderByDisplayOrderAsc(book.getId());
         List<VolumeDto> result = volumes.findByBookIdOrderByDisplayOrderAsc(book.getId()).stream().map(volume ->
             new VolumeDto(volume.getId(), volume.getTitle(), allChapters.stream()
@@ -68,13 +68,13 @@ public class ContentReadService {
                 throw new BusinessException(404, "章节不属于指定图书");
             }
         }
-        Book book = resolveBook(chapter.getBookId()); ensureReadable(book);
+        Book book = resolveBook(chapter.getBookId()); ensurePublished(book);
         byte[] content = verifiedRead(chapter.getContentObjectKey(), chapter.getSha256());
         return new ChapterContentDto(book.getId(), chapter.getId(), chapter.getTitle(), new String(content, StandardCharsets.UTF_8));
     }
     @Transactional(readOnly = true)
     public FullContentDto fullContent(String requestedId) {
-        Book book = resolveBook(requestedId); ensureReadable(book);
+        Book book = resolveBook(requestedId); ensurePublished(book);
         if (book.getFullContentObjectKey() == null || !storage.exists(book.getFullContentObjectKey())) {
             throw new BusinessException(404, "该书全文尚未入库");
         }
@@ -107,11 +107,14 @@ public class ContentReadService {
             return mappings.findByProviderIgnoreCaseAndExternalBookId("WENKU8", external).flatMap(mapping -> books.findById(mapping.getBookId()));
         }).orElseThrow(() -> new BusinessException(404, "图书不存在"));
     }
-    private void ensureReadable(Book book) {
-        ensurePublished(book);
-        if (!"AUTHORIZED".equalsIgnoreCase(book.getRightsStatus())) throw new BusinessException(403, "该内容暂未获得正文分发授权");
-    }
-    private void ensurePublished(Book book) { if (!book.isPublished()) throw new BusinessException(404, "内容尚未发布"); }
+    /**
+     * 发布状态是唯一的读取开关；rights_status 已退化为信息字段，只用于展示与后台标注，
+     * 不再参与读取判定（原先它会让上游标记为版权受限的作品连已入库正文都无法读取）。
+     *
+     * 下架必须用 404 以外的状态码：回退门面只把 404 当作「尚未入库」并据此访问上游适配器，
+     * 若下架也用 404，被下架的正文会改由适配器重新分发。
+     */
+    private void ensurePublished(Book book) { if (!book.isPublished()) throw new BusinessException(403, "内容已下架"); }
     private NovelDto novelDto(Book book) {
         String coverUrl = book.getCoverObjectKey() == null ? book.getCoverPath() : "/content/novels/" + book.getId() + "/cover";
         return new NovelDto(book.getId(), book.getTitle(), book.getAuthor(), book.getDescription(), book.getStatus(),

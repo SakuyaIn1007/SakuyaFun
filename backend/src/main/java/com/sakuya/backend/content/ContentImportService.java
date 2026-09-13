@@ -89,8 +89,10 @@ public class ContentImportService {
         books.save(book);
         volumes.saveAll(nextVolumes);
         chapters.saveAll(nextChapters);
-        book.updateContentPublication(!source.copyrightRestricted(), rights,
-            source.copyrightRestricted() ? "来源标记为版权受限，正文未发布" : "由后台 Provider 导入",
+        // 导入即发布：正文与封面都已完整入库。上游的版权标记只记录到 rights_status 供展示，
+        // 不再顺带把作品下架——那会让已入库的正文读不出来。
+        book.updateContentPublication(true, rights,
+            source.copyrightRestricted() ? "来源标记为版权受限，仅供内部验证" : "由后台 Provider 导入",
             full.key(), cover == null ? book.getCoverObjectKey() : cover.key());
         book.updateFullContentObject(full.key(), full.sha256(), full.byteSize());
         if (cover != null) book.updateCoverObject(cover.key(), cover.sha256(), cover.byteSize());

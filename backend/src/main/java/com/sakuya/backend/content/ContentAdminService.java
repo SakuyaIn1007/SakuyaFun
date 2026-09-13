@@ -43,8 +43,9 @@ public class ContentAdminService {
         String id = requestedId == null || requestedId.isBlank() ? "content-" + UUID.randomUUID() : requestedId;
         Book book = books.findById(id).orElseGet(() -> new Book(id, title, author, publisher, rating, tags, description, null));
         book.updateCatalogMetadata(title, author, publisher, rating, tags, description, status);
-        if (published && (book.getFullContentObjectKey() == null || !"AUTHORIZED".equalsIgnoreCase(rightsStatus))) {
-            throw new BusinessException(400, "只有已上传正文且确认授权的书籍才能发布");
+        // 发布只要求正文已入库；rights_status 已退化为展示字段，不再作为发布前置条件。
+        if (published && book.getFullContentObjectKey() == null) {
+            throw new BusinessException(400, "只有已上传正文的书籍才能发布");
         }
         book.updateContentPublication(published, rightsStatus, licenseNote, book.getFullContentObjectKey(), book.getCoverObjectKey());
         return books.save(book);

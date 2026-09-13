@@ -117,11 +117,15 @@ public class Book {
     public long getFullContentByteSize() { return fullContentByteSize; }
     public String getCoverSha256() { return coverSha256; }
     public long getCoverByteSize() { return coverByteSize; }
-    /** 管理与导入服务统一更新内容发布信息，版权不明确时不能把正文暴露给客户端。 */
+    /**
+     * 管理与导入服务统一更新内容发布信息。
+     * published 是唯一的读取开关；rightsStatus 仅作展示与后台标注，不参与任何判定，
+     * 因此导入时不应因为上游标记版权受限就顺带把作品下架。
+     */
     public void updateContentPublication(boolean published, String rightsStatus, String licenseNote,
             String fullContentObjectKey, String coverObjectKey) {
         this.published = published;
-        this.rightsStatus = rightsStatus == null ? "UNKNOWN" : rightsStatus;
+        this.rightsStatus = rightsStatus == null || rightsStatus.isBlank() ? "UNKNOWN" : rightsStatus;
         this.licenseNote = licenseNote == null ? "" : licenseNote;
         this.fullContentObjectKey = fullContentObjectKey;
         this.coverObjectKey = coverObjectKey;
