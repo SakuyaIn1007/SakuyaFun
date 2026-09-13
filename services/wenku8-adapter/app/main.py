@@ -21,6 +21,8 @@ from wenku8 import Wenku8API
 from wenku8.consts import NovelSortMethod
 from wenku8.exceptions import CloudflareChallengeException, NotLoggedInException, PageParseError, RateLimitException
 
+from app.throttle import CooldownActive, UpstreamThrottle
+
 app = FastAPI(title="Sakuya Wenku8 Adapter", docs_url=None, redoc_url=None)
 logger = logging.getLogger("wenku8_adapter")
 _enabled = os.getenv("WENKU8_ENABLED", "false").lower() == "true"
@@ -62,6 +64,12 @@ _cache_ttl = int(os.getenv("WENKU8_CACHE_SECONDS", "120"))
 # 避免同一本小说在用户连续选择章节时重复请求 CDN。该缓存不会落盘。
 _full_content_cache_ttl = int(os.getenv("WENKU8_FULL_CONTENT_CACHE_SECONDS", "1800"))
 _full_content_timeout = max(75, int(os.getenv("WENKU8_FULL_CONTENT_TIMEOUT_SECONDS", "180")))
+# 上游没有内置限流，_semaphore 只约束并发数而非频率；实测连续 5 次请求后即被 Cloudflare 拒绝。
+# 间隔与冷却均可配：间隔调 0 可临时关闭限速，冷却期内的请求直接拒绝、不再打上游以免恶化 IP 信誉。
+_throttle = UpstreamThrottle(
+    float(os.getenv("WENKU8_MIN_REQUEST_INTERVAL_SECONDS", "5")),
+    float(os.getenv("WENKU8_COOLDOWN_SECONDS", "900")),
+)
 
 
 class UpstreamError(Exception):
@@ -119,9 +127,19 @@ async def _cached(
     cached = _cache.get(key)
     if cached and time.monotonic() - cached[0] < ttl: return cached[1]
     async with _semaphore:
-        try: result = await asyncio.wait_for(work(), timeout=timeout_seconds)
+        # 节流必须在信号量内部：否则被放行的并发请求会各自算出同样的时间点而同时发出，限速失效。
+        try:
+            await _throttle.acquire()
+        except CooldownActive as error:
+            raise UpstreamError("UPSTREAM_BLOCKED", "Wenku8 被 Cloudflare 或限流拦截") from error
+        try:
+            result = await asyncio.wait_for(work(), timeout=timeout_seconds)
         except UpstreamError: raise
-        except Exception as error: raise _map_error(error) from error
+        except Exception as error:
+            mapped = _map_error(error)
+            # 仅对真正的限流拦截开启冷却；超时、解析失败等与 IP 信誉无关，不应中止后续请求。
+            if mapped.code == "UPSTREAM_BLOCKED": _throttle.note_rate_limited()
+            raise mapped from error
     _cache[key] = (time.monotonic(), result)
     return result
 
