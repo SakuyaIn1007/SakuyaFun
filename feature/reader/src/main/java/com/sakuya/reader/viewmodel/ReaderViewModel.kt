@@ -194,7 +194,7 @@ class ReaderViewModel @Inject constructor(
      * 目录传入的章节始终优先于旧进度；
      * 全文失败时只展示当前章，且不覆写这份连续进度，等待用户稍后重试全文。
      */
-    private fun openRemoteNovel(novelId: String, chapterId: String, title: String) {
+    private fun openRemoteNovel(novelId: String, chapterId: String?, title: String) {
         val request = RemoteReadRequest(novelId, chapterId, title)
         remoteRequest = request
         saveProgressJob?.cancel()
@@ -521,7 +521,7 @@ sealed interface ReaderAction {
         val uri: Uri,
         val bookId: String?
         ) : ReaderAction
-    data class OpenRemoteChapter(val novelId: String, val chapterId: String, val title: String) : ReaderAction
+    data class OpenRemoteChapter(val novelId: String, val chapterId: String?, val title: String) : ReaderAction
     data class SetProgress(val progress: Float) : ReaderAction
     data class SetReadingPosition(val position: ReaderReadingPosition) : ReaderAction
     data class ChangeFontSize(val fontSize: Float) : ReaderAction
@@ -553,7 +553,7 @@ sealed interface ReaderAction {
 }
 
 /** 保存一次可重试的远端目录选择；不包含正文、Cookie 或任何上游登录信息。 */
-private data class RemoteReadRequest(val novelId: String, val chapterId: String, val title: String)
+private data class RemoteReadRequest(val novelId: String, val chapterId: String?, val title: String)
 
 /** 将底层错误转换为稳定的用户可读信息，UI 不需判断具体解析实现。 */
 private fun ReaderParseError.toDisplayMessage(): String = when (this) {

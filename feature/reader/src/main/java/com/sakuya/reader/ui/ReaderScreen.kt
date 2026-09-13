@@ -69,7 +69,8 @@ import java.io.File
 fun ReaderScreen(
     bookId: String?,
     filePath: String,
-    remoteChapter: Triple<String, String, String>? = null,
+    /** 第二项为 null 表示「整本阅读」：从头连续阅读，无需定位目标章。 */
+    remoteChapter: Triple<String, String?, String>? = null,
     onBack: () -> Unit = {},
     viewModel: ReaderViewModel = hiltViewModel()
 ) {
