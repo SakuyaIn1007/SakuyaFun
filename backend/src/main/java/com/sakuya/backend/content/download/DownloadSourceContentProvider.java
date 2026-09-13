@@ -1,5 +1,7 @@
 package com.sakuya.backend.content.download;
 
+import com.sakuya.backend.catalog.Book;
+import com.sakuya.backend.catalog.BookRepository;
 import com.sakuya.backend.common.BusinessException;
 import com.sakuya.backend.content.ContentProvider;
 import java.nio.charset.StandardCharsets;
@@ -23,11 +25,15 @@ import org.springframework.stereotype.Component;
 public class DownloadSourceContentProvider implements ContentProvider {
 
     private final DownloadSourceClient client;
+    private final BookRepository books;
 
     /** 单次导入内的下载缓存，避免 volumes 与 chapterContent 重复下载同一本。 */
     private final Map<String, String> downloadCache = new ConcurrentHashMap<>();
 
-    public DownloadSourceContentProvider(DownloadSourceClient client) { this.client = client; }
+    public DownloadSourceContentProvider(DownloadSourceClient client, BookRepository books) {
+        this.client = client;
+        this.books = books;
+    }
 
     @Override public String id() { return "WENKU8_CDN"; }
 
@@ -48,11 +54,22 @@ public class DownloadSourceContentProvider implements ContentProvider {
         throw new UnsupportedOperationException("下载源没有目录枚举接口，无法批量导入；请使用适配器 provider");
     }
 
-    /** 元数据以本地库为准，这里只提供最简结构，避免为导入而多发一次上游请求。 */
+    /**
+     * 元数据取自本地库：书目信息此前已由目录同步写入，无需再访问上游。
+     * 标题必须非空——ContentImportService 对空标题会拒绝导入，因此这里显式兜底。
+     */
     @Override
     public ProviderBook book(String externalBookId) {
-        return new ProviderBook(externalBookId, "", "", "", "", List.of(), false);
+        Book stored = books.findById("wenku8-" + externalBookId).orElse(null);
+        if (stored == null) throw new BusinessException(404, "该书尚未在本地库中登记，无法仅凭下载源导入");
+        String title = stored.getTitle() == null ? "" : stored.getTitle();
+        if (title.isBlank()) throw new BusinessException(503, "本地书目缺少标题，无法导入");
+        return new ProviderBook(externalBookId, title, nullSafe(stored.getAuthor()), nullSafe(stored.getDescription()),
+            nullSafe(stored.getStatus()), stored.getTags() == null ? List.of() : List.copyOf(stored.getTags()),
+            stored.isCopyrightRestricted());
     }
+
+    private String nullSafe(String value) { return value == null ? "" : value; }
 
     @Override
     public List<ProviderVolume> volumes(String externalBookId) {
@@ -99,6 +116,29 @@ public class DownloadSourceContentProvider implements ContentProvider {
 
     @Override
     public byte[] cover(String externalBookId) { return new byte[0]; }
+
+    /** 整本正文与章节锚点，供回退链路在异步入库完成前直接把内容返回给用户。 */
+    public record FullTextDocument(String title, String content, List<ChapterAnchor> chapters) { }
+
+    public record ChapterAnchor(String chapterId, String title, String volumeTitle, int offset) { }
+
+    /**
+     * 读取整本正文与锚点。与 volumes() 共用同一份下载缓存，因此一次回退只产生一次网络请求。
+     * 章节 id 沿用偏移字符串，与 volumes() 产出的 externalChapterId 保持一致。
+     */
+    public FullTextDocument fullText(String externalBookId) {
+        if (!supportsAid(externalBookId)) throw new BusinessException(400, "该小说没有可用的下载标识");
+        String text = cachedText(externalBookId);
+        ChapterSplitter.SplitResult result = ChapterSplitter.split(text);
+        List<ChapterAnchor> anchors = new ArrayList<>();
+        for (ChapterSplitter.SplitChapter chapter : result.chapters()) {
+            if (hasNoReadableText(extractBody(text, result, chapter))) continue;
+            anchors.add(new ChapterAnchor(String.valueOf(chapter.offset()), chapter.title(),
+                chapter.volumeTitle(), chapter.offset()));
+        }
+        String title = books.findById("wenku8-" + externalBookId).map(Book::getTitle).orElse("");
+        return new FullTextDocument(title == null ? "" : title, text, List.copyOf(anchors));
+    }
 
     private String cachedText(String externalBookId) {
         return downloadCache.computeIfAbsent(externalBookId,

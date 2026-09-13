@@ -30,7 +30,7 @@ class DownloadSourceContentProviderTest {
         DownloadSourceClient client = new DownloadSourceClient(HttpClient.newHttpClient(), properties) {
             @Override public byte[] download(int aid) { return payload; }
         };
-        return new DownloadSourceContentProvider(client);
+        return new DownloadSourceContentProvider(client, null);
     }
 
     @Test
