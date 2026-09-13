@@ -1,6 +1,7 @@
 package com.sakuya.backend.content;
 
 import com.sakuya.backend.common.BusinessException;
+import com.sakuya.backend.content.download.DownloadSourceContentProvider;
 import com.sakuya.backend.wenku8.Wenku8GatewayService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
@@ -22,9 +23,11 @@ public class ContentFallbackFacade {
     private final ContentImportRunner imports;
     private final ContentManagementProperties properties;
     private final MeterRegistry metrics;
+    private final DownloadSourceContentProvider downloadSource;
     public ContentFallbackFacade(ContentReadService database, Wenku8GatewayService gateway, ContentImportRunner imports,
-            ContentManagementProperties properties, MeterRegistry metrics) {
+            ContentManagementProperties properties, MeterRegistry metrics, DownloadSourceContentProvider downloadSource) {
         this.database = database; this.gateway = gateway; this.imports = imports; this.properties = properties; this.metrics = metrics;
+        this.downloadSource = downloadSource;
     }
     public Object search(String keyword, int page, int pageSize) {
         ContentReadService.NovelPage stored = database.search(keyword, page, pageSize);
@@ -63,6 +66,16 @@ public class ContentFallbackFacade {
         try { Object result = database.fullContent(bookId); hit("full"); return result; }
         catch (BusinessException error) {
             if (error.getCode() != 404 || !fallbackEnabled() || !canFallback(bookId)) throw error;
+            // 下载源直连 CDN，不经过 Cloudflare 验证。必须同步返回内容本身：
+            // backfill 是 @Async，若只触发它就去读库，异步导入尚未完成，必然再次 404。
+            // 异步回填仍然照做，使下次读取直接命中数据库。
+            DownloadSourceContentProvider.FullTextDocument document = downloadSourceIfPossible(bookId);
+            if (document != null) {
+                fallback("full");
+                return new ContentReadService.FullContentDto(bookId, document.title(), document.content(),
+                    document.chapters().stream().map(anchor -> new ContentReadService.ChapterAnchorDto(
+                        anchor.chapterId(), anchor.title(), anchor.volumeTitle(), anchor.offset())).toList());
+            }
             String external = externalId(bookId); var raw = gateway.fullContent(external);
             var anchors = raw.chapters().stream().map(anchor -> new ContentReadService.ChapterAnchorDto(
                 anchor.chapterId(), anchor.title(), anchor.volumeTitle(), anchor.offset())).toList();
@@ -77,6 +90,23 @@ public class ContentFallbackFacade {
             String external = externalId(bookId); fallback("cover"); return new ContentReadService.CoverDto(gateway.cover(external), "image/jpeg");
         }
     }
+    /**
+     * 尝试用下载源直接取回全文；不可用（无 aid、CDN 缺资源、被拦截等）时返回 null
+     * 交由适配器兜底。任何异常都不向上抛，避免单本下载失败中断整条回退链路。
+     */
+    private DownloadSourceContentProvider.FullTextDocument downloadSourceIfPossible(String bookId) {
+        String external = externalId(bookId);
+        if (!DownloadSourceContentProvider.supportsAid(external)) return null;
+        try {
+            DownloadSourceContentProvider.FullTextDocument document = downloadSource.fullText(external);
+            // 异步入库，使用户下次读取直接命中数据库；失败只记日志，不影响本次返回。
+            imports.backfill("WENKU8_CDN", external);
+            return document;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private boolean fallbackEnabled() { return "DB_FIRST_WITH_ADAPTER_FALLBACK".equals(properties.normalizedReadMode()); }
     private void hit(String operation) { metrics.counter("content.read", "result", "db_hit", "operation", operation).increment(); }
     private void fallback(String operation) { metrics.counter("content.read", "result", "fallback_hit", "operation", operation).increment(); }
