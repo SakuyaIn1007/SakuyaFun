@@ -17,6 +17,7 @@ import com.sakuya.navigation.feedAuthorRoute
 import com.sakuya.navigation.WENKU8_DETAIL_BASE_ROUTE
 import com.sakuya.navigation.WENKU8_DETAIL_ARG_ID
 import com.sakuya.navigation.WENKU8_DETAIL_ROUTE
+import com.sakuya.navigation.WENKU8_FULL_READER_BASE_ROUTE
 import com.sakuya.navigation.WENKU8_READER_BASE_ROUTE
 import com.sakuya.navigation.READER_ARG_BOOK_ID
 import com.sakuya.navigation.READER_ARG_CHAPTER_ID
@@ -50,8 +51,15 @@ fun NavGraphBuilder.searchNavGraph(navController: NavHostController) {
     }
     composable(route = WENKU8_DETAIL_ROUTE, arguments = listOf(navArgument(WENKU8_DETAIL_ARG_ID) { type = NavType.StringType })) {
         val novelId = it.arguments?.getString(WENKU8_DETAIL_ARG_ID).orEmpty()
-        Wenku8DetailScreen(onBack = { navController.popBackStack() }, onChapterClick = { chapterId, title ->
-            navController.navigate("$WENKU8_READER_BASE_ROUTE?$READER_ARG_BOOK_ID=${Uri.encode(novelId)}&$READER_ARG_CHAPTER_ID=${Uri.encode(chapterId)}&$READER_ARG_TITLE=${Uri.encode(title)}")
-        })
+        Wenku8DetailScreen(
+            onBack = { navController.popBackStack() },
+            onChapterClick = { chapterId, title ->
+                navController.navigate("$WENKU8_READER_BASE_ROUTE?$READER_ARG_BOOK_ID=${Uri.encode(novelId)}&$READER_ARG_CHAPTER_ID=${Uri.encode(chapterId)}&$READER_ARG_TITLE=${Uri.encode(title)}")
+            },
+            // 整本阅读不带目标章，进入后从头连续阅读并展示完整目录。
+            onFullReadClick = {
+                navController.navigate("$WENKU8_FULL_READER_BASE_ROUTE?$READER_ARG_BOOK_ID=${Uri.encode(novelId)}")
+            },
+        )
     }
 }

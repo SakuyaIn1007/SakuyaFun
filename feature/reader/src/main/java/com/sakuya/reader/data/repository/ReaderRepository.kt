@@ -79,7 +79,7 @@ class ReaderRepository @Inject constructor(
      * 连续阅读执行流程：先请求全文与章节锚点 -> 锚点可用则建立会话内全文文档 ->
      * 任意上游限制、正文异常或目标章无法定位时，再按原接口读取当前章节作为可恢复降级。
      */
-    suspend fun openRemoteNovel(novelId: String, targetChapterId: String, fallbackTitle: String): Wenku8NovelOpenResult = withContext(Dispatchers.IO) {
+    suspend fun openRemoteNovel(novelId: String, targetChapterId: String?, fallbackTitle: String): Wenku8NovelOpenResult = withContext(Dispatchers.IO) {
         runCatching {
             val response = contentApi.fullContent(novelId)
             val body = response.body()
@@ -88,7 +88,8 @@ class ReaderRepository @Inject constructor(
             val content = data.content.orEmpty()
             if (content.isBlank()) error("连续阅读正文为空")
             val anchors = mapReadableAnchors(data.chapters, content.length)
-            if (anchors.none { it.chapterId == targetChapterId }) error("当前章节无法在全文中定位")
+            // targetChapterId 为 null 表示「整本阅读」：从头开始，无需在锚点中定位目标章。
+            if (targetChapterId != null && anchors.none { it.chapterId == targetChapterId }) error("当前章节无法在全文中定位")
             Wenku8NovelOpenResult.Full(
                 ReaderDocument.Wenku8Full(
                     title = data.title.orEmpty().ifBlank { fallbackTitle },
@@ -110,6 +111,10 @@ class ReaderRepository @Inject constructor(
                     ReaderDocument.Wenku8Full(fallbackTitle, builder.toString(), anchors)
                 )
             }
+            // 整本阅读没有目标章可降级；全文不可用时只能如实报告失败。
+            if (targetChapterId == null) return@withContext Wenku8NovelOpenResult.Failure(
+                ReaderParseError.InvalidContent("连续阅读加载失败：${fullError.message}")
+            )
             when (val chapter = openRemoteChapter(novelId, targetChapterId, fallbackTitle)) {
                 is ReaderOpenResult.Success -> Wenku8NovelOpenResult.ChapterFallback(
                     document = chapter.document as? ReaderDocument.Txt
