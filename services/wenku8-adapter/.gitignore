@@ -1,0 +1,17 @@
+# Wenku8 适配服务的本地环境与凭据（不进入版本库）
+#
+# 本服务从进程环境读取 WENKU8_USERNAME / WENKU8_PASSWORD，不读取文件；
+# 但本地调试常把它们写进 .env 再由 shell 载入，那种文件绝不能提交。
+# 推荐直接 export，避免凭据落盘：
+#   WENKU8_ENABLED=true WENKU8_USERNAME=... WENKU8_PASSWORD=... \
+#     ./.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+.env
+.env.*
+!.env.example
+*.local
+
+# 虚拟环境与 Python 产物
+.venv/
+__pycache__/
+*.py[cod]

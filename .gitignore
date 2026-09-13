@@ -18,3 +18,46 @@ local.properties
 # Firebase 客户端与服务账号配置属于部署密钥，不进入版本库。
 app/google-services.json
 **/firebase-service-account*.json
+
+# ---------------------------------------------------------------------------
+# 隐私与凭据（不进入版本库）
+#
+# 后端通过环境变量注入以下凭据，任何承载它们的文件都不得提交：
+#   JWT_SECRET、DB_PASSWORD、WENKU8_USERNAME、WENKU8_PASSWORD、
+#   CONTENT_MANAGEMENT_TOKEN、RELEASE_MANAGEMENT_TOKEN、
+#   CONTENT_STORAGE_ACCESS_KEY、CONTENT_STORAGE_SECRET_KEY、
+#   FIREBASE_CREDENTIALS_PATH
+# 若确需在本地存放，请用 .env.local（已被下方规则忽略）。
+# ---------------------------------------------------------------------------
+
+# 环境变量与本地配置
+.env
+.env.*
+!.env.example
+*.env
+*.local
+
+# Android 签名密钥：泄露即可伪造发布包，绝不入库
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties
+signing.properties
+
+# 证书与私钥
+*.pem
+*.key
+*.p8
+*.mobileprovision
+
+# 后端运行期产物：含有导入的完整正文与上传文件，体积大且属受版权保护内容
+content-store/
+backend/content-store/
+uploads/
+backend/uploads/
+
+# 本地日志可能带出请求头中的令牌或账号信息
+*.log
+logs/
+
