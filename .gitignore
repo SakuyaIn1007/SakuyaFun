@@ -18,7 +18,7 @@ local.properties
 # Firebase 客户端与服务账号配置属于部署密钥，不进入版本库。
 app/google-services.json
 **/firebase-service-account*.json
-
+/docs
 # ---------------------------------------------------------------------------
 # 隐私与凭据（不进入版本库）
 #

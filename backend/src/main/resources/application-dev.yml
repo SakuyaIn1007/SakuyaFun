@@ -21,4 +21,6 @@ app:
 wenku8:
   adapter:
     base-url: http://localhost:8000
-    enabled: true
+    # 必须保留占位符：profile 专属配置优先于 application.yml，写成字面量 true 会让那里的
+    # ${WENKU8_ADAPTER_ENABLED} 永远不生效，脚本与文档中宣传的开关随之形同虚设。
+    enabled: ${WENKU8_ADAPTER_ENABLED:true}
