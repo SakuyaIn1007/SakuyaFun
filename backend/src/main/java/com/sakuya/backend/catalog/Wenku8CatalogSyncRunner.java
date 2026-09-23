@@ -15,5 +15,9 @@ public class Wenku8CatalogSyncRunner {
     public void refresh(String trigger) {
         log.info("开始 {} Wenku8 首页缓存同步", trigger);
         cache.refreshAll();
+        log.info("Wenku8 首页缓存同步完成");
+        // 封面预取必须在 refreshAll() 返回之后单独调用：refreshAll() 带 @Transactional，
+        // 内部自调用会绕过 Spring 代理，且数十次网络 I/O 会被包进同一个数据库事务。
+        cache.prefetchCovers();
     }
 }

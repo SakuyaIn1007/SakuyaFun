@@ -20,7 +20,9 @@ import zendriver
 from wenku8 import Wenku8API
 from wenku8.consts import NovelSortMethod
 from wenku8.exceptions import CloudflareChallengeException, NotLoggedInException, PageParseError, RateLimitException
+from wenku8.utils import get_chapter_content
 
+from app.singleflight import SingleFlight
 from app.throttle import CooldownActive, UpstreamThrottle
 
 app = FastAPI(title="Sakuya Wenku8 Adapter", docs_url=None, redoc_url=None)
@@ -64,12 +66,19 @@ _cache_ttl = int(os.getenv("WENKU8_CACHE_SECONDS", "120"))
 # 避免同一本小说在用户连续选择章节时重复请求 CDN。该缓存不会落盘。
 _full_content_cache_ttl = int(os.getenv("WENKU8_FULL_CONTENT_CACHE_SECONDS", "1800"))
 _full_content_timeout = max(75, int(os.getenv("WENKU8_FULL_CONTENT_TIMEOUT_SECONDS", "180")))
+# 已发布的章节正文不会再变，但默认 120 秒的 TTL 远短于限流冷却（900 秒）：
+# 整本导入本就受 5 秒/次节流限制，中途被 Cloudflare 拦截后进入冷却，重试时先前已抓取的章节
+# 早已过期，只能从头重抓——于是每轮重试都退回到同一位置，永远无法完成。
+# 与全文缓存取齐后，重试可复用冷却期内缓存的章节，导入得以逐轮向前推进。
+_chapter_cache_ttl = int(os.getenv("WENKU8_CHAPTER_CACHE_SECONDS", "1800"))
 # 上游没有内置限流，_semaphore 只约束并发数而非频率；实测连续 5 次请求后即被 Cloudflare 拒绝。
 # 间隔与冷却均可配：间隔调 0 可临时关闭限速，冷却期内的请求直接拒绝、不再打上游以免恶化 IP 信誉。
 _throttle = UpstreamThrottle(
     float(os.getenv("WENKU8_MIN_REQUEST_INTERVAL_SECONDS", "5")),
     float(os.getenv("WENKU8_COOLDOWN_SECONDS", "900")),
 )
+# 合并同一 key 的并发请求，见 _cached 的说明与 app/singleflight.py。
+_singleflight = SingleFlight()
 
 
 class UpstreamError(Exception):
@@ -122,10 +131,28 @@ async def _cached(
     cache_seconds: int | None = None,
     timeout_seconds: int = 75,
 ) -> Any:
-    """统一执行上游读取；调用方可为大响应单独指定内存缓存与超时，不改变普通接口默认值。"""
+    """统一执行上游读取；调用方可为大响应单独指定内存缓存与超时，不改变普通接口默认值。
+
+    同一 key 的并发调用由 SingleFlight 合并，只会真正打一次上游；缓存命中检查仍在最前，
+    且必须留在 SingleFlight 之外——命中缓存的请求不该在在途表里留下任何痕迹。
+
+    **work 内部不得以同一个 key 再次调用 _cached**：等待者会 await 那个任务，
+    而该任务正在等自己，直接死锁，症状是「请求永不返回」，排查成本极高。
+    已核对的调用图无此情况：content:{novel}:{cid} 内部调用 full-content:{novel}，
+    full-content:* 内部不再调用 _cached，index:* 与它们平级。
+    """
     ttl = _cache_ttl if cache_seconds is None else cache_seconds
     cached = _cache.get(key)
     if cached and time.monotonic() - cached[0] < ttl: return cached[1]
+    return await _singleflight.run(key, lambda: _load(key, work, ttl, timeout_seconds))
+
+
+async def _load(key: str, work: Callable[[], Awaitable[Any]], ttl: int, timeout_seconds: int) -> Any:
+    """单次上游读取的完整流程：并发闸 -> 节流 -> 超时 -> 错误映射 -> 成功才写缓存。
+
+    本函数体是从 _cached 逐字搬来的，不是重写——失败不写缓存、冷却期本地拒绝、
+    仅 UPSTREAM_BLOCKED 触发冷却、节流在信号量内部等既有语义因此自动守恒。
+    """
     async with _semaphore:
         # 节流必须在信号量内部：否则被放行的并发请求会各自算出同样的时间点而同时发出，限速失效。
         try:
@@ -271,9 +298,55 @@ async def _cover(novel_id: int):
 @app.get("/chapters/{chapter_id}/content")
 async def content(chapter_id: int, novel_id: int = Query(alias="novelId")) -> dict[str, Any]:
     try:
-        text = await _cached(f"content:{novel_id}:{chapter_id}", lambda: _content(novel_id, chapter_id))
+        text = await _cached(
+            f"content:{novel_id}:{chapter_id}",
+            lambda: _content_frame(novel_id, chapter_id),
+            cache_seconds=_chapter_cache_ttl,
+            timeout_seconds=_full_content_timeout,
+        )
         if not text.strip(): raise UpstreamError("CONTENT_UNAVAILABLE", "该章节暂不可阅读")
         return {"novelId": str(novel_id), "chapterId": str(chapter_id), "content": text}
     except UpstreamError as error: _raise(error)
 
 async def _content(novel_id: int, chapter_id: int): return await (await _require_login()).get_novel_content(novel_id, chapter_id)
+
+async def _content_frame(novel_id: int, chapter_id: int) -> str:
+    """逐章读取的取数策略：优先从已缓存的整本全文切出，避免为每一章单独打上游。
+
+    整本导入会连续读取全部章节，若逐章请求，一本 200 章的作品需要 200 次上游调用；
+    适配层本就以 5 秒/次的间隔节流，单本导入因此要十几分钟且极易触发 Cloudflare 拦截。
+    整本全文已有 30 分钟缓存且只占一次请求，从它切分可把整本导入的上游调用降到 1 次。
+
+    切分使用 pywenku8api 自带的 get_chapter_content，与逐章接口同源，格式完全一致。
+    仅在整本全文不可用（版权受限、CDN 缺资源、下载失败）时退回原有逐章路径，
+    保证行为不因优化而退化，也让两者之间的格式差异被 pytest 用例钉住。
+
+    注意：本函数必须返回"整段正文"，不能只返回章节文本——_cached 会按缓存键存整个返回值。
+    """
+    page = await _content_via_full(novel_id, chapter_id)
+    return page if page is not None else await _content(novel_id, chapter_id)
+
+
+async def _content_via_full(novel_id: int, chapter_id: int) -> str | None:
+    try:
+        document = await _cached(
+            f"full-content:{novel_id}",
+            lambda: _full_content(novel_id),
+            cache_seconds=_full_content_cache_ttl,
+            timeout_seconds=_full_content_timeout,
+        )
+    except Exception:
+        # 全文不可用是预期内的常见情况（版权受限、CDN 缺资源），在此静默降级即可；
+        # 若此处抛出，逐章接口会连带失败，用户将读不到本可正常阅读的章节。
+        return None
+    index = await _novel_index(novel_id)
+    if index is None: return None
+    return get_chapter_content(document["content"], index, chapter_id)
+
+
+async def _novel_index(novel_id: int):
+    """目录决定章节在全文中如何切分；目录不可用时返回 None，由调用方退回逐章路径。"""
+    try:
+        return await _cached(f"index:{novel_id}", lambda: _index(novel_id))
+    except Exception:
+        return None

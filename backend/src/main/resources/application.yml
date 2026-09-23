@@ -63,6 +63,15 @@ wenku8:
     connect-timeout-seconds: ${WENKU8_DOWNLOAD_CONNECT_TIMEOUT_SECONDS:5}
     read-timeout-seconds: ${WENKU8_DOWNLOAD_READ_TIMEOUT_SECONDS:30}
     max-bytes: ${WENKU8_DOWNLOAD_MAX_BYTES:67108864}
+  # 封面直连：按 aid 从 img.wenku8.com 取封面字节，不经过适配器与 Cloudflare 验证站。
+  # 与 download-source 的触发面不同：正文只在「本地无正文」时取，封面在每次同步对每一本都取，
+  # 因此默认关闭——让「后端直连图片 CDN」成为一个显式的、单独的部署决定。
+  cover-source:
+    enabled: ${WENKU8_COVER_SOURCE_ENABLED:false}
+    connect-timeout-seconds: ${WENKU8_COVER_CONNECT_TIMEOUT_SECONDS:5}
+    read-timeout-seconds: ${WENKU8_COVER_READ_TIMEOUT_SECONDS:10}
+    max-bytes: ${WENKU8_COVER_MAX_BYTES:2097152}
+    max-concurrency: ${WENKU8_COVER_MAX_CONCURRENCY:4}
   catalog:
     sync:
       # 适配服务未启用时任务会保留旧缓存并跳过外部写入；生产环境可通过环境变量关闭。

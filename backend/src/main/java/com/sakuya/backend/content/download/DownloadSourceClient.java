@@ -1,11 +1,11 @@
 package com.sakuya.backend.content.download;
 
 import com.sakuya.backend.common.BusinessException;
+import com.sakuya.backend.content.CloudflareChallenge;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.function.UnaryOperator;
 
@@ -70,7 +70,7 @@ public class DownloadSourceClient {
                 throw new BusinessException(503, "Wenku8 下载内容超出体积上限");
             }
             // 质询判定必须先于状态码分支：CF 拦截以 403/503 返回 HTML，若先按状态码分类会被误报为上游异常。
-            if (isCloudflareChallenge(status, body)) {
+            if (CloudflareChallenge.isChallenge(status, body)) {
                 throw new BusinessException(503, "CDN 资源被 Cloudflare 防火墙拦截");
             }
             if (status == 429) throw new BusinessException(429, "Wenku8 下载源限流");
@@ -87,14 +87,5 @@ public class DownloadSourceClient {
         } catch (Exception error) {
             throw new BusinessException(503, "Wenku8 下载源不可用：" + error.getMessage());
         }
-    }
-
-    /** CF 质询/封禁页会以 403/503 返回 HTML，检测特征串即可与正常响应区分。 */
-    private boolean isCloudflareChallenge(int status, byte[] body) {
-        if (status != 403 && status != 503) return false;
-        if (body == null || body.length == 0) return false;
-        String head = new String(body, 0, Math.min(body.length, 4096), StandardCharsets.UTF_8).toLowerCase();
-        return head.contains("just a moment") || head.contains("cf-error-details")
-            || head.contains("access denied") || head.contains("used cloudflare to restrict access");
     }
 }

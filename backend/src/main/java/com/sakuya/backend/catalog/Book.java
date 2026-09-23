@@ -42,6 +42,15 @@ public class Book {
     private boolean copyrightRestricted;
     private String coverPath;
     private Instant sourceSyncedAt;
+    /**
+     * 详情是否已补全。null = 当前 description 来自列表页的截断预览，待补抓；
+     * 非空 = 已成功取得过详情响应，不再重复抓取。
+     *
+     * 这个字段是「同步阶段零详情请求」成立的必要条件：目录同步与内容读取读写的是同一张 books 表，
+     * 同步写入后 database.novel() 必然命中、永不 404，回退门面因此永远不会触发详情回退。
+     * 若没有该标记，截断的 intro_preview 会被**永久固化**，用户点开详情页也拿不到完整简介。
+     */
+    @Column(name = "detail_synced_at") private Instant detailSyncedAt;
     /** 内容库发布状态；已有书目默认保持可见，导入中的新书完成全部文件后再发布。 */
     @Column(nullable = false, columnDefinition = "boolean default true") private boolean published = true;
     @Column(name = "rights_status", nullable = false, length = 24) private String rightsStatus = "AUTHORIZED";
@@ -67,7 +76,13 @@ public class Book {
         this.category = category;
     }
 
-    /** 同步时只使用 Wenku8 实际提供的资料；detail 为 null 时保留旧的完整简介，避免局部失败降级数据。 */
+    /**
+     * 同步时只使用 Wenku8 实际提供的资料。
+     *
+     * detailDescription 恒为 null（目录同步已不再请求详情），因此当现存 description 非空时不会覆盖——
+     * 这带来一个**已确认接受**的行为变化：已补全的简介不再随每日同步更新，上游改简介后本地不跟随。
+     * 换取的是同步阶段零详情请求；如需修正可对超期书籍重新补抓，本设计不引入周期性重抓。
+     */
     public void refreshFromWenku8(String aid, String title, String author, List<String> tags, String listDescription,
             String status, boolean copyrightRestricted, String detailDescription, Instant syncedAt) {
         this.sourceType = "WENKU8";
@@ -108,6 +123,7 @@ public class Book {
     public boolean isCopyrightRestricted() { return copyrightRestricted; }
     public String getCoverPath() { return coverPath; }
     public Instant getSourceSyncedAt() { return sourceSyncedAt; }
+    public Instant getDetailSyncedAt() { return detailSyncedAt; }
     public boolean isPublished() { return published; }
     public String getRightsStatus() { return rightsStatus == null ? "UNKNOWN" : rightsStatus; }
     public String getLicenseNote() { return licenseNote == null ? "" : licenseNote; }
@@ -130,6 +146,21 @@ public class Book {
         this.fullContentObjectKey = fullContentObjectKey;
         this.coverObjectKey = coverObjectKey;
     }
+    /**
+     * 详情补抓专用：只写简介与补全标记，其余字段一概不碰。
+     *
+     * 不复用 refreshFromWenku8 的原因有三：详情响应比列表页更旧，全量回写会把同步刚拿到的
+     * title/author/tags 回退；它会无条件重写 sourceSyncedAt，凭空声明「刚做过目录同步」；
+     * 且补抓路径上实体是跨网络调用持有的，写入面越窄越安全。
+     *
+     * 上游返回空简介时**仍然写入 detailSyncedAt**——否则每次打开都会重抓一本没有简介的书，
+     * 持续消耗与正文导入共享的 5 秒节流额度。
+     */
+    public void applyDetailDescription(String detailDescription, Instant syncedAt) {
+        if (detailDescription != null && !detailDescription.isBlank()) this.description = detailDescription;
+        this.detailSyncedAt = syncedAt;
+    }
+
     public void updateFullContentObject(String key, String sha256, long byteSize) {
         fullContentObjectKey = key; fullContentSha256 = sha256; fullContentByteSize = byteSize;
     }

@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -107,10 +105,3 @@ final class S3ContentStorage implements ContentStorage {
     }
 }
 
-final class ContentHashes {
-    private ContentHashes() { }
-    static String sha256(byte[] content) {
-        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content)); }
-        catch (Exception error) { throw new IllegalStateException("SHA-256 不可用", error); }
-    }
-}

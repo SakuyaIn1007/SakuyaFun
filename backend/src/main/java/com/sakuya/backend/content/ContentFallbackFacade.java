@@ -1,5 +1,6 @@
 package com.sakuya.backend.content;
 
+import com.sakuya.backend.catalog.NovelDetailBackfillService;
 import com.sakuya.backend.common.BusinessException;
 import com.sakuya.backend.content.download.DownloadSourceContentProvider;
 import com.sakuya.backend.wenku8.Wenku8GatewayService;
@@ -8,6 +9,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,27 +21,40 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class ContentFallbackFacade {
+    /** 单次搜索最多新导入的作品数：整本导入成本高，翻页浏览不该触发几十次连续下载。 */
+    private static final int MAX_BACKFILLS_PER_SEARCH = 3;
+    private static final Logger log = LoggerFactory.getLogger(ContentFallbackFacade.class);
     private final ContentReadService database;
     private final Wenku8GatewayService gateway;
     private final ContentImportRunner imports;
     private final ContentManagementProperties properties;
     private final MeterRegistry metrics;
     private final DownloadSourceContentProvider downloadSource;
+    private final NovelDetailBackfillService detailBackfill;
     public ContentFallbackFacade(ContentReadService database, Wenku8GatewayService gateway, ContentImportRunner imports,
-            ContentManagementProperties properties, MeterRegistry metrics, DownloadSourceContentProvider downloadSource) {
+            ContentManagementProperties properties, MeterRegistry metrics, DownloadSourceContentProvider downloadSource,
+            NovelDetailBackfillService detailBackfill) {
         this.database = database; this.gateway = gateway; this.imports = imports; this.properties = properties; this.metrics = metrics;
-        this.downloadSource = downloadSource;
+        this.downloadSource = downloadSource; this.detailBackfill = detailBackfill;
     }
     public Object search(String keyword, int page, int pageSize) {
         ContentReadService.NovelPage stored = database.search(keyword, page, pageSize);
         if (!stored.items().isEmpty() || !fallbackEnabled()) { hit("search"); return stored; }
         var upstream = keyword == null || keyword.isBlank() ? gateway.list("lastupdate") : gateway.search(keyword, page);
         List<Map<String, Object>> items = upstream.items().stream().map(this::canonicalNovel).toList();
-        for (Map<String, Object> item : upstream.items()) imports.backfill("WENKU8", string(item.get("id")));
+        backfillMissing(items);
         fallback("search"); return new ContentReadService.NovelPage(items.stream().map(this::novelDto).toList(), upstream.nextPage());
     }
     public Object novel(String bookId) {
-        try { Object result = database.novel(bookId); hit("novel"); return result; }
+        try {
+            Object result = database.novel(bookId);
+            hit("novel");
+            // 本地命中后的**旁路**：若该书从未补全过详情，异步补抓完整简介。
+            // 这不是回退分支的一部分——404 回退语义完全不变（下文一字未动）。
+            // DB_ONLY 的语义是「不访问上游」，此处据此跳过；补抓本身异步且永不抛异常。
+            if (fallbackEnabled()) detailBackfill.schedule(bookId);
+            return result;
+        }
         catch (BusinessException error) {
             if (error.getCode() != 404 || !fallbackEnabled() || !canFallback(bookId)) throw error;
             String external = externalId(bookId); Map<String, Object> raw = canonicalNovel(gateway.novel(external));
@@ -90,6 +106,27 @@ public class ContentFallbackFacade {
             String external = externalId(bookId); fallback("cover"); return new ContentReadService.CoverDto(gateway.cover(external), "image/jpeg");
         }
     }
+    /**
+     * 为搜索结果里尚未入库的作品排队回填。
+     *
+     * 回填是异步的整本导入，成本很高，因此设两道闸：
+     * 已入库的作品只是这次关键词没命中，不需要也不应该重新导入；
+     * 单次搜索最多只新增 MAX_BACKFILLS_PER_SEARCH 本，避免翻一页就触发几十次整本下载。
+     */
+    private void backfillMissing(List<Map<String, Object>> items) {
+        int budget = MAX_BACKFILLS_PER_SEARCH;
+        for (Map<String, Object> item : items) {
+            String externalId = string(item.get("id"));
+            if (externalId.isBlank()) continue;
+            if (database.hasBook(externalId)) continue;
+            if (budget-- <= 0) {
+                log.debug("本次搜索回填已达上限 {}，其余作品留待后续读取时按需回填", MAX_BACKFILLS_PER_SEARCH);
+                return;
+            }
+            imports.backfill("WENKU8", externalId);
+        }
+    }
+
     /**
      * 尝试用下载源直接取回全文；不可用（无 aid、CDN 缺资源、被拦截等）时返回 null
      * 交由适配器兜底。任何异常都不向上抛，避免单本下载失败中断整条回退链路。
