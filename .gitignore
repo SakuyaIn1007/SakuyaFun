@@ -57,6 +57,11 @@ backend/content-store/
 uploads/
 backend/uploads/
 
+# 适配器测试样本同样是整本正文（约 950 KB），与 content-store 同理不入库。
+# 它被 tests/test_chapter_content_source.py 用于钉住「全文切分与逐章接口格式一致」的契约，
+# 因此必须在本地保留；缺失时该用例会以 FileNotFoundError 失败，属预期行为。
+services/wenku8-adapter/samples/
+
 # 本地日志可能带出请求头中的令牌或账号信息
 *.log
 logs/
