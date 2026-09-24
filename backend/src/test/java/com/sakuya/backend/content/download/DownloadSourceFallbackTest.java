@@ -22,7 +22,7 @@ class DownloadSourceFallbackTest {
         DownloadSourceProperties properties = new DownloadSourceProperties(true, 5, 30, 64 * 1024 * 1024);
         DownloadSourceClient client = new DownloadSourceClient(HttpClient.newHttpClient(), properties);
         ContentImportRunner runner = new ContentImportRunner(
-            null, List.of(new DownloadSourceContentProvider(client, null)), null);
+            null, null, List.of(new DownloadSourceContentProvider(client, null)), null);
         assertThat(runner.supports("WENKU8_CDN")).isTrue();
         // 适配器 provider 的标识仍独立可用，二者不冲突。
         assertThat(runner.supports("WENKU8")).isFalse();

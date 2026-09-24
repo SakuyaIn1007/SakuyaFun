@@ -24,3 +24,6 @@ interface ContentCatalogEntryRepository extends JpaRepository<ContentCatalogEntr
     void deleteByFeed(String feed);
 }
 interface ContentImportJobRepository extends JpaRepository<ContentImportJob, UUID> { }
+interface ContentImportStateRepository extends JpaRepository<ContentImportState, UUID> {
+    Optional<ContentImportState> findByProviderAndExternalBookId(String provider, String externalBookId);
+}
