@@ -22,6 +22,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // 演示种子数据改由 YAML 承载，避免每条文案都改 Java；版本由 Spring Boot BOM 管理。
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     implementation platform('software.amazon.awssdk:bom:2.25.60')
     implementation 'software.amazon.awssdk:s3'

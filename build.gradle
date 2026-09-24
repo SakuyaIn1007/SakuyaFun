@@ -8,3 +8,54 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.compose) apply false
     alias(libs.plugins.google.services) apply false
 }
+
+// 模块依赖方向校验（硬约定，见 docs/contracts.md「模块依赖方向」）。
+// 允许的 feature→feature 边即下方 DECLARED_FEATURE_EDGES 声明的子模块层次；
+// 其余任何 feature 之间的依赖都视为违规。
+ext.DECLARED_FEATURE_EDGES = [
+        ":feature:profile": [":feature:bookshelf", ":feature:profile-services"],
+]
+
+tasks.register("checkFeatureIsolation") {
+    group = "verification"
+    description = "校验 feature 模块之间只存在已声明的子模块依赖"
+    doLast {
+        def declaredEdges = project.rootProject.ext.DECLARED_FEATURE_EDGES
+        def violations = []
+        def seen = [:]
+        subprojects.each { p ->
+            if (!p.path.startsWith(":feature:")) return
+            def allowed = declaredEdges.get(p.path) ?: []
+            p.configurations.findAll { it.name == "implementation" || it.name == "api" }.each { cfg ->
+                cfg.dependencies.withType(org.gradle.api.artifacts.ProjectDependency).each { dep ->
+                    // 用 getIdentityPath()：它是规范路径（如 ":core:common"），
+                    // 且不会像 getDependencyProject() 那样触发目标项目求值。
+                    def target = dep.getIdentityPath().toString()
+                    if (!target.startsWith(":feature:")) return
+                    seen["${p.path} -> ${target}"] = true
+                    if (!allowed.contains(target)) {
+                        violations << "${p.path} 依赖了 ${target}（未在 DECLARED_FEATURE_EDGES 中声明）"
+                    }
+                }
+            }
+        }
+        if (violations) {
+            throw new GradleException(
+                    "feature 模块隔离校验失败，发现 ${violations.size} 条未声明依赖：\n  - " +
+                            violations.join("\n  - ") +
+                            "\n若确需新增子模块边，请同时更新根 build.gradle 的 DECLARED_FEATURE_EDGES " +
+                            "与 docs/contracts.md「模块依赖方向」。")
+        }
+        // 注意必须写 seen.size()：seen 是 Map，Groovy 里 seen.size 会取 key "size" 而非调用方法。
+        println "checkFeatureIsolation: 通过，当前 feature 间依赖 ${seen.size()} 条："
+        seen.keySet().sort().each { println "  - ${it}" }
+    }
+}
+
+// 挂到 check：新增未声明的 feature→feature 依赖将直接导致构建失败。
+// 根项目没有 check 任务（无 java/base 插件），所以挂到各子项目的 check 上。
+subprojects {
+    tasks.matching { it.name == "check" }.configureEach {
+        dependsOn(rootProject.tasks.named("checkFeatureIsolation"))
+    }
+}
