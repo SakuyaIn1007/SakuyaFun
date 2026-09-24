@@ -9,6 +9,8 @@ data class RelationshipUser(
     val userId: String,
     val name: String,
     val initial: String,
+    /** 头像地址；空串表示未设置头像，由 AvatarImage 回落默认图。 */
+    val avatarUrl: String = "",
     val description: String,
     val avatarColor: Long,
     val isFollowing: Boolean,

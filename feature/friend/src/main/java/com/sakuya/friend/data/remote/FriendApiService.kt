@@ -68,6 +68,7 @@ data class FriendRequestItem(
     val userId: String,
     val name: String,
     val avatarText: String,
+    val avatarUrl: String = "",
     val message: String,
     val createdAt: String
 )

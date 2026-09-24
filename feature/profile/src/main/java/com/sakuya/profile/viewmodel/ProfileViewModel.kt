@@ -2,6 +2,8 @@ package com.sakuya.profile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sakuya.data.feed.AuthorFeedSource
+import com.sakuya.model.feed.DynamicPost
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,15 +19,28 @@ import com.sakuya.model.notification.UpdateBadgeState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 
+/**
+ * 个人页「我的动态」列表状态。
+ * 说明：动态列表与资料分开持有，资料加载失败不应连带清空已经拿到的动态。
+ */
+data class ProfilePostsState(
+    val posts: List<DynamicPost> = emptyList(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+)
+
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val updateBadges:UpdateBadgeRepository,
+    private val feedRepository: AuthorFeedSource,
 ) : ViewModel() {
     val updateState=updateBadges.state.stateIn(viewModelScope,SharingStarted.WhileSubscribed(5_000),UpdateBadgeState())
 
     private val _userProfile = MutableStateFlow(UserProfile.Companion.empty())
     val userProfile: StateFlow<UserProfile> = _userProfile
+    private val _postsState = MutableStateFlow(ProfilePostsState())
+    val postsState: StateFlow<ProfilePostsState> = _postsState
     private val _effect = MutableSharedFlow<ProfileEffect>()
     val effect = _effect.asSharedFlow()
 
@@ -40,9 +55,33 @@ class ProfileViewModel @Inject constructor(
     fun loadUserProfile() {
         viewModelScope.launch {
             userRepository.getUserProfile()
-                .onSuccess { profile -> _userProfile.value = profile }
+                .onSuccess { profile ->
+                    _userProfile.value = profile
+                    // 动态列表以资料里的 userId 为查询键，因此必须等资料到手后再加载。
+                    loadMyPosts(profile.userId)
+                }
                 .onFailure { error ->
                     _effect.emit(ProfileEffect.showToast(error.message ?: "个人资料加载失败"))
+                }
+        }
+    }
+
+    /**
+     * 读取当前用户自己的动态，供个人页「动态」标签展示。
+     * 执行流程：清空上次结果并进入加载态 -> 走动态模块的作者分页接口 -> 成功写入列表，失败保留错误供整页重试。
+     * 说明：这里刻意复用 /feed/authors/{自己}，而不是另起接口；
+     * 该接口只返回分页结果、不写首页 Room 流缓存，因此不会污染推荐流或关注流。
+     */
+    fun loadMyPosts(userId: String) {
+        if (userId.isBlank()) return
+        viewModelScope.launch {
+            _postsState.value = ProfilePostsState(isLoading = true)
+            feedRepository.getAuthorFeed(userId, page = 0, pageSize = MY_POSTS_PAGE_SIZE)
+                .onSuccess { result ->
+                    _postsState.value = ProfilePostsState(posts = result.items)
+                }
+                .onFailure { error ->
+                    _postsState.value = ProfilePostsState(errorMessage = error.message ?: "动态加载失败")
                 }
         }
     }
@@ -94,6 +133,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private companion object { const val MY_POSTS_PAGE_SIZE = 20 }
 }
 sealed interface ProfileEffect {
     data object NavigateToMe : ProfileEffect

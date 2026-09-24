@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,6 +58,7 @@ import com.sakuya.conversation.viewmodel.ChatAction
 import com.sakuya.conversation.viewmodel.ChatEffect
 import com.sakuya.conversation.viewmodel.ChatViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.motion.MotionContent
 import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
@@ -276,13 +276,13 @@ private fun MessageRow(
         verticalAlignment = Alignment.Top
     ) {
         if (!message.isMine) {
-            ChatAvatar(text = message.avatarText.ifEmpty { "?" })
+            ChatAvatar(avatarUrl = message.senderAvatarUrl)
             Spacer(modifier = Modifier.width(8.dp))
         }
         MessageBubble(message = message, onRetry = onRetry, onReply = onReply, isHighlighted = isHighlighted)
         if (message.isMine) {
             Spacer(modifier = Modifier.width(8.dp))
-            ChatAvatar(text = "我", isMine = true)
+            ChatAvatar(avatarUrl = message.senderAvatarUrl)
         }
     }
 }
@@ -365,32 +365,13 @@ private fun MessageBubble(
 }
 
 @Composable
-private fun ChatAvatar(
-    text: String,
-    modifier: Modifier = Modifier,
-    isMine: Boolean = false
-) {
-    Box(
-        modifier = modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(
-                if (isMine) MaterialTheme.colorScheme.tertiary
-                else MaterialTheme.colorScheme.primary
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (isMine) {
-                MaterialTheme.colorScheme.onTertiary
-            } else {
-                MaterialTheme.colorScheme.onPrimary
-            },
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
+private fun ChatAvatar(avatarUrl: String, modifier: Modifier = Modifier) {
+    AvatarImage(
+        avatarUrl = avatarUrl,
+        modifier = modifier.size(36.dp),
+        shape = RoundedCornerShape(4.dp),
+        contentDescription = "头像",
+    )
 }
 
 @Preview(showBackground = true)

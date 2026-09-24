@@ -18,5 +18,7 @@ object SakuyaIcons {
     val Thumb = R.drawable.ic_thumb
     // 动态卡片等非聊天输入区域使用横向三点图标；资源名须与 drawable 文件全小写命名一致。
     val MoreHoriz = R.drawable.ic_morehoriz
+    /** 默认头像：用户没有上传头像，或头像加载中/加载失败时统一使用。 */
+    val Avatar = R.drawable.ic_avatar
 
 }

@@ -11,6 +11,7 @@ fun ConversationEntity.toDomainModel(): Conversation {
         timeLabel = this.timeLabel,
         unreadCount = this.unreadCount,
         avatarText = this.avatarText ?: "S",
+        avatarUrl = this.avatarUrl,
         isPinned = this.isPinned
     )
 }

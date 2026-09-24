@@ -4,6 +4,7 @@ import com.sakuya.feed.data.remote.FeedApiService
 import com.sakuya.feed.data.repository.FeedRepository
 import com.sakuya.feed.data.repository.RemoteFeedRepository
 import com.google.gson.Gson
+import com.sakuya.data.feed.AuthorFeedSource
 import com.sakuya.data.local.dao.FeedCacheDao
 import dagger.Module
 import dagger.Provides
@@ -23,6 +24,16 @@ object FeedNetworkModule {
     @Provides
     @Singleton
     fun provideFeedApiService(retrofit: Retrofit): FeedApiService = retrofit.create(FeedApiService::class.java)
-    @Provides @Singleton fun provideFeedRepository(api: FeedApiService, cacheDao: FeedCacheDao, gson: Gson): FeedRepository =
-        RemoteFeedRepository(api, cacheDao, gson)
+    // 三个绑定链式复用同一个 RemoteFeedRepository 实例。
+    // 若 FeedRepository 与 AuthorFeedSource 各自 new 一个，会得到两份持有 FeedCacheDao 的实例，
+    // 缓存写入路径将出现两个来源。
+    @Provides @Singleton fun provideRemoteFeedRepository(
+        api: FeedApiService,
+        cacheDao: FeedCacheDao,
+        gson: Gson
+    ): RemoteFeedRepository = RemoteFeedRepository(api, cacheDao, gson)
+
+    @Provides @Singleton fun provideFeedRepository(repo: RemoteFeedRepository): FeedRepository = repo
+
+    @Provides @Singleton fun provideAuthorFeedSource(repo: RemoteFeedRepository): AuthorFeedSource = repo
 }

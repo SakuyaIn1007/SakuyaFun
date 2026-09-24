@@ -11,6 +11,7 @@ import com.sakuya.feed.data.remote.FeedReportRequest
 import com.sakuya.feed.data.remote.FeedBooleanActionRequest
 import com.sakuya.feed.data.remote.PublishFeedRequest
 import com.google.gson.Gson
+import com.sakuya.data.feed.AuthorFeedSource
 import com.sakuya.data.local.dao.FeedCacheDao
 import com.sakuya.data.local.entity.FeedCacheEntity
 import com.sakuya.model.feed.DynamicPost
@@ -37,7 +38,7 @@ class RemoteFeedRepository(
     private val apiService: FeedApiService,
     private val feedCacheDao: FeedCacheDao,
     private val gson: Gson,
-) : FeedRepository {
+) : FeedRepository, AuthorFeedSource {
     override fun observeCachedFeed(stream: FeedStream): Flow<List<DynamicPost>> =
         feedCacheDao.observeByStream(stream.name).map { items -> items.map { it.toDomain(gson) } }
 
@@ -92,7 +93,8 @@ internal fun FeedStream.toApiStream(): String = when (this) {
 }
 
 private fun FeedPostDto.toDomain() = DynamicPost(
-    id = id, userId = userId, authorName = authorName, authorInitial = authorInitial, authorColor = authorColor,
+    id = id, userId = userId, authorName = authorName, authorInitial = authorInitial, authorAvatarUrl = authorAvatarUrl,
+    authorColor = authorColor,
     title = title, content = content, attachments = attachments.map(FeedMediaDto::toDomain), tags = tags,
     publishedAt = publishedAt, commentCount = commentCount, likeCount = likeCount, favoriteCount = favoriteCount,
     isLiked = isLiked, isFavorited = isFavorited, isMine = isMine,
@@ -105,14 +107,15 @@ private fun FeedMediaDto.toDomain() = FeedMediaAttachment(
 
 /** 将复杂展示字段序列化，确保缓存可完全恢复成首页卡片需要的领域模型。 */
 private fun DynamicPost.toCacheEntity(stream: FeedStream, position: Int, gson: Gson) = FeedCacheEntity(
-    stream.name, id, position, userId, authorName, authorInitial, authorColor, title, content,
+    stream.name, id, position, userId, authorName, authorInitial, authorAvatarUrl, authorColor, title, content,
     gson.toJson(attachments), gson.toJson(imageColors), gson.toJson(tags), publishedAt,
     relatedNovel?.let(gson::toJson), commentCount, likeCount, favoriteCount, isLiked, isFavorited, isMine,
 )
 
 /** 单条缓存解析失败以安全默认值降级，避免旧缓存阻断其他动态的离线展示。 */
 private fun FeedCacheEntity.toDomain(gson: Gson) = DynamicPost(
-    id = postId, userId = userId, authorName = authorName, authorInitial = authorInitial, authorColor = authorColor,
+    id = postId, userId = userId, authorName = authorName, authorInitial = authorInitial, authorAvatarUrl = authorAvatarUrl,
+    authorColor = authorColor,
     title = title, content = content,
     attachments = runCatching { gson.fromJson(attachmentsJson, Array<FeedMediaAttachment>::class.java).toList() }.getOrDefault(emptyList()),
     imageColors = runCatching { gson.fromJson(imageColorsJson, Array<Long>::class.java).toList() }.getOrDefault(emptyList()),
@@ -124,6 +127,7 @@ private fun FeedCacheEntity.toDomain(gson: Gson) = DynamicPost(
 
 private fun FeedCommentDto.toDomain() = FeedComment(
     id = id, postId = postId, authorId = authorId, authorName = authorName, authorInitial = authorInitial,
+    authorAvatarUrl = authorAvatarUrl,
     content = content, publishedAt = publishedAt, replyToCommentId = replyToCommentId,
     replyToAuthorName = replyToAuthorName, likeCount = likeCount, isLiked = isLiked,
 )

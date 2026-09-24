@@ -17,18 +17,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.sakuya.profile.model.PrivacySettings
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.ui.components.ProfileInfoItem
 import com.sakuya.profile.viewmodel.ProfileAction
 import com.sakuya.profile.viewmodel.ProfileMeViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable
@@ -67,12 +66,11 @@ fun MyContent(
             title = "头像",
             onClick = { onAction(ProfileAction.OnAvatarClick) }
         ) {
-            AsyncImage(
-                model = profile.avatarUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(12.dp))
+            AvatarImage(
+                avatarUrl = profile.avatarUrl,
+                shape = RoundedCornerShape(12.dp),
+                contentDescription = "头像",
+                modifier = Modifier.size(36.dp),
             )
         }
         ProfileOutline(12.dp)

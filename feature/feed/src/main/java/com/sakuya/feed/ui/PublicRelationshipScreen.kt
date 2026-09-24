@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.model.profile.RelationshipUserDto
@@ -34,6 +32,7 @@ import com.sakuya.feed.viewmodel.PublicRelationshipAction
 import com.sakuya.feed.viewmodel.PublicRelationshipUiState
 import com.sakuya.feed.viewmodel.PublicRelationshipViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.AvatarImage
 
 /**
  * PublicRelationshipScreen.kt
@@ -144,10 +143,11 @@ private fun PublicRelationshipUserRow(
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val avatarColor = if (user.avatarColor == 0L) MaterialTheme.colorScheme.primary else Color(user.avatarColor)
-        Box(Modifier.size(42.dp).background(avatarColor, CircleShape), contentAlignment = Alignment.Center) {
-            Text(user.initial, color = Color.White, style = MaterialTheme.typography.titleMedium)
-        }
+        AvatarImage(
+            avatarUrl = user.avatarUrl,
+            modifier = Modifier.size(42.dp),
+            contentDescription = "${user.name}的头像",
+        )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(user.name, style = MaterialTheme.typography.titleSmall)

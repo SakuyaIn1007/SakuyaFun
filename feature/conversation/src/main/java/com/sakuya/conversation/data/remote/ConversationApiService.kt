@@ -75,6 +75,7 @@ data class ConversationDto(
     val timeLabel: String,
     val unreadCount: Int = 0,
     val avatarText: String,
+    val avatarUrl: String = "",
     val isPinned: Boolean = false
 )
 

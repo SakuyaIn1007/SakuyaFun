@@ -49,6 +49,7 @@ private fun ConversationEntity.toDomain(): Conversation = Conversation(
     timeLabel = timeLabel,
     unreadCount = unreadCount,
     avatarText = avatarText ?: "?",
+    avatarUrl = avatarUrl,
     isPinned = isPinned,
 )
 
@@ -60,6 +61,7 @@ private fun ConversationDto.toDomainModel(): Conversation {
         timeLabel = timeLabel,
         unreadCount = unreadCount,
         avatarText = avatarText,
+        avatarUrl = avatarUrl,
         isPinned = isPinned
     )
 }
@@ -72,6 +74,7 @@ private fun Conversation.toEntity(): ConversationEntity {
         timeLabel = timeLabel,
         unreadCount = unreadCount,
         avatarText = avatarText,
+        avatarUrl = avatarUrl,
         isPinned = isPinned,
         lastActiveTime = System.currentTimeMillis()
     )

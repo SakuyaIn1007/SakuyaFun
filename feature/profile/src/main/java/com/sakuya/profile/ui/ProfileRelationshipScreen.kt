@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.profile.model.RelationshipListType
@@ -39,6 +37,7 @@ import com.sakuya.profile.viewmodel.RelationshipEffect
 import com.sakuya.profile.viewmodel.RelationshipUiState
 import com.sakuya.profile.viewmodel.RelationshipViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.UpdateDot
 
 /**
@@ -137,9 +136,11 @@ private fun RelationshipUserRow(
             .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(42.dp).background(Color(user.avatarColor), CircleShape), contentAlignment = Alignment.Center) {
-            Text(user.initial, color = Color.White, style = MaterialTheme.typography.titleMedium)
-        }
+        AvatarImage(
+            avatarUrl = user.avatarUrl,
+            modifier = Modifier.size(42.dp),
+            contentDescription = "${user.name}的头像",
+        )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment=Alignment.CenterVertically){Text(user.name, style = MaterialTheme.typography.titleSmall);if(user.hasUnseenPosts){Spacer(Modifier.width(6.dp));UpdateDot()}}

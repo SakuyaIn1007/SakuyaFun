@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,6 +44,7 @@ import com.sakuya.friend.viewmodel.FriendAction
 import com.sakuya.friend.viewmodel.FriendViewModel
 import com.sakuya.model.group.GroupConversation
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
@@ -214,7 +214,7 @@ internal fun GroupChatRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(text = group.group.avatarText, online = false)
+        FriendAvatar(online = false)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -319,7 +319,7 @@ private fun FriendRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(text = friend.avatarText, online = friend.isOnline)
+        FriendAvatar(online = friend.isOnline, avatarUrl = friend.avatarUrl)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -353,7 +353,7 @@ internal fun FriendSearchRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(text = friend.avatarText, online = friend.isOnline)
+        FriendAvatar(online = friend.isOnline, avatarUrl = friend.avatarUrl)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -390,7 +390,7 @@ internal fun FriendRequestRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FriendAvatar(text = request.avatarText, online = false)
+        FriendAvatar(online = false, avatarUrl = request.avatarUrl)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -451,25 +451,17 @@ internal fun EmptyMessage(
 
 @Composable
 internal fun FriendAvatar(
-    text: String,
     online: Boolean,
+    /** 头像地址；为空时由 AvatarImage 回落默认图。 */
+    avatarUrl: String = "",
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.size(48.dp)) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondary),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = text,
-                color = MaterialTheme.colorScheme.onSecondary,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+        AvatarImage(
+            avatarUrl = avatarUrl,
+            modifier = Modifier.matchParentSize(),
+            contentDescription = "好友头像",
+        )
         if (online) {
             Box(
                 modifier = Modifier

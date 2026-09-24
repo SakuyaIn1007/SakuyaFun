@@ -37,7 +37,7 @@ class RelationshipRepository @Inject constructor(
 }
 
 private fun RelationshipPageDto.toDomain() = RelationshipPage(users.map(RelationshipUserDto::toDomain), nextPage)
-private fun RelationshipUserDto.toDomain() = RelationshipUser(userId, name, initial, description.orEmpty(), avatarColor, isFollowing,hasUnseenPosts)
+private fun RelationshipUserDto.toDomain() = RelationshipUser(userId, name, initial, avatarUrl, description.orEmpty(), avatarColor, isFollowing,hasUnseenPosts)
 private fun <T, R> Response<BaseResponse<T>>.toDomain(mapper: (T) -> R): Result<R> =
     if (!isSuccessful) Result.failure(IllegalStateException("HTTP ${code()}"))
     else body()?.toResult()?.map(mapper) ?: Result.failure(IllegalStateException("服务器未返回数据"))

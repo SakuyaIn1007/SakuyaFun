@@ -7,6 +7,7 @@ data class ChatMessageDto(
     val timeLabel: String,
     val isMine: Boolean,
     val avatarText: String = "",
+    val senderAvatarUrl: String = "",
     val timeStamp: Long = 0,
     val messageType: String = "text",
     val senderId: String = "",

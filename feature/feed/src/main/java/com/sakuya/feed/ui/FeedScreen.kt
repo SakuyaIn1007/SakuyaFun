@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -98,6 +97,7 @@ import com.sakuya.feed.viewmodel.PublicAuthorViewModel
 import com.sakuya.model.feed.FeedComment
 import com.sakuya.model.feed.DynamicPost
 import com.sakuya.model.feed.RelatedNovel
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.DynamicTagRow
 import com.sakuya.ui.motion.MotionSpec
 import com.sakuya.ui.motion.rememberMotionPreferences
@@ -401,12 +401,11 @@ private fun DetailTopBarAuthor(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(28.dp).clip(CircleShape).background(Color(post.authorColor)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(post.authorInitial, color = Color.White, style = MaterialTheme.typography.labelLarge)
-        }
+        AvatarImage(
+            avatarUrl = post.authorAvatarUrl,
+            modifier = Modifier.size(28.dp),
+            contentDescription = "${post.authorName}的头像",
+        )
         Spacer(Modifier.width(8.dp))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
         FollowButton(
@@ -725,9 +724,11 @@ private fun DetailAuthorRow(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(post.authorColor)).clickable { onAuthorClick(post.userId) }, contentAlignment = Alignment.Center) {
-            Text(post.authorInitial, color = Color.White, style = MaterialTheme.typography.titleMedium)
-        }
+        AvatarImage(
+            avatarUrl = post.authorAvatarUrl,
+            modifier = Modifier.size(40.dp).clickable { onAuthorClick(post.userId) },
+            contentDescription = "${post.authorName}的头像",
+        )
         Spacer(Modifier.width(10.dp))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).clickable { onAuthorClick(post.userId) })
         FollowButton(
@@ -769,9 +770,11 @@ private fun DynamicCommentList(
         }
         comments.forEach { comment ->
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.tertiaryContainer), contentAlignment = Alignment.Center) {
-                    Text(comment.authorInitial, color = MaterialTheme.colorScheme.onTertiaryContainer, style = MaterialTheme.typography.labelLarge)
-                }
+                AvatarImage(
+                    avatarUrl = comment.authorAvatarUrl,
+                    modifier = Modifier.size(32.dp),
+                    contentDescription = "${comment.authorName}的头像",
+                )
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(comment.authorName, style = MaterialTheme.typography.labelLarge)

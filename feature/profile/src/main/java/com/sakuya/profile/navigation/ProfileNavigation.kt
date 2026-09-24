@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import com.sakuya.navigation.CONVERSATION_ROUTE
 import com.sakuya.navigation.FEED_ROUTE
 import com.sakuya.navigation.FRIEND_ROUTE
+import com.sakuya.library.navigation.libraryNavGraph
 import com.sakuya.navigation.LIBRARY_ROUTE
 import com.sakuya.navigation.PROFILE_ALBUMS_ROUTE
 import com.sakuya.navigation.PROFILE_AVATAR
@@ -75,6 +76,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
         val viewModel: ProfileViewModel = hiltViewModel()
         val profile by viewModel.userProfile.collectAsState()
         val updateState by viewModel.updateState.collectAsState()
+        val postsState by viewModel.postsState.collectAsState()
         val context = LocalContext.current
         LaunchedEffect(Unit) {
             viewModel.effect.collect { effect ->
@@ -134,6 +136,8 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
             onOpenHistory = { navController.navigate(PROFILE_READING_HISTORY) },
             updateState=updateState,
             onDynamicViewed=viewModel::markDynamicUpdatesRead,
+            postsState=postsState,
+            onRetryPosts={viewModel.loadMyPosts(profile.userId)},
         )
     }
     composable(PROFILE_FOLLOWING_ROUTE) {
@@ -518,4 +522,5 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
         }
     }
     profileServicesNavGraph(navController)
+    libraryNavGraph(navController)
 }

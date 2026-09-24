@@ -33,8 +33,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,6 +41,7 @@ import com.sakuya.model.chat.Conversation
 import com.sakuya.conversation.viewmodel.ConversationAction
 import com.sakuya.conversation.viewmodel.ConversationViewModel
 import com.sakuya.ui.component.AppPrimaryTopBar
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 import com.sakuya.ui.component.UpdateDot
@@ -214,20 +213,12 @@ private fun ConversationRow(
                 }
             }
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = conversation.avatarText,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            AvatarImage(
+                avatarUrl = conversation.avatarUrl,
+                modifier = Modifier.size(48.dp),
+                shape = RoundedCornerShape(4.dp),
+                contentDescription = "会话头像",
+            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(

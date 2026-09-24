@@ -106,6 +106,7 @@ private fun FriendDto.toDomainModel(): Friend {
         name = name,
         status = status,
         avatarText = avatarText,
+        avatarUrl = avatarUrl.orEmpty(),
         isOnline = isOnline
     )
 }

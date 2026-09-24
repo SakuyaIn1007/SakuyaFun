@@ -3,7 +3,6 @@ package com.sakuya.profile.ui
 import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,20 +36,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
-import coil.request.ImageRequest
 import com.sakuya.designsystem.icon.SakuyaIcons
 import com.sakuya.library.ui.LibraryScreen
 import com.sakuya.model.feed.DynamicPost
 import com.sakuya.profile.model.PrivacySettings
 import com.sakuya.profile.model.UserProfile
 import com.sakuya.profile.viewmodel.ProfileAction
+import com.sakuya.profile.viewmodel.ProfilePostsState
+import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.component.DynamicPostCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
@@ -69,6 +68,8 @@ fun ProfileScreen(
     onOpenHistory: () -> Unit = {},
     updateState:UpdateBadgeState=UpdateBadgeState(),
     onDynamicViewed:()->Unit={},
+    postsState: ProfilePostsState = ProfilePostsState(),
+    onRetryPosts: () -> Unit = {},
 ) {
     ProfileContent(
         profile,
@@ -82,6 +83,8 @@ fun ProfileScreen(
         onOpenHistory = onOpenHistory,
         updateState=updateState,
         onDynamicViewed=onDynamicViewed,
+        postsState = postsState,
+        onRetryPosts = onRetryPosts,
     )
 }
 
@@ -99,6 +102,8 @@ fun ProfileContent(
     onOpenHistory: () -> Unit = {},
     updateState:UpdateBadgeState=UpdateBadgeState(),
     onDynamicViewed:()->Unit={},
+    postsState: ProfilePostsState = ProfilePostsState(),
+    onRetryPosts: () -> Unit = {},
 ) {
     var selectedSection by remember { mutableIntStateOf(0) }
     Column(
@@ -123,47 +128,45 @@ fun ProfileContent(
             if (selectedSection == 0) {
                 LibraryScreen(onOpenReader = onOpenReader)
             } else {
-                ProfileDynamicContent(profile, onOpenDynamic)
+                ProfileDynamicContent(postsState, onOpenDynamic, onRetryPosts)
             }
         }
     }
 }
 
+/**
+ * 个人页「动态」标签内容。
+ * 执行流程：加载中显示进度 -> 失败显示整页重试 -> 无动态显示空态 -> 否则按发布时间倒序渲染卡片。
+ * 说明：这里展示的是服务端真实数据（/feed/authors/{当前用户}），
+ * 不再使用本地硬编码的示例动态，避免列表里的内容与实际账号无关。
+ */
 @Composable
-private fun ProfileDynamicContent(profile: UserProfile, onOpenDynamic: () -> Unit) {
-    val posts = listOf(
-        DynamicPost(
-            id = "my-post-1",
-            authorName = profile.nickname,
-            authorInitial = profile.nickname.take(1).ifBlank { "我" },
-            authorColor = 0xFF5D8C77,
-            title = "我的周末阅读记录",
-            content = "重新翻开搁置已久的小说，读到熟悉段落时还是会被其中的细节打动。",
-            imageColors = listOf(0xFF8799B0, 0xFFC3947A, 0xFF749B90),
-            tags = listOf("#阅读记录", "#周末"),
-            commentCount = 6,
-            likeCount = 23,
-            userId = "current-user",
-            isMine = true,
-        ),
-        DynamicPost(
-            id = "my-post-2",
-            authorName = profile.nickname,
-            authorInitial = profile.nickname.take(1).ifBlank { "我" },
-            authorColor = 0xFF5D8C77,
-            title = "写在书页边的句子",
-            content = "有些句子并不会立刻懂得，但在某个平常的夜晚又会突然想起。",
-            tags = listOf("#摘抄", "#随想"),
-            commentCount = 2,
-            likeCount = 11,
-            userId = "current-user",
-            isMine = true,
-        ),
-    )
-    LazyColumn(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        items(posts, key = DynamicPost::id) { post ->
-            DynamicPostCard(post = post, onClick = onOpenDynamic)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+private fun ProfileDynamicContent(
+    postsState: ProfilePostsState,
+    onOpenDynamic: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    when {
+        postsState.isLoading && postsState.posts.isEmpty() ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        postsState.errorMessage != null && postsState.posts.isEmpty() ->
+            Column(
+                Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(postsState.errorMessage, color = MaterialTheme.colorScheme.outline)
+                Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("重试") }
+            }
+        postsState.posts.isEmpty() ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("还没有发布过动态", color = MaterialTheme.colorScheme.outline)
+            }
+        else -> LazyColumn(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            items(postsState.posts, key = DynamicPost::id) { post ->
+                DynamicPostCard(post = post, onClick = onOpenDynamic)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+            }
         }
     }
 }
@@ -219,19 +222,12 @@ fun ProfileHeader(
                 .padding(top = 24.dp, bottom = 24.dp)
         ) {
         Spacer(modifier = Modifier.width(16.dp))
-        Image(
-            painter = rememberAsyncImagePainter(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(profile.avatarUrl)
-                    .crossfade(true)
-                    .build()
-            ),
+        // 默认头像是铺满整块区域的不透明图，加载中与加载失败都会覆盖底色，无需再铺背景。
+        AvatarImage(
+            avatarUrl = profile.avatarUrl,
+            shape = RoundedCornerShape(8.dp),
             contentDescription = "头像",
-            modifier = Modifier.run {
-                size(72.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            }
+            modifier = Modifier.size(72.dp),
         )
         Spacer(modifier = Modifier.width(14.dp))
         Column(

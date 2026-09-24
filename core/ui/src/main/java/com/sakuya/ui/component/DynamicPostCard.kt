@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -98,15 +97,11 @@ private fun DynamicAuthor(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(Color(post.authorColor)).clickable(onClick = onAuthorClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(post.authorInitial, color = Color.White, style = MaterialTheme.typography.titleMedium)
-        }
+        AvatarImage(
+            avatarUrl = post.authorAvatarUrl,
+            modifier = Modifier.size(28.dp).clickable(onClick = onAuthorClick),
+            contentDescription = "${post.authorName}的头像",
+        )
         Spacer(Modifier.width(8.dp))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.clickable(onClick = onAuthorClick))
         Spacer(Modifier.weight(1f))
