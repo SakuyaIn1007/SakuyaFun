@@ -85,12 +85,6 @@ fun ContentCard(
                     contentScale = ContentScale.Crop
                 )
             }
-            Text(
-                text = title.take(2),
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
         }
 
         Spacer(modifier = Modifier.width(dimensions.spaceMd))

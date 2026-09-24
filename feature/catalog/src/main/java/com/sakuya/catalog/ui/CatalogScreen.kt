@@ -346,12 +346,6 @@ private fun CatalogGridBook(
                     contentScale = ContentScale.Crop
                 )
             }
-            Text(
-                text = item.title.take(2),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White.copy(alpha = 0.75f)
-            )
         }
         Spacer(Modifier.width(8.dp))
         Column(

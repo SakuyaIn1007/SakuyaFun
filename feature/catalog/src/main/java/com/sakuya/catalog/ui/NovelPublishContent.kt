@@ -202,12 +202,6 @@ private fun ReleaseNovelItem(
                     contentScale = ContentScale.Crop,
                 )
             }
-            Text(
-                text = release.novel.title.take(1),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontWeight = FontWeight.Bold,
-            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {

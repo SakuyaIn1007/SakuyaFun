@@ -47,7 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.sakuya.catalog.R
@@ -407,12 +406,6 @@ private fun RankingCover(item: ContentItem, rank: Int) {
                 contentScale = ContentScale.Crop
             )
         }
-        Text(
-            text = item.title.take(2),
-            color = Color.White.copy(alpha = 0.78f),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
