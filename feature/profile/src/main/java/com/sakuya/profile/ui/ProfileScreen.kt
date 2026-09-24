@@ -51,6 +51,7 @@ import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.component.DynamicPostCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 import com.sakuya.model.notification.UpdateBadgeState
 import com.sakuya.ui.component.UpdateDot
 import androidx.compose.material3.BadgedBox
@@ -123,7 +124,7 @@ fun ProfileContent(
             onOpenHistory = onOpenHistory,
             updateState=updateState,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(SakuyaTheme.tokens.dimensions.spaceMd))
         Box(Modifier.weight(1f)) {
             if (selectedSection == 0) {
                 LibraryScreen(onOpenReader = onOpenReader)
@@ -146,6 +147,7 @@ private fun ProfileDynamicContent(
     onOpenDynamic: () -> Unit,
     onRetry: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     when {
         postsState.isLoading && postsState.posts.isEmpty() ->
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -156,7 +158,7 @@ private fun ProfileDynamicContent(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(postsState.errorMessage, color = MaterialTheme.colorScheme.outline)
-                Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("重试") }
+                Button(onClick = onRetry, modifier = Modifier.padding(top = dimensions.spaceMd)) { Text("重试") }
             }
         postsState.posts.isEmpty() ->
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -178,6 +180,7 @@ private fun ProfileSectionBar(
     showDynamicUpdate:Boolean,
     onSettingsClick: () -> Unit
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     PrimaryTabRow(
         tabs = listOf("书架", "动态"),
         selectedIndex = selectedSection,
@@ -187,7 +190,7 @@ private fun ProfileSectionBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
-            .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp)
+            .padding(start = dimensions.spaceLg, end = dimensions.spaceSm, top = 6.dp, bottom = 6.dp)
     ) {
         IconButton(onClick = onSettingsClick) {
             Icon(painterResource(SakuyaIcons.Settings), "设置", Modifier.size(24.dp),
@@ -206,6 +209,7 @@ fun ProfileHeader(
     onOpenHistory: () -> Unit = {},
     updateState:UpdateBadgeState=UpdateBadgeState(),
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -219,9 +223,9 @@ fun ProfileHeader(
                     Log.d("ProfileHeader", "clicked")
                     onClick()
                 }
-                .padding(top = 24.dp, bottom = 24.dp)
+                .padding(top = dimensions.spaceXl, bottom = dimensions.spaceXl)
         ) {
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceLg))
         // 默认头像是铺满整块区域的不透明图，加载中与加载失败都会覆盖底色，无需再铺背景。
         AvatarImage(
             avatarUrl = profile.avatarUrl,
@@ -242,7 +246,7 @@ fun ProfileHeader(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(top = 2.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimensions.spaceSm))
             Text(
                 text = profile.signature?.takeIf { it.isNotBlank() } ?: "点击完善个人资料",
                 style = MaterialTheme.typography.bodySmall,
@@ -250,7 +254,7 @@ fun ProfileHeader(
                 maxLines = 1
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         MiniQrCode(
             modifier = Modifier.size(22.dp),
             color = MaterialTheme.colorScheme.outline
@@ -275,6 +279,7 @@ private fun ProfileStats(
     onOpenHistory: () -> Unit,
     updateState:UpdateBadgeState,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     val stats = listOf(
         Triple(profile.followingCount.toString(), "关注", onOpenFollowing),
         Triple(profile.followerCount.toString(), "粉丝", onOpenFollowers),
@@ -282,7 +287,7 @@ private fun ProfileStats(
         Triple("0", "历史浏览", onOpenHistory),
     )
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = dimensions.spaceLg, end = dimensions.spaceLg, bottom = 20.dp),
     ) {
         stats.forEach { (count, label, onClick) ->
             Column(
@@ -328,6 +333,7 @@ fun ProfileFunctionItem(
     @DrawableRes iconRes: Int,
     onClick: () -> Unit = {}
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -336,14 +342,14 @@ fun ProfileFunctionItem(
             .padding(vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Icon(
             painter = painterResource(iconRes),
             contentDescription = title,
             modifier = Modifier.size(24.dp),
             tint = Color.Unspecified
         )
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceLg))
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,

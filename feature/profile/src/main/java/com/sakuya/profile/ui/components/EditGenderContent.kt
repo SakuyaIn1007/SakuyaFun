@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakuya.model.extentions.Gender
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun EditGenderContent(
@@ -50,12 +51,13 @@ private fun GenderOptionRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp), // 稍微加大了一点内边距，点击区域更舒服喵
+            .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceLg), // 稍微加大了一点内边距，点击区域更舒服喵
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween // 让文字在左边，勾勾在右边喵
     ) {

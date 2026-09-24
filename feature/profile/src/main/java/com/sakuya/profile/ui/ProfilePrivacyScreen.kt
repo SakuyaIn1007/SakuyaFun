@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sakuya.profile.viewmodel.ProfileViewModel
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun ProfilePrivacyScreen(
@@ -28,11 +29,12 @@ fun ProfilePrivacyScreen(
 ) {
     val profile by viewModel.userProfile.collectAsState()
     var privacy by remember { mutableStateOf(profile.privacySettings) }
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(dimensions.spaceLg)
     ) {
         // 顶部返回按钮
         Row(
@@ -46,7 +48,7 @@ fun ProfilePrivacyScreen(
             }) { Text("保存") }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(dimensions.spaceLg))
 
         // 设置开关
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -61,7 +63,7 @@ fun ProfilePrivacyScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimensions.spaceSm))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -74,7 +76,7 @@ fun ProfilePrivacyScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimensions.spaceSm))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

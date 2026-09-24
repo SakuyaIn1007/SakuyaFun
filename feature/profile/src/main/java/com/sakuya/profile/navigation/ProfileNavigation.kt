@@ -69,6 +69,7 @@ import com.sakuya.profile.viewmodel.ProfileMeViewModel
 import com.sakuya.profile.viewmodel.ProfileViewModel
 import com.sakuya.profile.viewmodel.UploadState
 import com.sakuya.profileservices.navigation.profileServicesNavGraph
+import com.sakuya.ui.theme.SakuyaTheme
 
 
 fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
@@ -317,6 +318,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
     composable(PROFILE_PHONE){
         val viewModel: ProfileMeViewModel = hiltViewModel()
         val profile by viewModel.userProfile.collectAsState()
+        val dimensions = SakuyaTheme.tokens.dimensions
         var inputPhone by remember(profile.phoneNumber) {
             mutableStateOf(profile.phoneNumber ?: "")
         }
@@ -348,7 +350,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                     text = "请输入 11 位手机号",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceSm)
                 )
             }
         }
@@ -413,6 +415,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
         val profile by viewModel.userProfile.collectAsState()
         val clipboardManager = LocalClipboardManager.current
         val context = LocalContext.current
+        val dimensions = SakuyaTheme.tokens.dimensions
         ProfileEditScreen(
             title = "ID",
             onBack = { navController.popBackStack() }
@@ -423,13 +426,13 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceLg)
             )
             Text(
                 text = "ID 是账号的唯一标识，不能修改。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = dimensions.spaceLg)
             )
             Text(
                 text = "复制 ID",
@@ -437,7 +440,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
+                    .padding(horizontal = dimensions.spaceLg, vertical = 20.dp)
                     .clickable {
                         clipboardManager.setText(AnnotatedString(profile.userId))
                         Toast
@@ -451,6 +454,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
     composable(PROFILE_POKE) {
         val viewModel: ProfileMeViewModel = hiltViewModel()
         val profile by viewModel.userProfile.collectAsState()
+        val dimensions = SakuyaTheme.tokens.dimensions
         var inputPoke by remember(profile.pokeText) {
             mutableStateOf(profile.pokeText ?: "")
         }
@@ -480,7 +484,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                 text = "别人戳你时会看到这句话。",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceSm)
             )
         }
     }
@@ -488,6 +492,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
     composable(PROFILE_SIGNATURE){
         val viewModel: ProfileMeViewModel = hiltViewModel()
         val profile by viewModel.userProfile.collectAsState()
+        val dimensions = SakuyaTheme.tokens.dimensions
         var inputSignature by remember(profile.signature) {
             mutableStateOf(profile.signature ?: "")
         }
@@ -517,7 +522,7 @@ fun NavGraphBuilder.profileNavGraph(navController: NavHostController) {
                 text = "${inputSignature.length}/40",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceSm)
             )
         }
     }

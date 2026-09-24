@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun ProfileInfoItem(
@@ -28,16 +29,17 @@ fun ProfileInfoItem(
 //  显示对应的个人信息
     trailingContent: @Composable RowScope.() ->Unit = {}
 ){
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
             .background(MaterialTheme.colorScheme.surface)
             .clickable{onClick()}
-            .padding(vertical = 16.dp),
+            .padding(vertical = dimensions.spaceLg),
         verticalAlignment = Alignment.CenterVertically
     ){
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Text(text = title
             , style = MaterialTheme.typography.titleMedium
             , color = MaterialTheme.colorScheme.onBackground

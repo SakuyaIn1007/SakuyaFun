@@ -39,6 +39,7 @@ import com.sakuya.profile.viewmodel.RelationshipViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.UpdateDot
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ProfileRelationshipScreen.kt
@@ -117,7 +118,7 @@ private fun RelationshipContent(
 private fun RelationshipEmptyState(errorMessage: String?, onRetry: () -> Unit) {
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text(errorMessage ?: "暂无用户", color = MaterialTheme.colorScheme.outline)
-        if (errorMessage != null) Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("重试") }
+        if (errorMessage != null) Button(onClick = onRetry, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceMd)) { Text("重试") }
     }
 }
 
@@ -129,6 +130,7 @@ private fun RelationshipUserRow(
     onToggleFollow: () -> Unit,
     onUserClick: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         Modifier
             .fillMaxWidth()
@@ -141,7 +143,7 @@ private fun RelationshipUserRow(
             modifier = Modifier.size(42.dp),
             contentDescription = "${user.name}的头像",
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(dimensions.spaceMd))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment=Alignment.CenterVertically){Text(user.name, style = MaterialTheme.typography.titleSmall);if(user.hasUnseenPosts){Spacer(Modifier.width(6.dp));UpdateDot()}}
             Text(user.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)

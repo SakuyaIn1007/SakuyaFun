@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun ProfileReadingHistoryScreen(
@@ -54,11 +55,12 @@ private fun ReadingHistoryRow(
     item: ReadingHistoryItem,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .padding(horizontal = dimensions.spaceLg, vertical = 14.dp)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -73,7 +75,7 @@ private fun ReadingHistoryRow(
                 color = MaterialTheme.colorScheme.outline
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Text(
             text = item.timeText,
             style = MaterialTheme.typography.bodySmall,

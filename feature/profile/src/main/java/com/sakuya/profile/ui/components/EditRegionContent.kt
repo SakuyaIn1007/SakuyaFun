@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakuya.profile.viewmodel.RegionItem
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 
 @Composable
@@ -54,12 +55,13 @@ fun RegionOptionRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ){
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(dimensions.spaceLg),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

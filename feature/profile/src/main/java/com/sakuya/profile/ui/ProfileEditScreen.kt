@@ -40,6 +40,7 @@ import com.sakuya.profile.viewmodel.UploadState
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun ProfileEditScreen(
@@ -73,7 +74,7 @@ fun ProfileEditScreen(
             }
         )
         Column(
-            modifier = Modifier.padding(vertical = 16.dp)
+            modifier = Modifier.padding(vertical = SakuyaTheme.tokens.dimensions.spaceLg)
         ) {
             content()
         }

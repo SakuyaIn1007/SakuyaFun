@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.sakuya.profile.viewmodel.UploadState
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -93,6 +94,7 @@ fun AvatarEditContent(
     var isCropping by remember { mutableStateOf(false) }
     val actionsEnabled = !isUploading && uploadState !is UploadState.Loading
             && !isCropping
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     fun startCrop(uri: Uri) {
         croppingUri = uri
@@ -198,7 +200,7 @@ fun AvatarEditContent(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceLg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -233,7 +235,7 @@ fun AvatarEditContent(
 
             when {
                 isUploading || uploadState is UploadState.Loading -> {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spaceMd))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
@@ -243,7 +245,7 @@ fun AvatarEditContent(
                             strokeWidth = 2.dp,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(dimensions.spaceSm))
                         Text(
                             text = "正在保存...",
                             style = MaterialTheme.typography.bodyMedium,
@@ -252,7 +254,7 @@ fun AvatarEditContent(
                     }
                 }
                 uploadState is UploadState.Success -> {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spaceMd))
                     Text(
                         text = "头像保存成功",
                         style = MaterialTheme.typography.bodyMedium,
@@ -261,7 +263,7 @@ fun AvatarEditContent(
                     )
                 }
                 uploadState is UploadState.Error -> {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(dimensions.spaceMd))
                     Text(
                         text = uploadState.message,
                         style = MaterialTheme.typography.bodySmall,
@@ -279,7 +281,7 @@ fun AvatarEditContent(
         )
 
         HorizontalDivider(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = dimensions.spaceLg),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
         )
 
@@ -333,7 +335,7 @@ fun AvatarEditContent(
                                 strokeWidth = 3.dp,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(dimensions.spaceMd))
                             Text(
                                 text = "正在加载图片...",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -352,7 +354,7 @@ fun AvatarEditContent(
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(dimensions.spaceSm))
                             Text(
                                 text = "点击上方按钮拍照或从相册选择",
                                 style = MaterialTheme.typography.bodySmall,
@@ -382,11 +384,12 @@ private fun AvatarCropContent(
     val density = LocalDensity.current
     val cropBoxDp = 300.dp
     val maxDragPx = with(density) { 150.dp.toPx() } * scale
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Column(
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = dimensions.spaceMd),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -394,7 +397,7 @@ private fun AvatarCropContent(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(dimensions.spaceLg))
         Box(
             modifier = Modifier
                 .size(cropBoxDp)
@@ -435,7 +438,7 @@ private fun AvatarCropContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(dimensions.spaceSm))
         Text(
             text = "缩放",
             style = MaterialTheme.typography.bodyMedium,
@@ -448,7 +451,7 @@ private fun AvatarCropContent(
             valueRange = 1f..3f,
             enabled = !isCropping
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(dimensions.spaceMd))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
@@ -602,11 +605,12 @@ private fun ActionItem(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = dimensions.spaceLg, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
