@@ -11,7 +11,6 @@ import com.sakuya.conversation.navigation.conversationNavGraph
 import com.sakuya.feed.navigation.feedNavGraph
 import com.sakuya.friend.navigation.friendNavGraph
 import com.sakuya.catalog.navigation.catalogNavGraph
-import com.sakuya.library.navigation.libraryNavGraph
 import com.sakuya.navigation.AUTH_LOGIN_ROUTE
 import com.sakuya.navigation.DASHBOARD_ROUTE
 import com.sakuya.navigation.FEED_ROUTE
@@ -49,7 +48,6 @@ fun NavGraphBuilder.mainNavGraph(navController: NavHostController) {
     conversationNavGraph(navController)
     searchNavGraph(navController)
     feedNavGraph(navController)
-    libraryNavGraph(navController)
     profileNavGraph(navController)
     friendNavGraph(navController)
     notificationNavGraph(navController)
