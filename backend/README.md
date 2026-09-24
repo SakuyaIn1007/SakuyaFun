@@ -11,11 +11,24 @@ cd ..
 ./gradlew -p backend bootRun
 ```
 
-默认地址为 `http://localhost:8080`，默认启用 `dev` Profile，并连接本机 MySQL 的 `sakuya` 数据库。可使用 `backend/docker-compose.yml` 启动 MySQL；开发环境首次启动会创建以下演示账号：
+默认地址为 `http://localhost:8080`，默认启用 `dev` Profile，并连接本机 MySQL 的 `sakuya` 数据库。可使用 `backend/docker-compose.yml` 启动 MySQL；开发环境首次启动会创建以下演示账号（密码统一为 `password123`）：
 
-- `sakuya / password123`（含完整资料、两位好友、两条会话、三本书架书目及一条待处理好友申请）
-- `alice / password123`
-- `bob / password123`
+- `sakuya`（含完整资料、6 位好友、4 个关注、3 本书架书目、两条会话及一条待处理好友申请）
+- `alice`、`bob`、`rin`（原有演示账号）
+- `qianxia`（千夏）、`yuzhen`（悠真）、`ling`（铃）、`che`（彻）、`mingli`（明里）、`lian`（莲）
+
+### 演示数据维护
+
+种子数据全部存放在 `src/main/resources/seed/demo-data.yml`，由 `DataInitializer` 在 `app.seed.enabled=true` 时导入。增删账号、好友、关注、好友申请、书架、会话、动态和评论**只需修改该 YAML，不需要改动 Java 代码**。
+
+编写约定：
+
+- 账号之间用 `account` 字符串互相引用，不写 UUID（实体 ID 由构造函数生成）。
+- 时间用 `daysAgo` / `hoursAgo` 相对描述，因此任何一天启动都是一份「最近两周」的新鲜数据；评论的时间是相对所属动态再往后偏移，保证晚于动态。
+- 回复评论用 `replyTo` 指向**本动态评论列表中更早的下标**。
+- 导入是**幂等**的：每条数据都按自然键（如动态的「作者 + 标题」）判断是否已存在，重复启动不会重复插入，也不会因为库里已有其他数据而跳过导入。
+
+`SeedDataLoader` 会在写库前校验引用完整性（账号是否已声明、`replyTo` 下标是否越界、进度是否在 0~1 之间等）。校验失败会**直接让应用启动失败**并指出具体是哪条数据，而不是静默少导入几条。
 
 ## Wenku8 本地验证
 

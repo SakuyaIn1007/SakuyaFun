@@ -12,7 +12,8 @@ class AuthApiIntegrationTest {
  @Test void sakuyaAccountHasCompleteDemoData() throws Exception {
   String token=token("sakuya");
   mvc.perform(get("/profile").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data.nickname").value("咲夜")).andExpect(jsonPath("$.data.email").value("sakuya@example.test"));
-  mvc.perform(get("/friends").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2));
+  // 好友数由 seed/demo-data.yml 的 friendships 决定（sakuya 共 6 位），调整种子时需同步此处。
+  mvc.perform(get("/friends").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(6));
   mvc.perform(get("/library").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(3));
   mvc.perform(get("/conversations").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2));
   mvc.perform(get("/friends/requests").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].name").value("凛"));
@@ -96,6 +97,72 @@ class AuthApiIntegrationTest {
   mvc.perform(get("/profile").header("Authorization","Bearer "+alice)).andExpect(status().isOk())
    .andExpect(jsonPath("$.data.signature").value("正在阅读")).andExpect(jsonPath("$.data.regionCode").value("CN-31"))
    .andExpect(jsonPath("$.data.ringtoneName").value("星河"));
+ }
+ /**
+  * 覆盖头像地址在各业务接口的输出，确保客户端拿到的每一处头像都来自 User.avatarUrl。
+  * 执行流程：两名隔离用户各自设置不同头像 -> 建立动态、评论、关注、好友与单聊关系 ->
+  * 逐接口校验返回的 avatarUrl 与设置值一致；最后用未设置头像的账号验证空值输出为空串而非 null。
+  */
+ @Test void avatarUrlIsExposedAcrossFeedFriendAndChatResponses() throws Exception {
+  String suffix=java.util.UUID.randomUUID().toString().replace("-","").substring(0,10);
+  TestUser author=register("avatarauthor"+suffix,"头像作者");
+  TestUser viewer=register("avatarviewer"+suffix,"头像读者");
+  String authorAvatar="https://example.test/author-"+suffix+".png";
+  String viewerAvatar="https://example.test/viewer-"+suffix+".png";
+  setAvatar(author.token(),authorAvatar,"头像作者");
+  setAvatar(viewer.token(),viewerAvatar,"头像读者");
+  String postId=publish(author.token(),"头像链路动态"+suffix);
+  mvc.perform(post("/feed/"+postId+"/comments").header("Authorization","Bearer "+viewer.token())
+   .contentType(MediaType.APPLICATION_JSON).content("{\"content\":\"头像链路评论\"}")).andExpect(status().isOk());
+  mvc.perform(post("/profiles/"+author.userId()+"/follow").header("Authorization","Bearer "+viewer.token())).andExpect(status().isOk());
+
+  // 动态流：作者头像透传。
+  mvc.perform(get("/feed/authors/"+author.userId()).header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.items[0].authorAvatarUrl").value(authorAvatar));
+  mvc.perform(get("/feed/"+postId).header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.authorAvatarUrl").value(authorAvatar));
+  // 评论：评论人头像独立于动态作者。
+  mvc.perform(get("/feed/"+postId+"/comments").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.items[0].authorAvatarUrl").value(viewerAvatar));
+  // 关注列表：列表项头像。
+  mvc.perform(get("/profiles/"+author.userId()+"/followers").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.users[0].avatarUrl").value(viewerAvatar));
+
+  // 好友：建立双向好友关系后校验列表与申请记录。
+  mvc.perform(post("/friends/requests").header("Authorization","Bearer "+author.token())
+   .contentType(MediaType.APPLICATION_JSON).content("{\"userId\":\""+viewer.userId()+"\",\"message\":\"头像链路\"}"))
+   .andExpect(status().isOk());
+  String pendingRequests=mvc.perform(get("/friends/requests").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].avatarUrl").value(authorAvatar)).andReturn().getResponse().getContentAsString();
+  String requestId=json.readTree(pendingRequests).path("data").get(0).path("id").asText();
+  mvc.perform(put("/friends/requests/"+requestId+"/accept").header("Authorization","Bearer "+viewer.token())).andExpect(status().isOk());
+  mvc.perform(get("/friends").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].avatarUrl").value(authorAvatar));
+
+  // 单聊：会话头像取对方，查看者视角不同则结果不同。
+  String conversationId=json.readTree(mvc.perform(post("/friends/"+author.userId()+"/conversation").header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).path("data").path("id").asText();
+  org.junit.jupiter.api.Assertions.assertEquals(authorAvatar,conversationAvatar(viewer.token(),conversationId));
+  org.junit.jupiter.api.Assertions.assertEquals(viewerAvatar,conversationAvatar(author.token(),conversationId));
+
+  // 未设置头像的账号输出空串，客户端据此回落到默认头像，而不是拿到 null 后显示空白。
+  TestUser blank=register("avatarblank"+suffix,"无头像用户");
+  mvc.perform(get("/profile").header("Authorization","Bearer "+blank.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.avatarUrl").value(""));
+  String blankPost=publish(blank.token(),"无头像动态"+suffix);
+  mvc.perform(get("/feed/"+blankPost).header("Authorization","Bearer "+viewer.token()))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.authorAvatarUrl").value(""));
+ }
+ /** 更新资料时只关心头像与昵称，其余字段留空以证明头像可单独设置。 */
+ private void setAvatar(String token,String avatarUrl,String nickname) throws Exception {
+  mvc.perform(put("/profile").header("Authorization","Bearer "+token).contentType(MediaType.APPLICATION_JSON)
+   .content("{\"avatarUrl\":\""+avatarUrl+"\",\"nickname\":\""+nickname+"\"}")).andExpect(status().isOk());
+ }
+ /** 按查看者视角取出指定会话的头像，用于验证单聊头像随查看者切换。 */
+ private String conversationAvatar(String token,String conversationId) throws Exception {
+  String body=mvc.perform(get("/conversations").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+  for(var item:json.readTree(body).path("data"))if(conversationId.equals(item.path("id").asText()))return item.path("avatarUrl").asText();
+  throw new AssertionError("找不到会话："+conversationId);
  }
  @Test void profileRejectsInvalidClientData() throws Exception {
   String alice=token("alice");

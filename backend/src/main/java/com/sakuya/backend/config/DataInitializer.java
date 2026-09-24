@@ -2,90 +2,44 @@ package com.sakuya.backend.config;
 
 import com.sakuya.backend.catalog.Book;
 import com.sakuya.backend.catalog.BookRepository;
-import com.sakuya.backend.catalog.UserLibraryBook;
-import com.sakuya.backend.catalog.UserLibraryRepository;
-import com.sakuya.backend.chat.ChatService;
-import com.sakuya.backend.friend.FriendRequest;
-import com.sakuya.backend.friend.FriendRequestRepository;
-import com.sakuya.backend.friend.Friendship;
-import com.sakuya.backend.friend.FriendshipRepository;
-import com.sakuya.backend.feed.FeedPost;
-import com.sakuya.backend.feed.FeedPostRepository;
-import com.sakuya.backend.user.User;
-import com.sakuya.backend.user.UserRepository;
+import com.sakuya.backend.config.seed.DemoSeedWriter;
+import com.sakuya.backend.config.seed.SeedData;
+import com.sakuya.backend.config.seed.SeedDataLoader;
 import java.util.List;
-import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * DataInitializer.java
- * 职责说明：在开发与测试环境创建演示账号，并为 sakuya 补齐资料、好友、书架、会话和好友申请数据。
- * 执行流程：应用启动且 app.seed.enabled=true -> 查找或创建演示用户与书籍 -> 按唯一关系补充关联数据 -> 不重复插入已有数据。
+ * 职责说明：在开发与测试环境触发演示数据导入，本身只做编排，不承载任何数据内容。
+ * 执行流程：应用启动且 app.seed.enabled=true -> 初始化书目 -> SeedDataLoader 读取并校验 seed/demo-data.yml
+ * -> DemoSeedWriter 按自然键幂等写入 -> 记录本次新增数量。
+ * 数据维护：账号、好友、关注、申请、书架、会话、动态与评论全部在 seed/demo-data.yml 中维护，
+ * 增删演示内容不需要改动 Java 代码。
  */
 @Configuration
 public class DataInitializer {
-    private static final String DEMO_PASSWORD = "password123";
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     @Bean
     @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
-    CommandLineRunner seed(
-            UserRepository users,
-            BookRepository books,
-            UserLibraryRepository library,
-            FriendshipRepository friendships,
-            FriendRequestRepository requests,
-            FeedPostRepository feedPosts,
-            ChatService chat,
-            PasswordEncoder encoder
-    ) {
+    CommandLineRunner seed(BookRepository books, SeedDataLoader loader, DemoSeedWriter writer) {
         return args -> {
-            User sakuya = findOrCreateUser(users, encoder, "sakuya", "咲夜");
-            configureSakuyaProfile(sakuya);
-            users.save(sakuya);
-            User alice = findOrCreateUser(users, encoder, "alice", "爱丽丝");
-            User bob = findOrCreateUser(users, encoder, "bob", "鲍勃");
-            User rin = findOrCreateUser(users, encoder, "rin", "凛");
-
             seedBooks(books);
-            seedFriendship(friendships, sakuya, alice);
-            seedFriendship(friendships, sakuya, bob);
-            seedFriendship(friendships, alice, bob);
-            seedLibrary(library, sakuya);
-            seedConversation(chat, sakuya, alice, List.of("欢迎来到 Sakuya！", "我刚把《刀剑神域》加入书架。"));
-            seedConversation(chat, sakuya, bob, List.of("周末一起聊聊最近读的书吗？"));
-            seedFriendRequest(requests, rin, sakuya);
-            seedFeed(feedPosts, sakuya);
+            SeedData data = loader.load();
+            int created = writer.write(data);
+            // 明确区分「首次导入」与「已是最新」，便于判断幂等是否生效。
+            log.info("演示数据导入完成：本次新增动态 {} 条，配置账号 {} 个。", created, data.accounts().size());
         };
-    }
-
-    /** 查找既有账号或创建默认密码账号，避免每次启动生成不同的用户 ID。 */
-    private User findOrCreateUser(UserRepository users, PasswordEncoder encoder, String account, String nickname) {
-        return users.findByAccountIgnoreCase(account)
-                .orElseGet(() -> users.save(new User(account, encoder.encode(DEMO_PASSWORD), nickname)));
-    }
-
-    /** 为 sakuya 写入完整资料页字段；调用方随后保存实体，供个人资料页面测试使用。 */
-    private void configureSakuyaProfile(User sakuya) {
-        sakuya.setSignature("在书页之间，寻找下一段故事。");
-        sakuya.setGender(1);
-        sakuya.setBirthday("2000-10-16");
-        sakuya.setRegionCode("CN-31");
-        sakuya.setPhoneNumber("13800138000");
-        sakuya.setEmail("sakuya@example.test");
-        sakuya.setPokeText("拍了拍你，并推荐了一本书");
-        sakuya.setRingtoneName("星夜阅读");
-        sakuya.setCanBeAddedByStrangers(true);
-        sakuya.setShowProfileToStrangers(true);
-        sakuya.setMuteMessagesFromUnknown(false);
     }
 
     /**
      * 初始化首页、书架和时间表共用书目；只补齐缺失书目，不覆盖已存在的手工资料。
-     * 执行流程：启动时读取已有 ID -> 过滤已存在项目 -> 保存时间表需要的新增小说。
+     * 说明：书目属于目录数据而非社交演示数据，与动态/好友的维护节奏不同，因此保留在 Java 中。
      */
     private void seedBooks(BookRepository books) {
         List<Book> seedBooks = List.of(
@@ -104,46 +58,5 @@ public class DataInitializer {
                 new Book("sakurasou", "樱花庄的宠物女孩", "鸭志田一", "电击文库", 4.4f, List.of("恋爱", "青春", "校园"), "住在樱花庄的少年少女，在创作、才能与青春中寻找方向。", "novel")
         );
         books.saveAll(seedBooks.stream().filter(book -> !books.existsById(book.getId())).toList());
-    }
-
-    /** 双向保存好友关系，使好友列表按当前用户 userId 查询时双方都可见。 */
-    private void seedFriendship(FriendshipRepository friendships, User first, User second) {
-        if (!friendships.existsByUserIdAndFriendId(first.getId(), second.getId())) friendships.save(new Friendship(first.getId(), second.getId()));
-        if (!friendships.existsByUserIdAndFriendId(second.getId(), first.getId())) friendships.save(new Friendship(second.getId(), first.getId()));
-    }
-
-    /** 为 sakuya 保存不同阅读进度，供书架列表和进度展示测试使用。 */
-    private void seedLibrary(UserLibraryRepository library, User sakuya) {
-        seedLibraryBook(library, sakuya.getId(), "sword-art-online", 0.68f);
-        seedLibraryBook(library, sakuya.getId(), "rezero", 0.25f);
-        seedLibraryBook(library, sakuya.getId(), "spice-and-wolf", 1f);
-    }
-
-    private void seedLibraryBook(UserLibraryRepository library, UUID userId, String bookId, float progress) {
-        if (library.existsByUserIdAndBookId(userId, bookId)) return;
-        UserLibraryBook item = new UserLibraryBook(userId, bookId);
-        item.setProgress(progress);
-        library.save(item);
-    }
-
-    /** 为好友单聊补首批消息；已有消息时不追加，避免重启后生成重复记录。 */
-    private void seedConversation(ChatService chat, User owner, User friend, List<String> messages) {
-        ChatService.ConversationDto conversation = chat.direct(owner.getId(), friend.getId());
-        UUID conversationId = UUID.fromString(conversation.id());
-        if (!chat.messages(owner.getId(), conversationId, null, 1).isEmpty()) return;
-        for (String message : messages) chat.save(friend.getId(), conversationId, message, "text");
-    }
-
-    /** 保留一条凛发给 sakuya 的待处理申请，用于测试好友申请列表与接受流程。 */
-    private void seedFriendRequest(FriendRequestRepository requests, User sender, User receiver) {
-        if (!requests.existsBySenderIdAndReceiverIdAndStatus(sender.getId(), receiver.getId(), FriendRequest.Status.PENDING)) {
-            requests.save(new FriendRequest(sender.getId(), receiver.getId(), "一起交流最近读的轻小说吧"));
-        }
-    }
-    /** 数据库存放演示动态，客户端不再硬编码月见草等测试内容。 */
-    private void seedFeed(FeedPostRepository posts, User author) {
-        if (posts.count() > 0) return;
-        posts.save(new FeedPost(author.getId(), "雨天读完《山茶文具店》", "像收到一封温柔的信。书里那些替人写下的话，让这个潮湿的下午也慢慢安静下来。", "#读书笔记|#治愈系"));
-        posts.save(new FeedPost(author.getId(), "给八月列了一张待读清单", "想把阅读的速度放慢一点，留些空白给散步和发呆。", "#待读书单|#八月阅读"));
     }
 }

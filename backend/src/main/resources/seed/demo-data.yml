@@ -1,0 +1,326 @@
+# 演示种子数据
+#
+# 这是开发/测试环境演示内容的唯一来源，由 DataInitializer 在 app.seed.enabled=true 时导入。
+# 增删账号、好友、动态、评论只需改本文件，不需要动 Java 代码。
+#
+# 编写约定：
+# 1. 账号之间用 account 字符串互相引用，不写 UUID（实体 ID 由构造函数生成）。
+# 2. 时间用 daysAgo / hoursAgo 相对描述，保证任何一天启动都是一份「最近两周」的新鲜数据。
+#    评论的相对时间是相对「所属动态的发布时间」再往后偏移，因此评论一定晚于动态。
+# 3. 回复评论用 replyTo 指向本动态评论列表的下标，只能指向更早的评论。
+# 4. 导入是幂等的：每条数据都按自然键判断是否已存在，重复启动不会重复插入。
+#
+# 注意：下列数量被集成测试断言锁定，调整时需同步修改测试：
+#   - sakuya 的好友数        -> AuthApiIntegrationTest#sakuyaAccountHasCompleteDemoData
+#   - sakuya 的书架书目数（3）-> 同上
+#   - sakuya 的会话数（2）    -> 同上
+#   - 发给 sakuya 的好友申请只有 rin 一条，且必须是最新一条 -> 同上的 $.data[0].name == "凛"
+
+accounts:
+  # —— 原有演示账号 ——
+  - account: sakuya
+    nickname: 咲夜
+    profile:
+      signature: 在书页之间，寻找下一段故事。
+      gender: 1
+      birthday: "2000-10-16"
+      regionCode: CN-31
+      phoneNumber: "13800138000"
+      email: sakuya@example.test
+      pokeText: 拍了拍你，并推荐了一本书
+      ringtoneName: 星夜阅读
+      canBeAddedByStrangers: true
+      showProfileToStrangers: true
+      muteMessagesFromUnknown: false
+  - account: alice
+    nickname: 爱丽丝
+    profile:
+      signature: 把读过的书都记在笔记本里。
+      gender: 2
+      regionCode: CN-11
+  - account: bob
+    nickname: 鲍勃
+    profile:
+      signature: 只看科幻和硬核推理。
+      gender: 1
+      regionCode: CN-44
+  - account: rin
+    nickname: 凛
+    profile:
+      signature: 最近在补轻小说。
+      gender: 2
+      regionCode: CN-12
+
+  # —— 本次新增账号，用于充实动态流与好友列表 ——
+  - account: qianxia
+    nickname: 千夏
+    profile:
+      signature: 夏天适合读短篇。
+      gender: 2
+      regionCode: CN-33
+  - account: yuzhen
+    nickname: 悠真
+    profile:
+      signature: 通勤路上一天一章。
+      gender: 1
+      regionCode: CN-31
+  - account: ling
+    nickname: 铃
+    profile:
+      signature: 喜欢在书页边写批注。
+      gender: 2
+      regionCode: CN-32
+  - account: che
+    nickname: 彻
+    profile:
+      signature: 读完必写长评。
+      gender: 1
+      regionCode: CN-51
+  - account: mingli
+    nickname: 明里
+    profile:
+      signature: 偏爱治愈系和日常向。
+      gender: 2
+      regionCode: CN-35
+  - account: lian
+    nickname: 莲
+    profile:
+      signature: 在图书馆工作，顺手整理书单。
+      gender: 2
+      regionCode: CN-42
+
+# 好友关系（双向保存）。sakuya 的好友共 6 位，与测试断言一致。
+friendships:
+  - { a: sakuya, b: alice }
+  - { a: sakuya, b: bob }
+  - { a: alice, b: bob }
+  - { a: sakuya, b: qianxia }
+  - { a: sakuya, b: yuzhen }
+  - { a: sakuya, b: ling }
+  - { a: sakuya, b: che }
+  # 新账号彼此之间也建立关系，使其个人主页看起来是真实使用过的账号。
+  - { a: qianxia, b: yuzhen }
+  - { a: qianxia, b: mingli }
+  - { a: ling, b: che }
+  - { a: mingli, b: lian }
+  - { a: yuzhen, b: lian }
+
+# 单向关注，喂给「关注」动态流。刻意不给 alice/bob 加关注，
+# 因为 AuthApiIntegrationTest#publicProfileAndFollowApisUseProfilesPath 断言 alice 关注列表的第一项是 bob。
+follows:
+  - { follower: sakuya, following: qianxia }
+  - { follower: sakuya, following: yuzhen }
+  - { follower: sakuya, following: ling }
+  - { follower: sakuya, following: che }
+  - { follower: qianxia, following: sakuya }
+  - { follower: yuzhen, following: sakuya }
+  - { follower: ling, following: mingli }
+  - { follower: che, following: qianxia }
+  - { follower: mingli, following: sakuya }
+  - { follower: lian, following: qianxia }
+
+# 待处理好友申请。发给 sakuya 的只能有 rin 一条（见文件头说明）。
+friendRequests:
+  - { from: rin, to: sakuya, message: 一起交流最近读的轻小说吧 }
+  - { from: mingli, to: alice, message: 看到你也在读治愈系，交个朋友 }
+  - { from: lian, to: bob, message: 想请教一下硬核推理的入门书单 }
+
+# sakuya 的书架保持 3 本，与测试断言一致。
+library:
+  - { account: sakuya, bookId: sword-art-online, progress: 0.68 }
+  - { account: sakuya, bookId: rezero, progress: 0.25 }
+  - { account: sakuya, bookId: spice-and-wolf, progress: 1.0 }
+
+# sakuya 的会话保持 2 个，与测试断言一致。
+conversations:
+  - participants: [sakuya, alice]
+    messages:
+      - { from: alice, content: 欢迎来到 Sakuya！ }
+      - { from: alice, content: 我刚把《刀剑神域》加入书架。 }
+      - { from: sakuya, content: 那本我最近也在看，进度刚过一半。 }
+  - participants: [sakuya, bob]
+    messages:
+      - { from: bob, content: 周末一起聊聊最近读的书吗？ }
+      - { from: sakuya, content: 好啊，我把书单整理一下发你。 }
+  - participants: [qianxia, yuzhen]
+    messages:
+      - { from: qianxia, content: 上次推荐的那本短篇集读完了。 }
+      - { from: yuzhen, content: 感觉怎么样？ }
+
+# 动态与评论。分散在最近 14 天内，按作者覆盖推荐流、关注流和作者主页三种视图。
+posts:
+  # —— sakuya ——
+  - author: sakuya
+    title: 雨天读完《山茶文具店》
+    content: 像收到一封温柔的信。书里那些替人写下的话，让这个潮湿的下午也慢慢安静下来。
+    tags: [读书笔记, 治愈系]
+    daysAgo: 1
+    hoursAgo: 3
+    likes: [alice, qianxia, ling, mingli]
+    favorites: [alice, mingli]
+    comments:
+      - { author: alice, content: 这本我也很喜欢，代笔的设定很特别。 }
+      - { author: qianxia, content: 同感，尤其是写吊唁信那几章。 }
+      - { author: sakuya, content: 对，那几章我反复看了两遍。 }
+      - { author: qianxia, content: 看来要找来读读了。 }
+  - author: sakuya
+    title: 给八月列了一张待读清单
+    content: 想把阅读的速度放慢一点，留些空白给散步和发呆。
+    tags: [待读书单, 八月阅读]
+    daysAgo: 6
+    likes: [bob, che]
+    favorites: []
+    comments:
+      - { author: che, content: 清单里有没有推理？求推荐。 }
+      - { author: sakuya, content: 有，加了一本《古书堂事件手帖》。 }
+
+  # —— 千夏 ——
+  - author: qianxia
+    title: 通勤地铁上读完了《古书堂事件手帖》
+    content: 每一本旧书背后都藏着一段关系，读到后面几乎忘了是在通勤。
+    tags: [日常阅读, 悬疑]
+    daysAgo: 0
+    hoursAgo: 5
+    likes: [sakuya, yuzhen, mingli, lian]
+    favorites: [sakuya, lian]
+    comments:
+      - { author: yuzhen, content: 这本适合通勤读吗？情节会不会太碎。 }
+      - { author: qianxia, content: 每章一个故事，反而很适合碎片时间。 }
+      - { author: mingli, content: 已加入书单。 }
+  - author: qianxia
+    title: 短篇集真是忙碌星人的救星
+    content: 一章一个完整故事，睡前读一篇刚好，不会因为急着看结局而熬夜。
+    tags: [短篇, 阅读习惯]
+    daysAgo: 4
+    likes: [mingli, lian]
+    favorites: []
+    comments:
+      - { author: lian, content: 图书馆里短篇集借阅量确实一直很高。 }
+  - author: qianxia
+    title: 重读《狼与香辛料》
+    content: 以前只记得旅途和经商，这次读到的是两个人慢慢建立的信任。
+    tags: [重读, 奇幻]
+    daysAgo: 11
+    likes: [sakuya, che]
+    favorites: [che]
+    comments:
+      - { author: che, content: 好的作品每次重读都有新东西。 }
+
+  # —— 悠真 ——
+  - author: yuzhen
+    title: 一天一章读完了《86》
+    content: 坚持了半个月，每天一章。看到最后反而舍不得读快。
+    tags: [科幻, 战争]
+    daysAgo: 2
+    hoursAgo: 8
+    likes: [sakuya, qianxia, bob, che]
+    favorites: [bob]
+    comments:
+      - { author: bob, content: 这部对战争的描写比想象中克制。 }
+      - { author: yuzhen, content: 是的，重点一直放在人身上。 }
+      - { author: sakuya, content: 结局那章看完缓了很久。 }
+  - author: yuzhen
+    title: 关于阅读速度的一点碎念
+    content: 以前总想着一年要读多少本，现在更在意一本书读完之后留下了什么。
+    tags: [随想]
+    daysAgo: 7
+    likes: [sakuya, ling, mingli]
+    favorites: [sakuya]
+    comments:
+      - { author: ling, content: 同意，数量堆上去但没有沉淀。 }
+      - { author: mingli, content: 我也是这样想的。 }
+
+  # —— 铃 ——
+  - author: ling
+    title: 书页边写批注的习惯
+    content: 铅笔轻轻写，不遮住正文，几年后翻回去还能看到当时在想什么。
+    tags: [阅读习惯, 摘抄]
+    daysAgo: 1
+    hoursAgo: 9
+    likes: [sakuya, mingli, lian, che]
+    favorites: [lian]
+    comments:
+      - { author: che, content: 我用便签，怕写坏书。 }
+      - { author: ling, content: 用铅笔就还好，可以擦掉。 }
+  - author: ling
+    title: 《物语系列》的对话读起来真累
+    content: 但累得很值得，那些绕来绕去的句子其实都在说人物自己。
+    tags: [怪谈, 青春]
+    daysAgo: 9
+    likes: [sakuya]
+    favorites: []
+    comments:
+      - { author: che, content: 西尾的对话量确实劝退，但读进去就停不下来。 }
+
+  # —— 彻 ——
+  - author: che
+    title: 读完必写长评是不是一种负担
+    content: 给自己定了规矩，读完必须写点什么。有时候反而因此不敢开始读新书。
+    tags: [随想, 阅读习惯]
+    daysAgo: 3
+    likes: [qianxia, ling, yuzhen]
+    favorites: [ling]
+    comments:
+      - { author: ling, content: 可以改成只写三句话，门槛低很多。 }
+      - { author: che, content: 这个建议不错，我试试。 }
+      - { author: qianxia, content: 我也是被长评劝退过。 }
+  - author: che
+    title: 《Fate/Zero》读后
+    content: 七个魔术师七种执念，没有一个人是纯粹的反派，这大概是最残酷的地方。
+    tags: [圣杯战争, 长评]
+    daysAgo: 8
+    likes: [bob, yuzhen]
+    favorites: [bob, yuzhen]
+    comments:
+      - { author: bob, content: 写得很到位。 }
+  - author: che
+    title: 在旧书店淘到一本绝版
+    content: 封面有点破损，但内页很干净，价格也比想象中便宜。
+    tags: [旧书, 日常]
+    daysAgo: 13
+    likes: [lian, mingli]
+    favorites: []
+
+  # —— 明里 ——
+  - author: mingli
+    title: 治愈系不是没有冲突
+    content: 只是把冲突放在了很轻的地方，读完才发现自己被安慰到了。
+    tags: [治愈系, 随想]
+    daysAgo: 2
+    hoursAgo: 2
+    likes: [qianxia, ling, lian]
+    favorites: [ling]
+    comments:
+      - { author: lian, content: 这个说法很准确。 }
+      - { author: mingli, content: 所以我不太喜欢把治愈和「没内容」画等号。 }
+      - { author: ling, content: 说得太好了。 }
+  - author: mingli
+    title: 樱花庄的宠物女孩
+    content: 讲创作的人看会更有感触，才能这件事真的很难和解。
+    tags: [青春, 校园]
+    daysAgo: 10
+    likes: [sakuya, qianxia]
+    favorites: []
+
+  # —— 莲 ——
+  - author: lian
+    title: 在图书馆整理书架时想到的
+    content: 一本书被借走多少次，和它被记住多少次，好像完全是两回事。
+    tags: [图书馆, 日常]
+    daysAgo: 0
+    hoursAgo: 12
+    likes: [sakuya, mingli, qianxia, yuzhen]
+    favorites: [sakuya, qianxia]
+    comments:
+      - { author: qianxia, content: 这句话值得记下来。 }
+      - { author: lian, content: 谢谢，整理书架的时候突然冒出来的。 }
+  - author: lian
+    title: 关于书单的一点建议
+    content: 别一次列二十本，列三本就好，读完再补。清单太长只会变成压力。
+    tags: [书单, 阅读习惯]
+    daysAgo: 5
+    likes: [mingli, che, ling]
+    favorites: [mingli]
+    comments:
+      - { author: che, content: 我那份二十本的清单确实一本没动。 }
+      - { author: lian, content: 从三本开始吧。 }
