@@ -18,6 +18,14 @@ data class OfflineDownloadEntity(
     val downloadedBytes: Long = 0,
     val errorMessage: String? = null,
     val updatedAt: Long = System.currentTimeMillis(),
+    /**
+     * 最近一次被阅读的时间，是容量超限时 LRU 淘汰的依据。
+     * 必须与 updatedAt 分开：updatedAt 记录下载进度，用它排序会优先淘汰
+     * 「下载完就没再动过」的书，而那恰恰可能是用户最想保留的。
+     */
+    val lastAccessedAt: Long = System.currentTimeMillis(),
+    /** 用户显式钉住后不参与自动淘汰。 */
+    val pinned: Boolean = false,
 )
 
 /** 已落盘章节和排序元数据；文件内容不进入 Room，避免大正文撑大数据库。 */

@@ -13,6 +13,8 @@ data class Conversation(
     val timeLabel: String,
     val unreadCount: Int = 0,
     val avatarText: String,
+    /** 单聊取对方头像，群聊无群头像字段因此恒为空串；空值由 AvatarImage 回落默认图。 */
+    val avatarUrl: String = "",
     val isPinned: Boolean = false
 )
 

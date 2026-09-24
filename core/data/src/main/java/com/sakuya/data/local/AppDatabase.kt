@@ -42,7 +42,7 @@ import com.sakuya.data.local.entity.OfflineDownloadEntity
         OfflineDownloadEntity::class,
         OfflineChapterEntity::class,
     ],
-    version = 13,
+    version = 15,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

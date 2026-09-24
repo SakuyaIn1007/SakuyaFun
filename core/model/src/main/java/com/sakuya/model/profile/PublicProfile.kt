@@ -25,6 +25,7 @@ data class RelationshipUserDto(
     val userId: String,
     val name: String = "",
     val initial: String = "?",
+    val avatarUrl: String = "",
     val description: String? = null,
     val avatarColor: Long = 0L,
     val isFollowing: Boolean,

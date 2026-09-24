@@ -10,6 +10,8 @@ data class DynamicPost(
     val userId: String = "",
     val authorName: String,
     val authorInitial: String,
+    /** 作者头像地址；空串表示作者未设置头像，由 AvatarImage 回落默认图。 */
+    val authorAvatarUrl: String = "",
     val authorColor: Long,
     val title: String,
     val content: String,

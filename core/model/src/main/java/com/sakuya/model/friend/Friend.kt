@@ -10,5 +10,7 @@ data class Friend(
     val name: String,
     val status: String,
     val avatarText: String,
+    /** 好友头像地址；空串表示未设置头像，由 AvatarImage 回落默认图。 */
+    val avatarUrl: String = "",
     val isOnline: Boolean = false
 )

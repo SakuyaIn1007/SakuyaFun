@@ -11,6 +11,8 @@ data class FeedComment(
     val authorId: String = "",
     val authorName: String,
     val authorInitial: String,
+    /** 评论人头像地址；空串表示未设置头像，由 AvatarImage 回落默认图。 */
+    val authorAvatarUrl: String = "",
     val content: String,
     val publishedAt: String,
     val replyToCommentId: String? = null,

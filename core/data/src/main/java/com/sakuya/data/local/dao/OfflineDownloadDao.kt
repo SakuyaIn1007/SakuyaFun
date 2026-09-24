@@ -21,6 +21,20 @@ interface OfflineDownloadDao {
     @Query("SELECT * FROM offline_downloads WHERE ownerId = :ownerId ORDER BY updatedAt DESC")
     fun observeAll(ownerId: String): Flow<List<OfflineDownloadEntity>>
 
+    /** 容量治理需要全量记录：进行中的任务也占磁盘，必须计入总量。 */
+    @Query("SELECT * FROM offline_downloads WHERE ownerId = :ownerId")
+    suspend fun all(ownerId: String): List<OfflineDownloadEntity>
+
+    /** 只有已完成的书才能作为淘汰对象。 */
+    @Query("SELECT * FROM offline_downloads WHERE ownerId = :ownerId AND status = 'COMPLETED'")
+    suspend fun completed(ownerId: String): List<OfflineDownloadEntity>
+
+    @Query("UPDATE offline_downloads SET lastAccessedAt = :accessedAt WHERE ownerId = :ownerId AND bookId = :bookId")
+    suspend fun updateLastAccessed(ownerId: String, bookId: String, accessedAt: Long)
+
+    @Query("UPDATE offline_downloads SET pinned = :pinned WHERE ownerId = :ownerId AND bookId = :bookId")
+    suspend fun updatePinned(ownerId: String, bookId: String, pinned: Boolean)
+
     @Query("SELECT * FROM offline_chapters WHERE ownerId = :ownerId AND bookId = :bookId ORDER BY chapterOrder")
     suspend fun chapters(ownerId: String, bookId: String): List<OfflineChapterEntity>
 

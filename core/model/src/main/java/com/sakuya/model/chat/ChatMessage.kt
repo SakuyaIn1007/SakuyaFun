@@ -14,6 +14,8 @@ data class ChatMessage(
     val timeLabel: String,
     val isMine: Boolean,
     val avatarText: String = "",
+    /** 发送者头像地址；空串表示发送者已注销或未设置头像，由 AvatarImage 回落默认图。 */
+    val senderAvatarUrl: String = "",
     val timestamp: Long = 0,
     val type: ChatMessageType = ChatMessageType.TEXT,
     val attachments: List<ChatAttachment> = emptyList(),

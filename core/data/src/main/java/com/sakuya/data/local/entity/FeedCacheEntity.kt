@@ -16,6 +16,8 @@ data class FeedCacheEntity(
     val userId: String,
     val authorName: String,
     val authorInitial: String,
+    /** 作者头像地址；v15 新增，升级前的缓存以空串补齐，由 AvatarImage 回落默认图。 */
+    val authorAvatarUrl: String = "",
     val authorColor: Long,
     val title: String,
     val content: String,

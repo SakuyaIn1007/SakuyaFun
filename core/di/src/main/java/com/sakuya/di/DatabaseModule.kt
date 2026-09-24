@@ -40,7 +40,7 @@ object DatabaseModule {
             "sakuya.db"
         )
 
-        builder.addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+        builder.addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
 
         if (BuildConfig.DEBUG) {
             builder.fallbackToDestructiveMigration()
@@ -174,6 +174,33 @@ object DatabaseModule {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("CREATE TABLE IF NOT EXISTS `offline_downloads` (`ownerId` TEXT NOT NULL, `bookId` TEXT NOT NULL, `title` TEXT NOT NULL, `status` TEXT NOT NULL, `completedChapters` INTEGER NOT NULL, `totalChapters` INTEGER NOT NULL, `downloadedBytes` INTEGER NOT NULL, `errorMessage` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`ownerId`, `bookId`))")
             db.execSQL("CREATE TABLE IF NOT EXISTS `offline_chapters` (`ownerId` TEXT NOT NULL, `bookId` TEXT NOT NULL, `chapterId` TEXT NOT NULL, `title` TEXT NOT NULL, `volumeTitle` TEXT NOT NULL, `chapterOrder` INTEGER NOT NULL, `filePath` TEXT NOT NULL, `byteSize` INTEGER NOT NULL, PRIMARY KEY(`ownerId`, `bookId`, `chapterId`))")
+        }
+    }
+
+    /**
+     * 离线缓存加入容量治理所需的字段。
+     * 已有记录以 updatedAt 作为 lastAccessedAt 的初值：升级前没有阅读时间信息，
+     * 这是最接近的可用近似，且不会让老记录集中落在时间轴同一点。
+     */
+    private val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `offline_downloads` ADD COLUMN `lastAccessedAt` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("UPDATE `offline_downloads` SET `lastAccessedAt` = `updatedAt`")
+            db.execSQL("ALTER TABLE `offline_downloads` ADD COLUMN `pinned` INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    /**
+     * 缓存表补齐头像地址，使离线展示的头像与在线一致。
+     * 执行流程：三张缓存表各加一列，存量记录统一以空串补齐，表示"暂无头像信息"，
+     * 客户端据此回落到默认头像；下一次成功同步会覆盖为服务端真实地址。
+     * 不修改任何既有业务字段，旧版本缓存仍可正常读取。
+     */
+    private val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `feed_cache` ADD COLUMN `authorAvatarUrl` TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE `conversations` ADD COLUMN `avatarUrl` TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE `chat_messages` ADD COLUMN `senderAvatarUrl` TEXT NOT NULL DEFAULT ''")
         }
     }
 }

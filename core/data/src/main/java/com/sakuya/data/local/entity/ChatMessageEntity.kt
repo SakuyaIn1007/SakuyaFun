@@ -25,6 +25,8 @@ data class ChatMessageEntity(
     val timeLabel: String,
     val isMine: Boolean,
     val avatarText: String = "",
+    /** 发送者头像；v15 新增，升级前的历史消息以空串补齐，由 AvatarImage 回落默认图。 */
+    val senderAvatarUrl: String = "",
     val timeStamp: Long,
     val messageType: MessageType = MessageType.TEXT,
     /** JSON 形式保存附件，避免聊天模块的领域模型反向依赖 core:data。 */
