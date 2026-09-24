@@ -48,6 +48,7 @@ import com.sakuya.data.content.ContentVolumeDto
 import com.sakuya.data.content.resolveContentUrl
 import com.sakuya.search.viewmodel.Wenku8DetailUiState
 import com.sakuya.search.viewmodel.Wenku8DetailViewModel
+import com.sakuya.ui.theme.SakuyaTheme
 import coil.compose.AsyncImage
 
 /**
@@ -106,13 +107,14 @@ fun Wenku8DetailContent(
             )
         },
     ) { innerPadding ->
+        val dimensions = SakuyaTheme.tokens.dimensions
         when {
             state.loading -> Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
             state.error != null -> Column(
-                Modifier.fillMaxSize().padding(innerPadding).padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                Modifier.fillMaxSize().padding(innerPadding).padding(dimensions.spaceXl),
+                verticalArrangement = Arrangement.spacedBy(dimensions.spaceMd),
             ) {
                 Text(state.error!!, color = MaterialTheme.colorScheme.error)
                 Button(onClick = onRetry) { Text("重试") }
@@ -124,12 +126,12 @@ fun Wenku8DetailContent(
                 if (state.chapterMode) {
                     when {
                         state.indexLoading -> item {
-                            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            Box(Modifier.fillMaxWidth().padding(dimensions.spaceXl), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
                             }
                         }
                         state.indexError != null -> item {
-                            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(dimensions.spaceSm)) {
                                 Text("目录加载失败：${state.indexError}", color = MaterialTheme.colorScheme.error)
                                 OutlinedButton(onClick = onRetryIndex) { Text("重新加载目录") }
                             }
@@ -180,6 +182,7 @@ fun Wenku8DetailContent(
 @Composable
 private fun BookHeader(state: Wenku8DetailUiState) {
     val novel = state.novel
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             AsyncImage(
@@ -207,17 +210,17 @@ private fun BookHeader(state: Wenku8DetailUiState) {
             Text(
                 "该作品受版权限制，部分章节可能不可阅读。",
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = dimensions.spaceSm),
             )
         }
         if (!novel?.tags.isNullOrEmpty()) {
             Text(
                 novel!!.tags.joinToString(" · "),
                 color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = dimensions.spaceSm),
             )
         }
-        Text(novel?.description.orEmpty(), modifier = Modifier.padding(top = 16.dp))
+        Text(novel?.description.orEmpty(), modifier = Modifier.padding(top = dimensions.spaceLg))
     }
 }
 
@@ -232,8 +235,9 @@ private fun ReadModeActions(
     onSelectChapterMode: () -> Unit,
     onCollapseChapterMode: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(dimensions.spaceMd)) {
             Button(onClick = onFullReadClick, modifier = Modifier.weight(1f)) { Text("整本阅读") }
             // 用文字箭头而非图标：方向箭头属于 material-icons-extended，
             // 为两个装饰性图标引入整个依赖包不划算。

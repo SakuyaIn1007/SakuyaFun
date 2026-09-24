@@ -19,6 +19,9 @@ dependencies {
     implementation project(':core:data')
     implementation project(':core:model')
     implementation project(':core:navigation')
+    // 读取 SakuyaTheme 令牌需要。core:data / core:model / core:navigation 对 core:ui
+    // 均为 implementation（不传导），故必须显式声明，否则编译期读不到令牌。
+    implementation project(':core:ui')
     implementation libs.bundles.feature.ui
     implementation libs.androidx.navigation.compose
     implementation libs.datastore.preferences

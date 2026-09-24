@@ -57,6 +57,7 @@ import com.sakuya.model.search.SearchResult
 import com.sakuya.search.viewmodel.SearchAction
 import com.sakuya.search.viewmodel.SearchUiState
 import com.sakuya.search.viewmodel.SearchViewModel
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * SearchScreen.kt
@@ -136,8 +137,9 @@ private fun SearchResultsPageContent(
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = dimensions.spaceSm, vertical = dimensions.spaceSm), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") }
             Text("“$query”的搜索结果", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
         }
@@ -159,7 +161,8 @@ private fun SearchResultsPageContent(
 
 @Composable
 private fun SearchEntryTopBar(query: String, onQueryChange: (String) -> Unit, onBack: () -> Unit, onSearch: () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+    val dimensions = SakuyaTheme.tokens.dimensions
+    Row(Modifier.fillMaxWidth().padding(horizontal = dimensions.spaceSm, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") }
         BasicTextField(
             value = query, onValueChange = onQueryChange, singleLine = true,
@@ -167,11 +170,11 @@ private fun SearchEntryTopBar(query: String, onQueryChange: (String) -> Unit, on
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { onSearch() }),
-            modifier = Modifier.weight(1f).height(38.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).padding(horizontal = 14.dp, vertical = 7.dp),
+            modifier = Modifier.weight(1f).height(38.dp).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(dimensions.radiusLarge)).background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).padding(horizontal = 14.dp, vertical = 7.dp),
         ) { innerTextField ->
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(dimensions.spaceSm))
                 Box(Modifier.weight(1f)) {
                     if (query.isEmpty()) Text("搜索小说、动态或用户", color = MaterialTheme.colorScheme.outline, fontSize = 15.sp)
                     innerTextField()
@@ -183,13 +186,14 @@ private fun SearchEntryTopBar(query: String, onQueryChange: (String) -> Unit, on
 
 @Composable
 private fun SearchResultFilterRow(selectedType: SearchContentType?, onTypeSelected: (SearchContentType?) -> Unit) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
         listOf(null to "综合", SearchContentType.DYNAMIC to "动态", SearchContentType.NOVEL to "轻小说", SearchContentType.USER to "用户").forEach { (type, title) ->
             Text(
                 text = title, style = MaterialTheme.typography.labelLarge,
                 fontWeight = if (selectedType == type) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (selectedType == type) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clickable { onTypeSelected(type) }.padding(end = 20.dp, top = 10.dp, bottom = 12.dp),
+                modifier = Modifier.clickable { onTypeSelected(type) }.padding(end = 20.dp, top = 10.dp, bottom = dimensions.spaceMd),
             )
         }
     }
@@ -204,11 +208,12 @@ private fun SearchDiscovery(
     onClearHistory: () -> Unit,
     onRetry: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         if (errorMessage != null) {
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = dimensions.spaceMd),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(errorMessage, color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
@@ -224,14 +229,15 @@ private fun SearchDiscovery(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SearchKeywordSection(title: String, keywords: List<String>, onKeywordClick: (String) -> Unit, onClear: (() -> Unit)? = null) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(Modifier.padding(top = 18.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
             onClear?.takeIf { keywords.isNotEmpty() }?.let { clear -> TextButton(onClick = clear) { Text("清除") } }
         }
-        if (keywords.isEmpty()) Text("暂无记录", color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(top = 12.dp))
-        else FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
+        if (keywords.isEmpty()) Text("暂无记录", color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(top = dimensions.spaceMd))
+        else FlowRow(horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm), verticalArrangement = Arrangement.spacedBy(dimensions.spaceSm), modifier = Modifier.padding(top = dimensions.spaceMd)) {
             keywords.forEach { keyword -> FilterChip(selected = false, onClick = { onKeywordClick(keyword) }, label = { Text(keyword) }) }
         }
     }
@@ -252,7 +258,7 @@ private fun SearchResultList(
         uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         uiState.results.isEmpty() -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Text(errorMessage ?: "没有找到相关内容，换个关键词试试。", color = MaterialTheme.colorScheme.outline)
-            if (errorMessage != null) Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("重试") }
+            if (errorMessage != null) Button(onClick = onRetry, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceMd)) { Text("重试") }
         }
         else -> LazyColumn(Modifier.fillMaxSize()) {
             items(uiState.results, key = { "${it.type}:${it.id}" }) { result ->
@@ -280,12 +286,13 @@ private fun SearchResultList(
 
 @Composable
 private fun SearchResultItem(result: SearchResult, onClick: () -> Unit) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.Top) {
         Text(result.type.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.width(44.dp).padding(top = 2.dp))
         Column(Modifier.weight(1f)) {
             Text(result.title, style = MaterialTheme.typography.titleSmall)
             if (result.summary.isNotBlank()) {
-                Text(result.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+                Text(result.summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = dimensions.spaceXs))
             }
             if (result.tags.isNotEmpty()) {
                 Text(result.tags.joinToString(" · ") { "#$it" }, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 6.dp))

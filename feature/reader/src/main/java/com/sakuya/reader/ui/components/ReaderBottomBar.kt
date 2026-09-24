@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.sakuya.reader.model.ReaderTheme
 import com.sakuya.reader.tts.TtsPlaybackStatus
 import com.sakuya.ui.motion.MotionVisibility
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ReaderBottomBar.kt
@@ -86,11 +87,12 @@ fun ReaderBottomBarContent(
     onTtsRateChanged: (Float) -> Unit = {},
 ) {
     val safeProgress = progress.coerceIn(0f, 1f)
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceXs),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -100,13 +102,13 @@ fun ReaderBottomBarContent(
                 text = "${(safeProgress * 100).toInt()}%",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier.padding(end = dimensions.spaceSm),
             )
             LinearProgressIndicator(
                 progress = { safeProgress },
                 modifier = Modifier.weight(1f),
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(dimensions.spaceSm))
             TextButton(onClick = if (isSettingsPanelVisible) onCloseSettings else onOpenSettings) {
                 Text(if (isSettingsPanelVisible) "收起" else "阅读设置")
             }
@@ -152,11 +154,12 @@ private fun ReaderSettingsPanel(
     onTtsRateChanged: (Float) -> Unit,
     onClose: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .padding(top = dimensions.spaceSm, bottom = dimensions.spaceMd),
+        verticalArrangement = Arrangement.spacedBy(dimensions.spaceSm),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -175,7 +178,7 @@ private fun ReaderSettingsPanel(
 
         Text("朗读速度 ${"%.1f".format(ttsRate)}x", style = MaterialTheme.typography.labelLarge)
         Slider(value = ttsRate, onValueChange = onTtsRateChanged, valueRange = 0.5f..2f, steps = 5)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm)) {
             TextButton(onClick = onToggleTts) {
                 Text(if (ttsStatus == TtsPlaybackStatus.PLAYING || ttsStatus == TtsPlaybackStatus.PREPARING) "暂停朗读" else "开始朗读")
             }
@@ -224,7 +227,7 @@ private fun ReaderSettingsPanel(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm),
         ) {
             ReaderTheme.entries.forEach { theme ->
                 FilterChip(

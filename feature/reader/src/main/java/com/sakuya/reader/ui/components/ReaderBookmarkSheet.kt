@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sakuya.reader.model.ReaderBookmark
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ReaderBookmarkSheet.kt
@@ -34,18 +35,19 @@ fun ReaderBookmarkSheet(
     onJumpToBookmark: (ReaderBookmark) -> Unit,
     onDeleteBookmark: (String) -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(bottom = dimensions.spaceXl),
+            verticalArrangement = Arrangement.spacedBy(dimensions.spaceXs),
         ) {
             Text(
                 text = "书签",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = dimensions.spaceXl, vertical = dimensions.spaceSm),
             )
 
             if (bookmarks.isEmpty()) {
@@ -53,7 +55,7 @@ fun ReaderBookmarkSheet(
                     text = "还没有书签，阅读时可在顶部添加当前位置。",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                    modifier = Modifier.padding(horizontal = dimensions.spaceXl, vertical = 20.dp),
                 )
             } else {
                 LazyColumn(

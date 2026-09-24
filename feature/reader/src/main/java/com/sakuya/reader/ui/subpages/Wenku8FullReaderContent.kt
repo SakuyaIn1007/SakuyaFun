@@ -21,6 +21,7 @@ import com.sakuya.reader.model.ReaderReadingPosition
 import com.sakuya.reader.model.ReaderTheme
 import com.sakuya.reader.model.ReaderType
 import com.sakuya.reader.model.Wenku8ChapterAnchor
+import com.sakuya.ui.theme.SakuyaTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -51,6 +52,7 @@ fun Wenku8FullReaderContent(
     if (sections.isEmpty()) return
 
     val listState = rememberLazyListState()
+    val dimensions = SakuyaTheme.tokens.dimensions
     val palette = readerContentPalette(readerTheme)
     val textStyle = remember(fontSizeSp) {
         TextStyle(fontSize = fontSizeSp.sp, lineHeight = (fontSizeSp * 1.6f).sp)
@@ -104,12 +106,17 @@ fun Wenku8FullReaderContent(
             Text(
                 text = listOf(section.volumeTitle, section.title).filter { it.isNotBlank() }.joinToString(" · "),
                 style = textStyle.copy(fontSize = (fontSizeSp + 3f).sp, color = palette.content),
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 10.dp),
+                modifier = Modifier.fillMaxWidth().padding(
+                    start = dimensions.spaceLg,
+                    end = dimensions.spaceLg,
+                    top = dimensions.spaceXl,
+                    bottom = 10.dp,
+                ),
             )
             Text(
                 text = section.content,
                 style = textStyle.copy(color = palette.content),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceSm),
             )
         }
     }

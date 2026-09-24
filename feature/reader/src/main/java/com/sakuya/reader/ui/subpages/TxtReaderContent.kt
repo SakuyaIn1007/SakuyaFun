@@ -23,6 +23,7 @@ import com.sakuya.reader.model.ReaderReadingPosition
 import com.sakuya.reader.model.ReaderTheme
 import com.sakuya.reader.model.ReaderType
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -49,6 +50,7 @@ fun TxtReaderContent(
 ) {
     if (fullText.isEmpty()) return
 
+    val dimensions = SakuyaTheme.tokens.dimensions
     val blocks = remember(fullText) { splitTxtIntoBlocks(fullText) }
     val textStyle = remember(fontSizeSp) {
         TextStyle(
@@ -107,7 +109,7 @@ fun TxtReaderContent(
             .fillMaxSize()
             .background(palette.background),
         state = listState,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = dimensions.spaceLg, vertical = dimensions.spaceSm),
     ) {
         itemsIndexed(blocks, key = { index, _ -> index }) { _, block ->
             Text(
@@ -115,7 +117,7 @@ fun TxtReaderContent(
                 style = textStyle.copy(color = palette.content),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = dimensions.spaceXs),
             )
         }
     }

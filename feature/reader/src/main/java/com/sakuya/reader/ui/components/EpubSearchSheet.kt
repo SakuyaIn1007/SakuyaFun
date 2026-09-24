@@ -16,20 +16,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sakuya.reader.data.EpubSearchResult
+import com.sakuya.ui.theme.SakuyaTheme
 
 /** 搜索面板只渲染 ViewModel 已计算的结果；点击结果回传章节索引，不在组合期间解析正文。 */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun EpubSearchSheet(query: String, results: List<EpubSearchResult>, onQuery: (String) -> Unit, onResult: (EpubSearchResult) -> Unit, onDismiss: () -> Unit) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = 16.dp)) {
+        Column(Modifier.padding(horizontal = dimensions.spaceLg)) {
             OutlinedTextField(value = query, onValueChange = onQuery, label = { Text("搜索 EPUB 正文") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            if (query.trim().length >= 2 && results.isEmpty()) Text("未找到匹配内容", Modifier.padding(vertical = 24.dp))
+            if (query.trim().length >= 2 && results.isEmpty()) Text("未找到匹配内容", Modifier.padding(vertical = dimensions.spaceXl))
             LazyColumn {
                 items(results, key = { "${it.chapterIndex}:${it.matchOffset}" }) { result ->
-                    Column(Modifier.fillMaxWidth().clickable { onResult(result) }.padding(vertical = 12.dp)) {
+                    Column(Modifier.fillMaxWidth().clickable { onResult(result) }.padding(vertical = dimensions.spaceMd)) {
                         Text(result.chapterTitle, style = MaterialTheme.typography.titleSmall)
-                        Text(result.excerpt, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                        Text(result.excerpt, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = dimensions.spaceXs))
                     }
                     HorizontalDivider()
                 }

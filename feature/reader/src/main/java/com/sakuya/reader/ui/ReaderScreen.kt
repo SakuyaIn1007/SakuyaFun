@@ -63,6 +63,7 @@ import com.sakuya.reader.viewmodel.ReaderViewModel
 import com.sakuya.data.reading.ReadingSyncStatus
 import com.sakuya.data.offline.OfflineDownloadStatus
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 import java.io.File
 
 @Composable
@@ -386,11 +387,11 @@ private fun ReaderDocumentContent(
         }
         state.remoteNotice?.let { notice ->
             Column(
-                modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
+                modifier = Modifier.align(Alignment.TopCenter).padding(SakuyaTheme.tokens.dimensions.spaceLg),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(text = notice, color = MaterialTheme.colorScheme.tertiary)
-                Button(onClick = { onAction(ReaderAction.RetryRemoteRead) }, modifier = Modifier.padding(top = 8.dp)) {
+                Button(onClick = { onAction(ReaderAction.RetryRemoteRead) }, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm)) {
                     Text("重试连续阅读")
                 }
             }
@@ -400,13 +401,14 @@ private fun ReaderDocumentContent(
 
 @Composable
 private fun ReaderEmptyState(modifier: Modifier, onChooseFile: () -> Unit) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Text("选择 TXT 或 EPUB 文件开始阅读", style = MaterialTheme.typography.bodyLarge)
-        Button(onClick = onChooseFile, modifier = Modifier.padding(top = 16.dp)) { Text("选择文件") }
+        Button(onClick = onChooseFile, modifier = Modifier.padding(top = dimensions.spaceLg)) { Text("选择文件") }
     }
 }
 
@@ -418,6 +420,7 @@ private fun ReaderErrorState(
     onRetry: () -> Unit,
     onChooseFile: () -> Unit,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -425,9 +428,9 @@ private fun ReaderErrorState(
     ) {
         Text(message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
         if (isRemote) {
-            Button(onClick = onRetry, modifier = Modifier.padding(top = 16.dp)) { Text("重试") }
+            Button(onClick = onRetry, modifier = Modifier.padding(top = dimensions.spaceLg)) { Text("重试") }
         } else {
-            Button(onClick = onChooseFile, modifier = Modifier.padding(top = 16.dp)) { Text("重新选择文件") }
+            Button(onClick = onChooseFile, modifier = Modifier.padding(top = dimensions.spaceLg)) { Text("重新选择文件") }
         }
     }
 }
