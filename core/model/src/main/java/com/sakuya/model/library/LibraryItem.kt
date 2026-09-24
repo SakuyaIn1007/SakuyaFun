@@ -1,4 +1,4 @@
-package com.sakuya.library.model
+package com.sakuya.model.library
 
 /**
  * LibraryItem.kt

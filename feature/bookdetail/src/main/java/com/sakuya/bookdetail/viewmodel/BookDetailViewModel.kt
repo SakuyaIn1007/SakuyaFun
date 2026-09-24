@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sakuya.bookdetail.data.repository.BookDetailRepository
 import com.sakuya.data.catalog.CatalogBook
-import com.sakuya.library.data.repository.LibraryRepository
-import com.sakuya.library.model.LibraryItem
+import com.sakuya.data.library.LibraryBookSource
+import com.sakuya.model.library.LibraryItem
 import com.sakuya.navigation.BOOK_DETAIL_ARG_ID
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class BookDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val libraryRepository: LibraryRepository,
+    private val libraryRepository: LibraryBookSource,
     private val bookDetailRepository: BookDetailRepository
 ) : ViewModel() {
     private val bookId: String = savedStateHandle[BOOK_DETAIL_ARG_ID] ?: ""

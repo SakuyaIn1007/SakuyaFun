@@ -36,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sakuya.bookdetail.viewmodel.BookDetailUiState
 import com.sakuya.bookdetail.viewmodel.BookDetailViewModel
-import com.sakuya.library.model.LibraryItem
-import com.sakuya.library.model.LibraryItemType
+import com.sakuya.model.library.LibraryItem
+import com.sakuya.model.library.LibraryItemType
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 
 @Composable

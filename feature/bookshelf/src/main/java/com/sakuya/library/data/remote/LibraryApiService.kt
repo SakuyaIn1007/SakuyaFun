@@ -1,6 +1,6 @@
 package com.sakuya.library.data.remote
 
-import com.sakuya.library.model.LibraryItem
+import com.sakuya.model.library.LibraryItem
 import com.sakuya.model.network.BaseResponse
 import retrofit2.Response
 import retrofit2.http.DELETE

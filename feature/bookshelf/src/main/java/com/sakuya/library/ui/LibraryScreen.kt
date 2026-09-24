@@ -71,8 +71,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sakuya.library.model.LibraryItem
-import com.sakuya.library.model.LibraryItemType
+import com.sakuya.model.library.LibraryItem
+import com.sakuya.model.library.LibraryItemType
 import com.sakuya.library.viewmodel.LibraryAction
 import com.sakuya.library.viewmodel.LibraryEffect
 import com.sakuya.library.viewmodel.LibraryViewModel

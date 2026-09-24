@@ -32,6 +32,7 @@ fun SettingsScreen(
     onProfileClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
+    onStorageClick: () -> Unit = {},
     onSwitchAccount: () -> Unit = {},
     onLogout: () -> Unit = {},
     onUnavailableClick: () -> Unit = {},
@@ -41,6 +42,7 @@ fun SettingsScreen(
         onProfileClick = onProfileClick,
         onPrivacyClick = onPrivacyClick,
         onNotificationClick = onNotificationClick,
+        onStorageClick = onStorageClick,
         onSwitchAccount = onSwitchAccount,
         onLogout = onLogout,
         onUnavailableClick = onUnavailableClick,
@@ -55,6 +57,7 @@ fun SettingsContent(
     onProfileClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
+    onStorageClick: () -> Unit = {},
     onSwitchAccount: () -> Unit = {},
     onLogout: () -> Unit = {},
     onUnavailableClick: () -> Unit = {},
@@ -120,6 +123,13 @@ fun SettingsContent(
                 SettingItemRow(
                     title = "隐私",
                     onClick = onPrivacyClick
+                )
+            }
+            item { SettingItemDivider() }
+            item {
+                SettingItemRow(
+                    title = "缓存管理",
+                    onClick = onStorageClick
                 )
             }
             item { SettingItemDivider() }

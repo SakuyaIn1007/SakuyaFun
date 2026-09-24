@@ -3,9 +3,9 @@ package com.sakuya.library.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sakuya.library.data.repository.LibraryRepository
-import com.sakuya.library.model.LibraryItem
-import com.sakuya.library.model.LibraryItemType
-import com.sakuya.library.model.LibrarySyncStatus
+import com.sakuya.model.library.LibraryItem
+import com.sakuya.model.library.LibraryItemType
+import com.sakuya.model.library.LibrarySyncStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,13 +1,14 @@
 package com.sakuya.library.data.repository
 
 import com.sakuya.data.catalog.CatalogBook
+import com.sakuya.data.library.LibraryBookSource
 import com.sakuya.data.local.dao.BookmarkDao
 import com.sakuya.data.local.dao.LibraryBookDao
 import com.sakuya.data.local.dao.ReadingProgressDao
 import com.sakuya.data.local.entity.LibraryBookEntity
-import com.sakuya.library.model.LibraryItem
-import com.sakuya.library.model.LibraryItemType
-import com.sakuya.library.model.LibrarySyncStatus
+import com.sakuya.model.library.LibraryItem
+import com.sakuya.model.library.LibraryItemType
+import com.sakuya.model.library.LibrarySyncStatus
 import com.sakuya.library.data.remote.LibraryApiService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -34,12 +35,12 @@ class LibraryRepository @Inject constructor(
     private val bookmarkDao: BookmarkDao,
     private val apiService: LibraryApiService,
     private val onlineReading: OnlineReadingStateRepository,
-) {
+) : LibraryBookSource {
     private val _syncStatus = MutableStateFlow(LibrarySyncStatus.SYNCED)
     val syncStatus = _syncStatus.asStateFlow()
 
     /** 同步状态独立于列表数据，以便书架在保留本地内容时显示同步中的反馈。 */
-    suspend fun syncLibrary() {
+    override suspend fun syncLibrary() {
         _syncStatus.value = LibrarySyncStatus.SYNCING
         runCatching {
             val response = apiService.getLibrary()
@@ -54,7 +55,7 @@ class LibraryRepository @Inject constructor(
         }.onSuccess { _syncStatus.value = LibrarySyncStatus.SYNCED }
             .onFailure { _syncStatus.value = LibrarySyncStatus.FAILED; throw it }
     }
-    fun observeBooks(): Flow<List<LibraryItem>> {
+    override fun observeBooks(): Flow<List<LibraryItem>> {
         return combine(
             libraryBookDao.observeBooks(),
             readingProgressDao.observeProgress(),
@@ -105,7 +106,7 @@ class LibraryRepository @Inject constructor(
         )
     }
 
-    suspend fun addCatalogBook(book: CatalogBook) {
+    override suspend fun addCatalogBook(book: CatalogBook) {
         val response = apiService.addBook(book.id)
         val body = response.body()
         if (!response.isSuccessful || body == null || !body.isSuccess()) {

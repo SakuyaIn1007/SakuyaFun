@@ -14,6 +14,7 @@ import com.sakuya.navigation.PROFILE_ME
 import com.sakuya.navigation.PROFILE_PRIVACY_ROUTE
 import com.sakuya.navigation.PROFILE_SETTINGS_ROUTE
 import com.sakuya.navigation.PROFILE_NOTIFICATION_SETTINGS_ROUTE
+import com.sakuya.navigation.PROFILE_STORAGE_ROUTE
 
 import com.sakuya.profileservices.data.GroupedWallet
 import com.sakuya.profileservices.data.WalletItem
@@ -23,6 +24,7 @@ import com.sakuya.profileservices.ui.CardsScreen
 import com.sakuya.profileservices.ui.FavouritesScreen
 import com.sakuya.profileservices.ui.SettingsScreen
 import com.sakuya.profileservices.ui.NotificationSettingsScreen
+import com.sakuya.profileservices.ui.StorageScreen
 import androidx.compose.runtime.*
 import com.sakuya.profileservices.viewmodel.SettingsViewModel
 import java.util.Date
@@ -55,6 +57,7 @@ fun NavGraphBuilder.profileServicesNavGraph(navController: NavHostController) {
             onProfileClick = { navController.navigate(PROFILE_ME) },
             onPrivacyClick = { navController.navigate(PROFILE_PRIVACY_ROUTE) },
             onNotificationClick = { navController.navigate(PROFILE_NOTIFICATION_SETTINGS_ROUTE) },
+            onStorageClick = { navController.navigate(PROFILE_STORAGE_ROUTE) },
             onSwitchAccount = { viewModel.logout(goLogin) },
             onLogout = { viewModel.logout(goLogin) },
         )
@@ -65,6 +68,18 @@ fun NavGraphBuilder.profileServicesNavGraph(navController: NavHostController) {
         val error by viewModel.notificationError.collectAsState()
         LaunchedEffect(Unit) { viewModel.loadNotificationPreferences() }
         NotificationSettingsScreen(preferences,error,{navController.popBackStack()},viewModel::updateNotificationPreferences)
+    }
+    composable(PROFILE_STORAGE_ROUTE) {
+        val viewModel: SettingsViewModel = hiltViewModel()
+        val usage by viewModel.storageUsage.collectAsState()
+        // 每次进入都重新测量：下载或阅读后占用会变化，缓存的旧数值会误导用户。
+        LaunchedEffect(Unit) { viewModel.loadStorageUsage() }
+        StorageScreen(
+            usage = usage,
+            onBack = { navController.popBackStack() },
+            onClearCaches = viewModel::clearReclaimableCaches,
+            onClearOffline = viewModel::clearOfflineContent,
+        )
     }
 }
 
