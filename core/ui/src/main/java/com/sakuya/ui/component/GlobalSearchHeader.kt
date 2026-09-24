@@ -41,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun GlobalSearchHeader(
@@ -53,13 +54,14 @@ fun GlobalSearchHeader(
     containerColor: Color = MaterialTheme.colorScheme.surface
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
             .background(containerColor)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = dimensions.spaceLg, vertical = 10.dp)
     ) {
         Box(
             modifier = Modifier
@@ -125,7 +127,7 @@ fun GlobalSearchHeader(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onFocusChanged { isFocused = it.isFocused }
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(horizontal = dimensions.spaceMd, vertical = dimensions.spaceSm)
                 ) { innerTextField ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

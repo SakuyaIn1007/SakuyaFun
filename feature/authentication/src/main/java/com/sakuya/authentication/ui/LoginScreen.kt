@@ -28,6 +28,7 @@ import com.sakuya.authentication.viewmodel.AuthUiState
 import com.sakuya.ui.motion.MotionContent
 import com.sakuya.ui.motion.MotionVisibility
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun LoginScreen(
@@ -57,13 +58,14 @@ fun LoginContent(
     onRegisterClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .safeDrawingPadding()
             .imePadding()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = dimensions.spaceXl),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -72,7 +74,7 @@ fun LoginContent(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(dimensions.spaceSm))
         Text(
             text = "登录 Sakuya 继续使用",
             style = MaterialTheme.typography.bodyMedium,
@@ -99,7 +101,7 @@ fun LoginContent(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         AuthErrorText(state.errorMessage)
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(dimensions.spaceXl))
         Button(
             onClick = onLogin,
             modifier = Modifier

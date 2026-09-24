@@ -25,6 +25,7 @@ import com.sakuya.feed.ui.FeedTimelineScreen
 import com.sakuya.model.feed.FeedStream
 import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 import androidx.compose.ui.tooling.preview.Preview
 
 /**
@@ -76,7 +77,12 @@ fun DashboardContent(
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding()
-                    .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
+                    .padding(
+                        start = SakuyaTheme.tokens.dimensions.spaceLg,
+                        end = SakuyaTheme.tokens.dimensions.spaceSm,
+                        top = 10.dp,
+                        bottom = SakuyaTheme.tokens.dimensions.spaceSm,
+                    )
             ) {
                 IconButton(onClick = onSearchClick) {
                     Icon(Icons.Default.Search, contentDescription = "搜索")

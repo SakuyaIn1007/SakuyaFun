@@ -101,7 +101,7 @@ fun ContentCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(dimensions.spaceXs))
 
             Text(
                 text = subtitle,
@@ -111,7 +111,7 @@ fun ContentCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimensions.spaceSm))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -130,7 +130,7 @@ fun ContentCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(dimensions.spaceMd))
 
                 tags.take(2).forEach { tag ->
                     Box(

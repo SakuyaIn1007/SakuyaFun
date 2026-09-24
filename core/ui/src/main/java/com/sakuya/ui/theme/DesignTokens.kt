@@ -64,6 +64,18 @@ internal val DarkTokens = SakuyaThemeTokens(
 
 private val LocalSakuyaTokens = staticCompositionLocalOf { LightTokens }
 
+/**
+ * 职责说明：为无法访问 CompositionLocal 的场景提供尺寸令牌。
+ *
+ * 使用场景：Modifier 扩展函数、drawBehind/Canvas 等绘制 lambda、顶层常量 ——
+ * 这些位置无法调用 SakuyaTheme.tokens（它是 @Composable 属性）。
+ *
+ * 注意：本对象**只暴露尺寸**。颜色必须走 SakuyaTheme.tokens.colors ——
+ * 颜色需随深浅主题变化，静态单例会导致主题切换后颜色不更新；
+ * 尺寸不随主题变化，因此静态实例是安全的。
+ */
+val SakuyaDimensions: SakuyaDimensionTokens = SakuyaDimensionTokens()
+
 object SakuyaTheme {
     val tokens: SakuyaThemeTokens
         @Composable get() = LocalSakuyaTokens.current

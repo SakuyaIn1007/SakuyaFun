@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun AppPrimaryTopBar(
@@ -20,6 +21,8 @@ fun AppPrimaryTopBar(
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
+
     androidx.compose.material3.TopAppBar(
         title = {
             Text(
@@ -32,7 +35,7 @@ fun AppPrimaryTopBar(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = dimensions.spaceXs),
         colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background
         ),

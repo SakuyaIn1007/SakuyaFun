@@ -29,6 +29,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * Motion.kt
@@ -137,8 +138,10 @@ fun StaticLoadingSkeleton(
     modifier: Modifier = Modifier,
     rowCount: Int = 4,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
+
     Column(
-        modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier = modifier.padding(horizontal = 20.dp, vertical = dimensions.spaceLg),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         repeat(rowCount) { index ->

@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.sakuya.designsystem.icon.SakuyaIcons
 import com.sakuya.model.feed.DynamicPost
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 private const val MaxVisibleImages = 3
 
@@ -52,11 +53,13 @@ fun DynamicPostCard(
     onDelete: () -> Unit = {},
     onAuthorClick: () -> Unit = {},
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 20.dp, vertical = dimensions.spaceLg),
     ) {
         DynamicAuthor(post, onNotInterested, onReport, onEdit, onDelete, onAuthorClick)
         Text(
@@ -75,7 +78,7 @@ fun DynamicPostCard(
         DynamicImageGrid(
             imageColors = post.imageColors,
             onImageClick = onImageClick,
-            modifier = Modifier.padding(top = 12.dp),
+            modifier = Modifier.padding(top = dimensions.spaceMd),
         )
         DynamicPostFooter(
             tags = post.tags,
@@ -96,13 +99,14 @@ private fun DynamicAuthor(
     onAuthorClick: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(verticalAlignment = Alignment.CenterVertically) {
         AvatarImage(
             avatarUrl = post.authorAvatarUrl,
             modifier = Modifier.size(28.dp).clickable(onClick = onAuthorClick),
             contentDescription = "${post.authorName}的头像",
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(dimensions.spaceSm))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.clickable(onClick = onAuthorClick))
         Spacer(Modifier.weight(1f))
         Box {
@@ -152,8 +156,9 @@ fun DynamicImageGrid(
 
     val visibleImages = imageColors.take(MaxVisibleImages)
     val hasHiddenImages = imageColors.size > visibleImages.size
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm),
         modifier = modifier.fillMaxWidth(),
     ) {
         visibleImages.forEachIndexed { index, color ->
@@ -174,10 +179,11 @@ private fun DynamicImagePlaceholder(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Box(
         modifier = modifier
             .height(96.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(dimensions.radiusSmall))
             .background(color)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -193,7 +199,7 @@ private fun DynamicImagePlaceholder(
                     text = "共 $totalImageCount 张",
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = dimensions.spaceXs),
                 )
             }
         }
@@ -217,6 +223,7 @@ private fun DynamicPostFooter(
 
 @Composable
 fun DynamicTagRow(tags: List<String>, modifier: Modifier = Modifier) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier) {
         tags.forEach { tag ->
             Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(6.dp)) {
@@ -224,7 +231,7 @@ fun DynamicTagRow(tags: List<String>, modifier: Modifier = Modifier) {
                     text = tag,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = dimensions.spaceSm, vertical = dimensions.spaceXs),
                 )
             }
         }

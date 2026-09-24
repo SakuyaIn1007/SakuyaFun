@@ -47,6 +47,7 @@ fun MediumContentCard(
         MaterialTheme.colorScheme.primary,
     )
     val safeProgress = progress.coerceIn(0f, 1f)
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Column(
         modifier = modifier
@@ -61,7 +62,7 @@ fun MediumContentCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = dimensions.spaceSm)
                     .aspectRatio(0.75f)
                     .shadow(
                         elevation = 4.dp,
@@ -89,13 +90,13 @@ fun MediumContentCard(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(dimensions.spaceLg)
         ) {
             LinearProgressIndicator(
                 progress = { safeProgress },
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 8.dp)
+                    .padding(start = dimensions.spaceSm)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp)),
                 color = MaterialTheme.colorScheme.primary,
@@ -112,7 +113,7 @@ fun MediumContentCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp)
+                .padding(start = dimensions.spaceSm)
             ,
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +124,7 @@ fun MediumContentCard(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(20.dp)
             )
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(dimensions.spaceXs))
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -175,7 +176,7 @@ private fun MediumContentCardCompactPreview() {
             fileType = "txt",
             modifier = Modifier
                 .width(136.dp)
-                .padding(12.dp)
+                .padding(SakuyaTheme.tokens.dimensions.spaceMd)
         )
     }
 }
@@ -190,7 +191,7 @@ private fun MediumContentCardRegularPreview() {
             fileType = "txt",
             modifier = Modifier
                 .width(184.dp)
-                .padding(16.dp)
+                .padding(SakuyaTheme.tokens.dimensions.spaceLg)
         )
     }
 }

@@ -25,6 +25,7 @@ import com.sakuya.authentication.viewmodel.AuthUiState
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.motion.MotionContent
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun RegisterScreen(
@@ -68,12 +69,13 @@ fun RegisterContent(
             )
         }
     ) { paddingValues ->
+        val dimensions = SakuyaTheme.tokens.dimensions
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .imePadding()
-                .padding(horizontal = 24.dp, vertical = 32.dp)
+                .padding(horizontal = dimensions.spaceXl, vertical = 32.dp)
         ) {
             Text(
                 text = "创建你的 Sakuya 账号",
@@ -110,7 +112,7 @@ fun RegisterContent(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
             AuthErrorText(state.errorMessage)
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(dimensions.spaceXl))
             Button(
                 onClick = onRegister,
                 modifier = Modifier
