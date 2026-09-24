@@ -36,6 +36,7 @@ import com.sakuya.ui.motion.MotionContent
 import com.sakuya.ui.motion.StaticLoadingSkeleton
 import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * 动态首页入口。
@@ -155,7 +156,7 @@ private fun FeedMessageState(
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         androidx.compose.foundation.layout.Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd),
         ) {
             Text(message, color = MaterialTheme.colorScheme.outline)
             actionLabel?.let { Button(onClick = onAction) { Text(it) } }

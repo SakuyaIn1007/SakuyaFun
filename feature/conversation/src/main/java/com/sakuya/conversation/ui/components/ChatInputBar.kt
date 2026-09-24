@@ -36,6 +36,7 @@ import com.sakuya.model.chat.ChatAttachment
 import com.sakuya.model.chat.ChatAttachmentType
 import com.sakuya.model.chat.ChatMessageReply
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ChatInputBar.kt
@@ -58,7 +59,7 @@ fun ChatInputBar(
 ) {
     Column(
         modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
-            .navigationBarsPadding().imePadding().padding(horizontal = 6.dp, vertical = 4.dp),
+            .navigationBarsPadding().imePadding().padding(horizontal = 6.dp, vertical = SakuyaTheme.tokens.dimensions.spaceXs),
     ) {
         replyingTo?.let { reply ->
             Row(
@@ -71,23 +72,23 @@ fun ChatInputBar(
         }
         if (attachments.isNotEmpty() || isUploadingAttachment) {
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = SakuyaTheme.tokens.dimensions.spaceXs),
                 horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically,
             ) {
                 attachments.forEach { attachment ->
                     Row(
-                        modifier = Modifier.background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp)).padding(start = 10.dp),
+                        modifier = Modifier.background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(SakuyaTheme.tokens.dimensions.radiusMedium)).padding(start = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(if (attachment.type == ChatAttachmentType.IMAGE) Icons.Default.Add else Icons.Default.MoreVert, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Text(attachment.name.ifBlank { if (attachment.type == ChatAttachmentType.IMAGE) "图片" else "文件" }, style = MaterialTheme.typography.labelSmall, maxLines = 1, modifier = Modifier.padding(start = 4.dp))
+                        Text(attachment.name.ifBlank { if (attachment.type == ChatAttachmentType.IMAGE) "图片" else "文件" }, style = MaterialTheme.typography.labelSmall, maxLines = 1, modifier = Modifier.padding(start = SakuyaTheme.tokens.dimensions.spaceXs))
                         IconButton(onClick = { onRemoveAttachment(attachment.id) }, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.Close, contentDescription = "移除附件", modifier = Modifier.size(16.dp)) }
                     }
                 }
                 if (isUploadingAttachment) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)) {
             IconButton(onClick = onPickImage, enabled = !isUploadingAttachment && attachments.size < 3, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Default.Add, contentDescription = "选择图片")
             }
@@ -97,7 +98,7 @@ fun ChatInputBar(
             Box(
                 modifier = Modifier.weight(1f).heightIn(min = 38.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceMd, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
                 contentAlignment = Alignment.CenterStart,
             ) {
                 BasicTextField(

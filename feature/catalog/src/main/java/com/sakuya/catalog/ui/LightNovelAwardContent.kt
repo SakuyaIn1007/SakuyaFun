@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.sakuya.catalog.model.ContentItem
 import com.sakuya.ui.component.ContentCard
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * 年度专题与实时排行榜分开呈现：这里的名次在同一届内固定，不展示升降趋势。
@@ -35,7 +36,7 @@ fun LightNovelAwardContent(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+            Column(modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceLg)) {
                 Text(
                     text = "轻小说大赏",
                     style = MaterialTheme.typography.headlineSmall,
@@ -48,7 +49,7 @@ fun LightNovelAwardContent(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceXs))
                 Text(
                     text = "与日榜、周榜等实时热度榜单分开浏览",
                     style = MaterialTheme.typography.bodySmall,
@@ -67,11 +68,11 @@ fun LightNovelAwardContent(
                 index = index,
                 coverUrl = item.coverRequestUrl,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg)
                     .clickable { onBookClick(item) }
             )
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceLg)) }
     }
 }

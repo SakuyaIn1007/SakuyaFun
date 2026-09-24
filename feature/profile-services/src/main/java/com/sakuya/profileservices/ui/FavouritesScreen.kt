@@ -29,6 +29,7 @@ import com.sakuya.profileservices.data.remote.FavouritesItemData
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 import java.util.Date
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun FavouritesScreen(
@@ -89,13 +90,13 @@ fun FavouritesItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceSm, vertical = 2.dp),
     ) {
         Column(
             modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(SakuyaTheme.tokens.dimensions.spaceLg),
+            verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm)
         ) {
 
 //          收藏标题+图片内容
@@ -109,7 +110,7 @@ fun FavouritesItem(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
-                        .padding(end = 8.dp)
+                        .padding(end = SakuyaTheme.tokens.dimensions.spaceSm)
                         .weight(1f)
                 )
                 Image(

@@ -57,6 +57,7 @@ import com.sakuya.catalog.viewmodel.CatalogViewModel
 import com.sakuya.ui.component.PrimaryTabRow
 import com.sakuya.ui.component.ContentCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -114,7 +115,7 @@ fun CatalogContent(
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding()
-                    .padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 8.dp)
+                    .padding(start = SakuyaTheme.tokens.dimensions.spaceLg, end = SakuyaTheme.tokens.dimensions.spaceSm, top = 10.dp, bottom = SakuyaTheme.tokens.dimensions.spaceSm)
             ) {
                 IconButton(onClick = onNavigateToSearch) { Icon(Icons.Default.Search, "搜索") }
             }
@@ -193,16 +194,16 @@ fun CatalogRecommendContent(
             startIndex = popularItems.size + seasonalAdaptations.size,
             onBookClick = onBookClick
         )
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        item { Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceLg)) }
     }
 }
 
 /** 推荐接口失败时给出原位重试，不遮蔽已经加载的内容。 */
 @Composable
 private fun CatalogLoadError(message: String, onRetry: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier = Modifier.fillMaxWidth().padding(SakuyaTheme.tokens.dimensions.spaceXl), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(message, color = MaterialTheme.colorScheme.error)
-        Text("点击重试", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp).clickable(onClick = onRetry))
+        Text("点击重试", color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm).clickable(onClick = onRetry))
     }
 }
 
@@ -214,8 +215,8 @@ private fun CatalogQuickLinks(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
+        horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm)
     ) {
         CatalogQuickLinkCard(
             title = "时间表",
@@ -238,14 +239,14 @@ private fun CatalogQuickLinkCard(
 ) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(SakuyaTheme.tokens.dimensions.radiusSmall),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f),
         tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .height(42.dp)
-                .padding(start = 12.dp, end = 8.dp),
+                .padding(start = SakuyaTheme.tokens.dimensions.spaceMd, end = SakuyaTheme.tokens.dimensions.spaceSm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -269,7 +270,7 @@ private fun CatalogQuickLinkCard(
 
 @Composable
 private fun CatalogSectionTitle(title: String, subtitle: String) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceMd)) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
@@ -294,8 +295,8 @@ private fun LazyListScope.catalogBookGridRows(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd)
         ) {
             CatalogGridBook(
                 item = books[firstIndex],
@@ -334,7 +335,7 @@ private fun CatalogGridBook(
         Box(
             modifier = Modifier
                 .size(width = 66.dp, height = 92.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(SakuyaTheme.tokens.dimensions.radiusSmall))
                 .background(Brush.linearGradient(coverColors)),
             contentAlignment = Alignment.Center
         ) {
@@ -347,10 +348,10 @@ private fun CatalogGridBook(
                 )
             }
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceSm))
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
         ) {
             Text(
                 text = item.title,

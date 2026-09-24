@@ -45,6 +45,7 @@ import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
 import com.sakuya.ui.component.UpdateDot
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun ConversationScreen(
@@ -98,7 +99,7 @@ fun ConversationContent(
                 color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
             ) {
-                Column(modifier = Modifier.padding(top = 24.dp)) {
+                Column(modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceXl)) {
                     ConversationEntryCard(
                         title = "新通知",
                         unreadCount = notificationUnreadCount,
@@ -139,7 +140,7 @@ fun ConversationContent(
                             text = "新消息",
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceMd, vertical = SakuyaTheme.tokens.dimensions.spaceSm)
                         )
                     }
 
@@ -169,7 +170,7 @@ private fun ConversationEntryCard(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
-            .padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp),
+            .padding(top = SakuyaTheme.tokens.dimensions.spaceLg, bottom = SakuyaTheme.tokens.dimensions.spaceLg, start = SakuyaTheme.tokens.dimensions.spaceLg, end = SakuyaTheme.tokens.dimensions.spaceSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -180,8 +181,8 @@ private fun ConversationEntryCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-        if (unreadCount > 0) Badge(modifier = Modifier.padding(end = 8.dp)) { Text(if (unreadCount > 99) "99+" else unreadCount.toString()) }
-        else if(showUpdateDot)UpdateDot(Modifier.padding(end=8.dp))
+        if (unreadCount > 0) Badge(modifier = Modifier.padding(end = SakuyaTheme.tokens.dimensions.spaceSm)) { Text(if (unreadCount > 99) "99+" else unreadCount.toString()) }
+        else if(showUpdateDot)UpdateDot(Modifier.padding(end=SakuyaTheme.tokens.dimensions.spaceSm))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = "箭头",
@@ -201,7 +202,7 @@ private fun ConversationRow(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         BadgedBox(
@@ -220,7 +221,7 @@ private fun ConversationRow(
                 contentDescription = "会话头像",
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(SakuyaTheme.tokens.dimensions.spaceMd))
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
@@ -240,7 +241,7 @@ private fun ConversationRow(
                     color = MaterialTheme.colorScheme.outline
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceXs))
             Text(
                 text = if (conversation.isPinned) "[置顶] ${conversation.lastMessage}" else conversation.lastMessage,
                 style = MaterialTheme.typography.bodyMedium,

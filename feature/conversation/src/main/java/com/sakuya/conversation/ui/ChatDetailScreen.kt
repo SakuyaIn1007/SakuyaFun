@@ -16,6 +16,7 @@ import com.sakuya.conversation.ui.components.ChatTopBar
 import com.sakuya.conversation.viewmodel.ChatDetailAction
 import com.sakuya.conversation.viewmodel.ChatDetailEffect
 import com.sakuya.conversation.viewmodel.ChatDetailViewModel
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ChatDetailScreen.kt
@@ -57,7 +58,7 @@ private fun ChatDetailContent(detail: ConversationDetail?, isLoading: Boolean, i
     Scaffold(topBar = { ChatTopBar(title = "聊天详情", onBack = onBack) }, snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         when {
             isLoading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            detail == null -> Column(Modifier.fillMaxSize().padding(padding), horizontalAlignment = Alignment.CenterHorizontally) { Text("聊天详情不可用", modifier = Modifier.padding(24.dp)); TextButton(onClick = onRetry) { Text("重试") } }
+            detail == null -> Column(Modifier.fillMaxSize().padding(padding), horizontalAlignment = Alignment.CenterHorizontally) { Text("聊天详情不可用", modifier = Modifier.padding(SakuyaTheme.tokens.dimensions.spaceXl)); TextButton(onClick = onRetry) { Text("重试") } }
             else -> DetailList(detail, isSaving, { onSearch(detail.title) }, onPinned, onMuted, onMemberNickname, onClear, onLeave)
         }
     }
@@ -68,17 +69,17 @@ private fun DetailList(detail: ConversationDetail, isSaving: Boolean, onSearch: 
     var nickname by remember(detail.preferences.memberNickname) { mutableStateOf(detail.preferences.memberNickname) }
     var showClear by remember { mutableStateOf(false) }
     var showLeave by remember { mutableStateOf(false) }
-    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(contentPadding = PaddingValues(SakuyaTheme.tokens.dimensions.spaceLg), verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd)) {
         item { Text(detail.title, style = MaterialTheme.typography.headlineSmall) }
         if (detail.type == ConversationType.DIRECT) {
-            detail.directProfile?.let { profile -> item { InfoCard("好友资料") { Text(profile.nickname, style = MaterialTheme.typography.titleMedium); Text(if (profile.isOnline) "在线" else "离线", color = MaterialTheme.colorScheme.outline); if (!profile.signature.isNullOrBlank()) Text(profile.signature!!, modifier = Modifier.padding(top = 4.dp)) } } }
+            detail.directProfile?.let { profile -> item { InfoCard("好友资料") { Text(profile.nickname, style = MaterialTheme.typography.titleMedium); Text(if (profile.isOnline) "在线" else "离线", color = MaterialTheme.colorScheme.outline); if (!profile.signature.isNullOrBlank()) Text(profile.signature!!, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceXs)) } } }
         } else {
             item { InfoCard("群聊资料") { if (detail.description.isNotBlank()) Text(detail.description); if (detail.announcement.isNotBlank()) Text("公告：${detail.announcement}", modifier = Modifier.padding(top = 6.dp)); Text("成员 ${detail.members.size} 人", modifier = Modifier.padding(top = 6.dp)) } }
             item { InfoCard("我的群名片") { OutlinedTextField(value = nickname, onValueChange = { nickname = it }, singleLine = true, label = { Text("群名片") }, modifier = Modifier.fillMaxWidth()); TextButton(onClick = { onMemberNickname(nickname) }, enabled = !isSaving) { Text("保存群名片") } } }
             item { Text("群成员", style = MaterialTheme.typography.titleSmall) }
             items(detail.members, key = { it.userId }) { member -> Text(member.displayName, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) }
         }
-        item { Text("会话设置", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
+        item { Text("会话设置", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm)) }
         item { PreferenceSwitch("置顶会话", detail.preferences.isPinned, !isSaving, onPinned) }
         item { PreferenceSwitch("消息免打扰", detail.preferences.isMuted, !isSaving, onMuted) }
         item { ListAction("查找聊天记录", onSearch) }
@@ -89,7 +90,7 @@ private fun DetailList(detail: ConversationDetail, isSaving: Boolean, onSearch: 
     if (showLeave) ConfirmDialog("退出群聊", "退出后将无法继续读取群消息。", { showLeave = false }, { showLeave = false; onLeave() })
 }
 
-@Composable private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) { Card { Column(Modifier.fillMaxWidth().padding(16.dp)) { Text(title, style = MaterialTheme.typography.titleSmall); Spacer(Modifier.height(8.dp)); content() } } }
+@Composable private fun InfoCard(title: String, content: @Composable ColumnScope.() -> Unit) { Card { Column(Modifier.fillMaxWidth().padding(SakuyaTheme.tokens.dimensions.spaceLg)) { Text(title, style = MaterialTheme.typography.titleSmall); Spacer(Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm)); content() } } }
 @Composable private fun PreferenceSwitch(title: String, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text(title, Modifier.weight(1f)); Switch(checked = checked, onCheckedChange = onChange, enabled = enabled) } }
-@Composable private fun ListAction(title: String, onClick: () -> Unit, isDestructive: Boolean = false) { Text(title, color = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp)) }
+@Composable private fun ListAction(title: String, onClick: () -> Unit, isDestructive: Boolean = false) { Text(title, color = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = SakuyaTheme.tokens.dimensions.spaceMd)) }
 @Composable private fun ConfirmDialog(title: String, message: String, onDismiss: () -> Unit, onConfirm: () -> Unit) { AlertDialog(onDismissRequest = onDismiss, title = { Text(title) }, text = { Text(message) }, confirmButton = { TextButton(onClick = onConfirm) { Text("确认") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }) }

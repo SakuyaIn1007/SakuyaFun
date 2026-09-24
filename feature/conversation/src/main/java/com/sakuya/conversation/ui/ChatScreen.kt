@@ -62,6 +62,7 @@ import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.motion.MotionContent
 import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ChatScreen.kt
@@ -188,7 +189,7 @@ fun ChatContent(
         ) {
             if (messages.isEmpty() && isLoading) {
                 item(key = "loading_messages") {
-                    Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().padding(vertical = SakuyaTheme.tokens.dimensions.spaceXl), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                     }
                 }
@@ -201,7 +202,7 @@ fun ChatContent(
                         color = MaterialTheme.colorScheme.outline,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
+                            .padding(vertical = SakuyaTheme.tokens.dimensions.spaceXl),
                     )
                 }
             }
@@ -213,7 +214,7 @@ fun ChatContent(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceSm, vertical = SakuyaTheme.tokens.dimensions.spaceXs),
                     )
                 }
             }
@@ -225,7 +226,7 @@ fun ChatContent(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceSm, vertical = SakuyaTheme.tokens.dimensions.spaceXs),
                     )
                     Text(
                         text = "点击重新加载聊天记录",
@@ -234,7 +235,7 @@ fun ChatContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(onClick = onRetryHistory)
-                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceSm, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
                     )
                 }
             }
@@ -277,11 +278,11 @@ private fun MessageRow(
     ) {
         if (!message.isMine) {
             ChatAvatar(avatarUrl = message.senderAvatarUrl)
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(SakuyaTheme.tokens.dimensions.spaceSm))
         }
         MessageBubble(message = message, onRetry = onRetry, onReply = onReply, isHighlighted = isHighlighted)
         if (message.isMine) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(SakuyaTheme.tokens.dimensions.spaceSm))
             ChatAvatar(avatarUrl = message.senderAvatarUrl)
         }
     }
@@ -317,7 +318,7 @@ private fun MessageBubble(
             .clip(RoundedCornerShape(4.dp))
             .combinedClickable(onClick = {}, onLongClick = onReply)
             .background(bubbleColor)
-            .padding(horizontal = 12.dp, vertical = 9.dp)
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceMd, vertical = 9.dp)
     ) {
         message.replyTo?.let { reply ->
             Text(
@@ -325,7 +326,7 @@ private fun MessageBubble(
                 color = textColor.copy(alpha = 0.75f),
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
-                modifier = Modifier.padding(bottom = 4.dp),
+                modifier = Modifier.padding(bottom = SakuyaTheme.tokens.dimensions.spaceXs),
             )
         }
         message.attachments.forEach { attachment ->
@@ -334,10 +335,10 @@ private fun MessageBubble(
                     model = attachment.thumbnailUrl ?: attachment.url,
                     contentDescription = attachment.name.ifBlank { "聊天图片" },
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxWidth().size(width = 240.dp, height = 160.dp).clip(RoundedCornerShape(4.dp)).padding(bottom = 4.dp),
+                    modifier = Modifier.fillMaxWidth().size(width = 240.dp, height = 160.dp).clip(RoundedCornerShape(4.dp)).padding(bottom = SakuyaTheme.tokens.dimensions.spaceXs),
                 )
             } else {
-                Text("[文件] ${attachment.name.ifBlank { "附件" }}", color = textColor, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 4.dp))
+                Text("[文件] ${attachment.name.ifBlank { "附件" }}", color = textColor, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = SakuyaTheme.tokens.dimensions.spaceXs))
             }
         }
         if (message.content.isNotBlank()) Text(text = message.content, color = textColor, style = MaterialTheme.typography.bodyMedium)

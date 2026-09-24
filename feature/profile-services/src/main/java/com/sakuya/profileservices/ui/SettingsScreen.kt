@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sakuya.ui.component.AppSecondaryTopBar // 咲夜之前写好的二级 TopBar 喵
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun SettingsScreen(
@@ -82,9 +83,9 @@ fun SettingsContent(
                     text = "账号",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm))
             }
 
             item {
@@ -109,7 +110,7 @@ fun SettingsContent(
                     text = "功能",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg)
                 )
             } // 微信同款的分组灰色占位块喵
             item {
@@ -148,7 +149,7 @@ fun SettingsContent(
                     text = "帮助与关于",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg)
                 )
             }
             item {
@@ -202,7 +203,7 @@ fun SettingItemRow(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface) // 设置项使用主题 Surface，深浅模式保持一致层级。
             .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceLg),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -214,7 +215,7 @@ fun SettingItemRow(
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
         ) {
             if (subtitle.isNotEmpty()) {
                 Text(
@@ -247,7 +248,7 @@ fun SettingActionRow(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
-            .padding(vertical = 16.dp),
+            .padding(vertical = SakuyaTheme.tokens.dimensions.spaceLg),
         horizontalArrangement = Arrangement.Center, // 文字居中排布，更有仪式感喵
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -268,7 +269,7 @@ fun SettingItemDivider() {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(start = 16.dp), // 左边缩进 16dp，右边顶格，这是最纯正的工业标准喵！
+            .padding(start = SakuyaTheme.tokens.dimensions.spaceLg), // 左边缩进 16dp，右边顶格，这是最纯正的工业标准喵！
         thickness = 0.5.dp,
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
     )

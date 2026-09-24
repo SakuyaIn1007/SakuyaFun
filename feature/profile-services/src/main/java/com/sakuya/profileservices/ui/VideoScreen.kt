@@ -35,6 +35,7 @@ import com.sakuya.ui.theme.SakuyaInAndroidTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.sakuya.ui.theme.SakuyaTheme
 
 // 📅 1. 定义视频数据模型，带上时长和时间戳喵
 data class VideoItem(
@@ -95,7 +96,7 @@ internal fun VideoGalleryContent(
 
     LazyColumn(
         modifier = modifier.background(MaterialTheme.colorScheme.background),
-        verticalArrangement = Arrangement.spacedBy(4.dp) // 行与行之间的小间距
+        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs) // 行与行之间的小间距
     ) {
         // 遍历分组后的 Map
         groupedVideos.forEach { (dateHeader, monthVideos) ->
@@ -109,7 +110,7 @@ internal fun VideoGalleryContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.background) // 挡住滚过去的视频，防止重叠透光
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceMd, vertical = SakuyaTheme.tokens.dimensions.spaceSm)
                 )
             }
 
@@ -123,8 +124,8 @@ internal fun VideoGalleryContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp) // 格子水平间距
+                        .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceMd),
+                    horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm) // 格子水平间距
                 ) {
                     // 渲染实际的视频格子喵
                     rowVideos.forEach { video ->
@@ -167,7 +168,7 @@ internal fun VideoGalleryContent(
                                 color = Color.White,
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(4.dp)
+                                    .padding(SakuyaTheme.tokens.dimensions.spaceXs)
                                     .background(
                                         color = Color.Black.copy(alpha = 0.5f),
                                         shape = RoundedCornerShape(2.dp)
@@ -223,7 +224,7 @@ fun VideoGridItem(
                 .size(30.dp)
                 .align(Alignment.Center)
                 .background(Color.Black.copy(alpha = 0.25f), shape = CircleShape)
-                .padding(4.dp)
+                .padding(SakuyaTheme.tokens.dimensions.spaceXs)
         )
 
         // 3. 右下角微信同款时长框
@@ -233,12 +234,12 @@ fun VideoGridItem(
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(4.dp)
+                .padding(SakuyaTheme.tokens.dimensions.spaceXs)
                 .background(
                     color = Color.Black.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(2.dp)
                 )
-                .padding(horizontal = 4.dp, vertical = 1.dp)
+                .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceXs, vertical = 1.dp)
         )
     }
 }

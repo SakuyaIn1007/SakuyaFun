@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.sakuya.profileservices.viewmodel.StorageUsage
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * StorageScreen.kt
@@ -45,14 +46,14 @@ fun StorageScreen(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm))
                 Text(
                     text = "存储占用",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg),
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm))
             }
 
             item { StorageUsageRow("离线下载内容", usage.offlineBytes, "已下载的书籍正文，可离线阅读") }
@@ -64,14 +65,14 @@ fun StorageScreen(
             item { StorageUsageRow("临时文件", usage.temporaryBytes, "导入书籍时的中间产物") }
 
             item {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm))
                 Text(
                     text = "清理",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg),
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm))
             }
 
             item {
@@ -95,7 +96,7 @@ fun StorageScreen(
                     text = "清理缓存不会影响阅读进度、书签和离线内容；移除离线内容后这些也仍会保留。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceMd),
                 )
             }
 
@@ -105,7 +106,7 @@ fun StorageScreen(
                         text = message,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp),
+                        modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg),
                     )
                 }
             }
@@ -133,7 +134,7 @@ private fun StorageUsageRow(title: String, bytes: Long, description: String) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceLg),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column {

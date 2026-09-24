@@ -102,6 +102,7 @@ import com.sakuya.ui.component.DynamicTagRow
 import com.sakuya.ui.motion.MotionSpec
 import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun FeedDetailScreen(
@@ -297,7 +298,7 @@ private fun DynamicDetailTopBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceSm, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
@@ -406,7 +407,7 @@ private fun DetailTopBarAuthor(
             modifier = Modifier.size(28.dp),
             contentDescription = "${post.authorName}的头像",
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceSm))
         Text(post.authorName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
         FollowButton(
             isFollowing = isFollowing,
@@ -450,7 +451,7 @@ private fun DynamicDetailContent(
                 RelatedNovelCard(
                     novel = novel,
                     onClick = { onBookClick(novel.id) },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceMd),
                 )
             }
         }
@@ -462,14 +463,14 @@ private fun DynamicDetailContent(
                 isFollowStateReady = isFollowStateReady,
                 isOperatingFollow = isOperatingFollow,
                 onToggleFollow = onToggleFollow,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceMd),
             )
         }
         item {
             Text(
                 text = post.title,
                 style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
             )
         }
         item {
@@ -477,24 +478,24 @@ private fun DynamicDetailContent(
                 text = post.content,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
             )
         }
-        item { DynamicTagRow(post.tags, Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
+        item { DynamicTagRow(post.tags, Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceSm)) }
         item {
             Text(
                 text = FeedTimeFormat.format(post.publishedAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
             )
         }
-        item { HorizontalDivider(Modifier.padding(top = 8.dp)) }
+        item { HorizontalDivider(Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm)) }
         item {
             Text(
                 text = "评论 ${post.commentCount}",
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceLg),
             )
         }
         item { DynamicCommentList(comments = comments, showTitle = false) }
@@ -521,7 +522,7 @@ private fun FeedInteractionBottomBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceSm, vertical = SakuyaTheme.tokens.dimensions.spaceXs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FeedBasicTextInput(
@@ -653,8 +654,8 @@ private fun DynamicImagePager(imageColors: List<Long>) {
         }
         Surface(
             color = Color.Black.copy(alpha = 0.58f),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+            shape = RoundedCornerShape(SakuyaTheme.tokens.dimensions.radiusMedium),
+            modifier = Modifier.align(Alignment.TopEnd).padding(SakuyaTheme.tokens.dimensions.spaceMd),
         ) {
             Text(
                 text = "${pagerState.currentPage + 1}/${imageColors.size}",
@@ -698,7 +699,7 @@ private fun RelatedNovelCard(
             ) {
                 Text(novel.title.take(2), color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.titleMedium)
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceMd))
             Column {
                 Text("正在评价 / 讨论", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
                 Text(novel.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 2.dp))
@@ -766,10 +767,10 @@ private fun DynamicCommentList(
 ) {
     Column(modifier = modifier.fillMaxWidth().dismissKeyboardOnTap()) {
         if (showTitle) {
-            Text("评论 ${comments.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
+            Text("评论 ${comments.size}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceLg))
         }
         comments.forEach { comment ->
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceMd)) {
                 AvatarImage(
                     avatarUrl = comment.authorAvatarUrl,
                     modifier = Modifier.size(32.dp),
@@ -779,7 +780,7 @@ private fun DynamicCommentList(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(comment.authorName, style = MaterialTheme.typography.labelLarge)
                     Text(comment.content, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 3.dp))
-                    Text(comment.publishedAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(top = 4.dp))
+                    Text(comment.publishedAt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceXs))
                 }
             }
         }
@@ -864,7 +865,7 @@ fun ComposeFeedScreen(
         },
     ) { innerPadding ->
     Column(Modifier.fillMaxSize().dismissKeyboardOnTap().background(MaterialTheme.colorScheme.background).padding(innerPadding).padding(20.dp)) {
-        FeedBasicTextInput(value = uiState.title, onValueChange = { viewModel.onAction(ComposeFeedAction.UpdateTitle(it)) }, placeholder = { Text("标题（可选）") }, modifier = Modifier.fillMaxWidth().padding(top = 16.dp), singleLine = true)
+        FeedBasicTextInput(value = uiState.title, onValueChange = { viewModel.onAction(ComposeFeedAction.UpdateTitle(it)) }, placeholder = { Text("标题（可选）") }, modifier = Modifier.fillMaxWidth().padding(top = SakuyaTheme.tokens.dimensions.spaceLg), singleLine = true)
         FeedBasicTextInput(
             value = uiState.content,
             onValueChange = { viewModel.onAction(ComposeFeedAction.UpdateContent(it)) },
@@ -873,9 +874,9 @@ fun ComposeFeedScreen(
             minLines = 6,
             enabled = !uiState.isPublishing,
         )
-        FeedBasicTextInput(value = uiState.topicInput, onValueChange = { viewModel.onAction(ComposeFeedAction.UpdateTopic(it)) }, placeholder = { Text("话题（空格分隔）") }, modifier = Modifier.fillMaxWidth().padding(top = 12.dp), singleLine = true)
+        FeedBasicTextInput(value = uiState.topicInput, onValueChange = { viewModel.onAction(ComposeFeedAction.UpdateTopic(it)) }, placeholder = { Text("话题（空格分隔）") }, modifier = Modifier.fillMaxWidth().padding(top = SakuyaTheme.tokens.dimensions.spaceMd), singleLine = true)
         errorMessage?.let { message ->
-            Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+            Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm))
         }
     }
     }
@@ -912,7 +913,7 @@ private fun FeedBasicTextInput(
         minLines = minLines,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceMd),
         decorationBox = { innerTextField ->
             Box { if (value.isBlank()) Box(Modifier.align(Alignment.CenterStart)) { placeholder() }; innerTextField() }
         }

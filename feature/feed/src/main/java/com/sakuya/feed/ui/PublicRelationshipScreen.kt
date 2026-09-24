@@ -33,6 +33,7 @@ import com.sakuya.feed.viewmodel.PublicRelationshipUiState
 import com.sakuya.feed.viewmodel.PublicRelationshipViewModel
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.component.AvatarImage
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * PublicRelationshipScreen.kt
@@ -102,7 +103,7 @@ private fun PublicRelationshipContent(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(state.errorMessage, color = MaterialTheme.colorScheme.error)
-                            Button(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) { Text("重试") }
+                            Button(onClick = onRetry, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm)) { Text("重试") }
                         }
                     }
                 }
@@ -123,7 +124,7 @@ private fun RelationshipEmptyState(errorMessage: String?, onRetry: () -> Unit) {
             color = if (errorMessage == null) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.error,
         )
         if (errorMessage != null) {
-            Button(onClick = onRetry, modifier = Modifier.padding(top = 12.dp)) { Text("重试") }
+            Button(onClick = onRetry, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceMd)) { Text("重试") }
         }
     }
 }
@@ -148,7 +149,7 @@ private fun PublicRelationshipUserRow(
             modifier = Modifier.size(42.dp),
             contentDescription = "${user.name}的头像",
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceMd))
         Column(Modifier.weight(1f)) {
             Text(user.name, style = MaterialTheme.typography.titleSmall)
             Text(user.description.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)

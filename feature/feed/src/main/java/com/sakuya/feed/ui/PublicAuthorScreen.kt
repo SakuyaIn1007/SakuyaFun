@@ -56,6 +56,7 @@ import com.sakuya.feed.viewmodel.PublicAuthorEffect
 import com.sakuya.feed.viewmodel.PublicAuthorViewModel
 import com.sakuya.model.feed.DynamicPost
 import com.sakuya.ui.component.DynamicPostCard
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * PublicAuthorScreen.kt
@@ -98,7 +99,7 @@ fun PublicAuthorScreen(
             )
         },
         bottomBar = {
-            Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(SakuyaTheme.tokens.dimensions.spaceMd), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
                     onClick = { viewModel.onAction(PublicAuthorAction.OpenConversation) },
                     modifier = Modifier.weight(1f),
@@ -106,7 +107,7 @@ fun PublicAuthorScreen(
                 ) {
                     if (state.isOpeningConversation) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceSm))
                         Text("正在打开")
                     } else {
                         Text("私信")
@@ -199,7 +200,7 @@ private fun AuthorHeader(profile: PublicProfileDto) {
         Box(Modifier.size(64.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF8B7BBE)), contentAlignment = Alignment.Center) {
             Text(profile.nickname.firstOrNull()?.toString() ?: "?", color = Color.White, style = MaterialTheme.typography.headlineSmall)
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceMd))
         Column(Modifier.height(64.dp).weight(1f), verticalArrangement = Arrangement.SpaceEvenly) {
             Text(profile.nickname, style = MaterialTheme.typography.titleMedium)
             Text(profile.signature.orEmpty().ifBlank { "这个人还没有留下签名" }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
@@ -218,7 +219,7 @@ private fun AuthorStats(profile: PublicProfileDto, onRelationshipClick: (String)
         profile.followerCount to "粉丝",
         profile.likesAndFavoritesCount to "获赞与收藏",
     )
-    Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp)) {
+    Row(Modifier.fillMaxWidth().padding(start = SakuyaTheme.tokens.dimensions.spaceXl, end = SakuyaTheme.tokens.dimensions.spaceXl, bottom = SakuyaTheme.tokens.dimensions.spaceXl)) {
         stats.forEach { (count, label) ->
             Column(
                 modifier = Modifier.weight(1f).clickable(enabled = label != "获赞与收藏") { onRelationshipClick(label) },
@@ -234,7 +235,7 @@ private fun AuthorStats(profile: PublicProfileDto, onRelationshipClick: (String)
 
 @Composable
 private fun AuthorDataContent(profile: PublicProfileDto) {
-    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceLg)) {
         Text("数据统计", style = MaterialTheme.typography.titleMedium)
         AuthorDataRow("已发布动态", profile.postCount)
         AuthorDataRow("累计获赞与收藏", profile.likesAndFavoritesCount)
@@ -261,7 +262,7 @@ private fun AuthorPostsMessage(message: String, actionLabel: String?, onAction: 
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd),
     ) {
         Text(message, color = MaterialTheme.colorScheme.outline, textAlign = TextAlign.Center)
         actionLabel?.let { Button(onClick = onAction) { Text(it) } }
@@ -271,7 +272,7 @@ private fun AuthorPostsMessage(message: String, actionLabel: String?, onAction: 
 @Composable
 private fun AuthorLoadFailure(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd)) {
             Text("暂时无法加载该用户主页", color = MaterialTheme.colorScheme.outline)
             Button(onClick = onRetry) { Text("重新加载") }
         }

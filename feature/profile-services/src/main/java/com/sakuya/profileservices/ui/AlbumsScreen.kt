@@ -50,6 +50,7 @@ import coil.request.ImageRequest
 import com.sakuya.designsystem.icon.SakuyaIcons
 import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 sealed class AlbumTab(
     val route: String,
@@ -213,9 +214,9 @@ fun AlbumsContent(
     ) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(SakuyaTheme.tokens.dimensions.spaceMd),
+            horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd),
+            verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm),
             modifier = Modifier.fillMaxSize()
         ) {
             item {
@@ -244,7 +245,7 @@ fun CreateAlbumItem(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
     ) {
         Box(
             modifier = Modifier
@@ -257,7 +258,7 @@ fun CreateAlbumItem(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -273,7 +274,7 @@ fun CreateAlbumItem(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceLg))
     }
 }
 
@@ -284,7 +285,7 @@ fun AlbumItem(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
     ) {
         Box(
             modifier = Modifier
@@ -311,7 +312,7 @@ fun AlbumItem(
                 .fillMaxWidth()
                 .padding(2.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm)
         ) {
             if (album.isLock) {
                 Icon(
@@ -335,7 +336,7 @@ fun AlbumItem(
 fun AlbumItemPreview() {
     SakuyaInAndroidTheme(true) {
         Box(modifier = Modifier
-            .padding(16.dp)
+            .padding(SakuyaTheme.tokens.dimensions.spaceLg)
             .size(120.dp)) {
             AlbumItem(
                 album = AlbumData("1", "", true, "预览图片")

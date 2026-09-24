@@ -36,6 +36,7 @@ import com.sakuya.catalog.model.NovelReleaseDayGroup
 import com.sakuya.catalog.viewmodel.ScheduleUiState
 import java.util.Calendar
 import java.util.GregorianCalendar
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * NovelPublishContent.kt
@@ -51,8 +52,8 @@ internal fun CatalogScheduleContent(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(vertical = SakuyaTheme.tokens.dimensions.spaceMd),
+        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd),
     ) {
         item(key = "recommend_title") {
             ScheduleSectionTitle("更新推荐")
@@ -83,7 +84,7 @@ private fun ScheduleSectionTitle(title: String) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground,
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg),
     )
 }
 
@@ -97,14 +98,14 @@ private fun RecommendedReleaseBanners(
             text = "暂无更新推荐",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
         )
         return
     }
 
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = SakuyaTheme.tokens.dimensions.spaceLg),
+        horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd),
     ) {
         items(releases, key = { it.novel.id }) { release ->
             ReleaseBanner(release = release, onClick = { onBookClick(release.novel) })
@@ -128,7 +129,7 @@ private fun ReleaseBanner(
             .clip(MaterialTheme.shapes.large)
             .background(Brush.linearGradient(colors))
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(SakuyaTheme.tokens.dimensions.spaceLg),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
@@ -167,7 +168,7 @@ private fun ReleaseDaySection(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceXs),
         )
         group.releases.forEach { release ->
             ReleaseNovelItem(release = release, onClick = { onBookClick(release.novel) })
@@ -184,7 +185,7 @@ private fun ReleaseNovelItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -203,7 +204,7 @@ private fun ReleaseNovelItem(
                 )
             }
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(SakuyaTheme.tokens.dimensions.spaceMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = release.novel.title,

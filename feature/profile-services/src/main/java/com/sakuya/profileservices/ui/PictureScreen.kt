@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.sakuya.ui.theme.SakuyaTheme
 
 data class PhotoItem(
     val id: String,
@@ -101,8 +102,8 @@ internal fun PictureGalleryContent(
 
     LazyColumn(
         modifier = modifier.background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp) // 稍微缩小间距，靠年份和月份本身的排版来拉开层次喵
+        contentPadding = PaddingValues(vertical = SakuyaTheme.tokens.dimensions.spaceLg),
+        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceLg) // 稍微缩小间距，靠年份和月份本身的排版来拉开层次喵
     ) {
         groupedPhotos.forEach { (groupKey, monthPhotos) ->
             val firstPhoto = monthPhotos.firstOrNull()
@@ -125,7 +126,7 @@ internal fun PictureGalleryContent(
                         color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, top = 16.dp, bottom = 8.dp) // 让年份上方有足够的跨年呼吸感
+                            .padding(start = SakuyaTheme.tokens.dimensions.spaceLg, top = SakuyaTheme.tokens.dimensions.spaceLg, bottom = SakuyaTheme.tokens.dimensions.spaceSm) // 让年份上方有足够的跨年呼吸感
                     )
                 }
             }
@@ -136,8 +137,8 @@ internal fun PictureGalleryContent(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg),
+                    horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceLg)
                 ) {
 
                     // 🕒 【左侧时间轴栏】：现在这里面清清爽爽，永远只有月份一行字喵！
@@ -161,12 +162,12 @@ internal fun PictureGalleryContent(
 
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
                     ) {
                         chunkedRows.forEach { rowPhotos ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)
                             ) {
                                 rowPhotos.forEach { photo ->
                                     Box(

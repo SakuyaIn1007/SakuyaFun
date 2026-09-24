@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import com.sakuya.model.notification.NotificationPreferences
 import com.sakuya.ui.component.AppSecondaryTopBar
+import com.sakuya.ui.theme.SakuyaTheme
 
 /** 系统通知总开关与业务分类偏好页面；系统权限拒绝时明确引导用户进入 Android 设置。 */
 @Composable
@@ -24,8 +25,8 @@ fun NotificationSettingsScreen(preferences:NotificationPreferences,error:String?
     val context=LocalContext.current
     var permissionGranted by remember { mutableStateOf(NotificationManagerCompat.from(context).areNotificationsEnabled()) }
     val launcher=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){permissionGranted=it}
-    Scaffold(topBar={AppSecondaryTopBar("新消息通知",onBack)}){padding->Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=16.dp)){
-        if(error!=null)Text(error,color=MaterialTheme.colorScheme.error,modifier=Modifier.padding(vertical=8.dp))
+    Scaffold(topBar={AppSecondaryTopBar("新消息通知",onBack)}){padding->Column(Modifier.fillMaxSize().padding(padding).padding(horizontal=SakuyaTheme.tokens.dimensions.spaceLg)){
+        if(error!=null)Text(error,color=MaterialTheme.colorScheme.error,modifier=Modifier.padding(vertical=SakuyaTheme.tokens.dimensions.spaceSm))
         NotificationSwitchRow("系统通知总开关","控制本应用发送到通知栏的动态和好友提醒",preferences.pushEnabled){enabled->onUpdate(preferences.copy(pushEnabled=enabled));if(enabled&&Build.VERSION.SDK_INT>=33&&context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)launcher.launch(Manifest.permission.POST_NOTIFICATIONS)}
         HorizontalDivider();NotificationSwitchRow("动态互动","评论、回复、点赞与收藏",preferences.feedEnabled,preferences.pushEnabled){onUpdate(preferences.copy(feedEnabled=it))}
         HorizontalDivider();NotificationSwitchRow("好友关系","新增关注、好友申请与申请通过",preferences.friendEnabled,preferences.pushEnabled){onUpdate(preferences.copy(friendEnabled=it))}

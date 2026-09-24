@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.sakuya.catalog.model.ContentItem
 import com.sakuya.ui.component.ContentCard
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 internal fun CatalogNovelContent(
@@ -33,7 +34,7 @@ internal fun CatalogNovelContent(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceMd)
         )
 
         items.forEachIndexed { index, item ->
@@ -45,13 +46,13 @@ internal fun CatalogNovelContent(
                 index = index,
                 coverUrl = item.coverRequestUrl,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg)
                     .clickable { onBookClick(item) }
             )
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(SakuyaTheme.tokens.dimensions.spaceSm))
     }
 }
 

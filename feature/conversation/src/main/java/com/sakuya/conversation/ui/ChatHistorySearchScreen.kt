@@ -14,6 +14,7 @@ import com.sakuya.conversation.ui.components.ChatTopBar
 import com.sakuya.conversation.viewmodel.ChatHistorySearchAction
 import com.sakuya.conversation.viewmodel.ChatHistorySearchEffect
 import com.sakuya.conversation.viewmodel.ChatHistorySearchViewModel
+import com.sakuya.ui.theme.SakuyaTheme
 
 /**
  * ChatHistorySearchScreen.kt
@@ -33,12 +34,12 @@ fun ChatHistorySearchScreen(onBack: () -> Unit, onMessageSelected: (String) -> U
         }
     }
     Scaffold(topBar = { ChatTopBar("查找聊天记录", onBack) }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            Row { OutlinedTextField(value = state.query, onValueChange = { viewModel.onAction(ChatHistorySearchAction.QueryChanged(it)) }, label = { Text("关键词") }, singleLine = true, modifier = Modifier.weight(1f)); TextButton(onClick = { viewModel.onAction(ChatHistorySearchAction.Search) }, modifier = Modifier.padding(top = 8.dp)) { Text("搜索") } }
-            if (state.isLoading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp))
-            errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp)) }
-            LazyColumn(Modifier.fillMaxSize().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { items(state.results, key = ChatMessage::id) { message -> SearchResult(message, onMessageSelected) } }
+        Column(Modifier.fillMaxSize().padding(padding).padding(SakuyaTheme.tokens.dimensions.spaceLg)) {
+            Row { OutlinedTextField(value = state.query, onValueChange = { viewModel.onAction(ChatHistorySearchAction.QueryChanged(it)) }, label = { Text("关键词") }, singleLine = true, modifier = Modifier.weight(1f)); TextButton(onClick = { viewModel.onAction(ChatHistorySearchAction.Search) }, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceSm)) { Text("搜索") } }
+            if (state.isLoading) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = SakuyaTheme.tokens.dimensions.spaceMd))
+            errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceMd)) }
+            LazyColumn(Modifier.fillMaxSize().padding(top = SakuyaTheme.tokens.dimensions.spaceMd), verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm)) { items(state.results, key = ChatMessage::id) { message -> SearchResult(message, onMessageSelected) } }
         }
     }
 }
-@Composable private fun SearchResult(message: ChatMessage, onSelected: (String) -> Unit) { Card(Modifier.fillMaxWidth().clickable { onSelected(message.id) }) { Column(Modifier.padding(12.dp)) { Text(message.timeLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline); Text(message.content, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 4.dp)) } } }
+@Composable private fun SearchResult(message: ChatMessage, onSelected: (String) -> Unit) { Card(Modifier.fillMaxWidth().clickable { onSelected(message.id) }) { Column(Modifier.padding(SakuyaTheme.tokens.dimensions.spaceMd)) { Text(message.timeLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline); Text(message.content, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = SakuyaTheme.tokens.dimensions.spaceXs)) } } }

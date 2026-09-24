@@ -57,6 +57,7 @@ import com.sakuya.catalog.model.RankingItem
 import com.sakuya.catalog.viewmodel.RankingUiState
 import com.sakuya.catalog.viewmodel.RankingViewModel
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 private enum class RankingBoard(val title: String) {
     POPULAR("人气榜"),
@@ -137,7 +138,7 @@ private fun ErrorContent(
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(error, color = MaterialTheme.colorScheme.error)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(SakuyaTheme.tokens.dimensions.spaceMd))
             Button(onClick = onRetry, colors = ButtonDefaults.buttonColors()) { Text("重试") }
         }
     }
@@ -168,7 +169,7 @@ private fun RankingList(
                     text = summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
+                    modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = 2.dp)
                 )
             }
         }
@@ -176,7 +177,7 @@ private fun RankingList(
             item {
                 Text(
                     text = "没有符合条件的作品，试试放宽筛选条件。",
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(SakuyaTheme.tokens.dimensions.spaceXl),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -185,13 +186,13 @@ private fun RankingList(
                 Column {
                     RankingBookCard(item, onClick = { onBookClick(item.item) })
                     HorizontalDivider(
-                        modifier = Modifier.padding(start = 102.dp, end = 16.dp, top = 8.dp),
+                        modifier = Modifier.padding(start = 102.dp, end = SakuyaTheme.tokens.dimensions.spaceLg, top = SakuyaTheme.tokens.dimensions.spaceSm),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
                     )
                 }
             }
         }
-        item { Spacer(Modifier.height(16.dp)) }
+        item { Spacer(Modifier.height(SakuyaTheme.tokens.dimensions.spaceLg)) }
     }
 }
 
@@ -228,7 +229,7 @@ private fun RankingQuickFilters(filters: RankingFilters, onClick: () -> Unit) {
     ) {
         LazyRow(
             modifier = Modifier.weight(1f),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 12.dp, end = 4.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(start = SakuyaTheme.tokens.dimensions.spaceMd, end = SakuyaTheme.tokens.dimensions.spaceXs),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             item { QuickFilterChip(filters.genre ?: "题材", onClick) }
@@ -244,14 +245,14 @@ private fun RankingQuickFilters(filters: RankingFilters, onClick: () -> Unit) {
         )
         TextButton(
             onClick = onClick,
-            modifier = Modifier.padding(horizontal = 4.dp)
+            modifier = Modifier.padding(horizontal = SakuyaTheme.tokens.dimensions.spaceXs)
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_filter_list),
                 contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceXs))
             Text("筛选")
         }
     }
@@ -282,8 +283,8 @@ private fun RankingFilterSheet(
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = SakuyaTheme.tokens.dimensions.spaceSm),
+            verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceMd)
         ) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("筛选", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -309,7 +310,7 @@ private fun RankingFilterSheet(
                 onFiltersChanged(filters.copy(publisher = it))
             }
             Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("查看榜单") }
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(SakuyaTheme.tokens.dimensions.spaceLg))
         }
     }
 }
@@ -321,9 +322,9 @@ private fun FilterOptionRow(
     selected: String?,
     onSelected: (String?) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceXs)) {
         Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(SakuyaTheme.tokens.dimensions.spaceSm)) {
             items(options) { option ->
                 val isAll = option == "不限"
                 FilterChip(
@@ -342,16 +343,16 @@ private fun RankingBookCard(rankingItem: RankingItem, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = SakuyaTheme.tokens.dimensions.spaceLg, vertical = SakuyaTheme.tokens.dimensions.spaceXs)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RankingCover(item, rankingItem.rank)
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(SakuyaTheme.tokens.dimensions.spaceMd))
         Box(modifier = Modifier.weight(1f).height(104.dp)) {
-            Column(modifier = Modifier.padding(end = 4.dp)) {
+            Column(modifier = Modifier.padding(end = SakuyaTheme.tokens.dimensions.spaceXs)) {
                 Text(item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(SakuyaTheme.tokens.dimensions.spaceXs))
                 Text(
                     item.description.orEmpty().ifBlank {
                         "一部围绕 ${item.tags.joinToString("、")} 展开的轻小说作品。"
@@ -394,7 +395,7 @@ private fun RankingCover(item: ContentItem, rank: Int) {
     Box(
         modifier = Modifier
             .size(width = 74.dp, height = 104.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(SakuyaTheme.tokens.dimensions.radiusSmall))
             .background(Brush.linearGradient(colors)),
         contentAlignment = Alignment.Center
     ) {
