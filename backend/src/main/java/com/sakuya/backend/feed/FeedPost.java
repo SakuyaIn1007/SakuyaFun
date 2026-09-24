@@ -43,12 +43,20 @@ public class FeedPost {
     protected FeedPost() {}
 
     public FeedPost(UUID userId, String title, String content, String tags) {
+        this(userId, title, content, tags, Instant.now());
+    }
+
+    /**
+     * 演示种子数据需要把动态分散在过去的若干天里，而 createdAt 是 updatable=false，
+     * 只能在构造时写入，因此提供带发布时间的重载。
+     */
+    public FeedPost(UUID userId, String title, String content, String tags, Instant createdAt) {
         this.id = UUID.randomUUID();
         this.userId = userId;
         this.title = title;
         this.content = content;
         this.tags = tags == null ? "" : tags;
-        this.createdAt = Instant.now();
+        this.createdAt = createdAt;
     }
 
     public UUID getId() { return id; }

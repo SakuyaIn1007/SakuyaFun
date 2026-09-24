@@ -155,7 +155,9 @@ public class ChatService {
         ChatMessageReplyDto reply = message.getReplyToMessageId() == null ? null : new ChatMessageReplyDto(
             message.getReplyToMessageId().toString(), message.getReplySenderName(), message.getReplyPreview()
         );
-        return new ChatMessageDto(message.getId().toString(), message.getConversationId().toString(), message.getContent(), label(message.getCreatedAt()), message.getSenderId().equals(viewer), avatar(name), message.getCreatedAt().toEpochMilli(), message.getMessageType(), message.getSenderId().toString(), name, media, reply, "unread");
+        // 发送者可能已被删除（sender 为 null），此时头像同样输出空串，由客户端回落到默认头像。
+        String senderAvatar = sender == null ? "" : avatarUrl(sender);
+        return new ChatMessageDto(message.getId().toString(), message.getConversationId().toString(), message.getContent(), label(message.getCreatedAt()), message.getSenderId().equals(viewer), avatar(name), senderAvatar, message.getCreatedAt().toEpochMilli(), message.getMessageType(), message.getSenderId().toString(), name, media, reply, "unread");
     }
     public List<UUID> memberIds(UUID conversationId) { return members.findByConversationId(conversationId).stream().map(ConversationMember::getUserId).toList(); }
     @Transactional public Conversation create(String title, List<UUID> userIds) { if (userIds.size() < 2) throw new BusinessException(400, "会话至少需要两名成员"); Conversation conversation = conversations.save(new Conversation(title, Conversation.Type.GROUP)); userIds.stream().distinct().forEach(id -> members.save(new ConversationMember(conversation.getId(), id))); return conversation; }
@@ -179,7 +181,7 @@ public class ChatService {
         Conversation conversation = requireConversation(member.getConversationId()); List<ConversationMember> all = members.findByConversationId(conversation.getId());
         String title = conversation.getType() == Conversation.Type.DIRECT ? all.stream().map(ConversationMember::getUserId).filter(id -> !id.equals(viewer)).findFirst().flatMap(users::findById).map(User::getNickname).orElse(conversation.getTitle()) : conversation.getTitle();
         Optional<ChatMessage> last = messages.findTopByConversationIdOrderByCreatedAtDesc(conversation.getId()); long unread = messages.countByConversationIdAndCreatedAtAfterAndSenderIdNot(conversation.getId(), Instant.ofEpochMilli(member.getLastReadAt()), viewer);
-        return new ConversationDto(conversation.getId().toString(), title, last.map(ChatMessage::getContent).orElse(""), last.map(message -> label(message.getCreatedAt())).orElse(""), (int) Math.min(unread, Integer.MAX_VALUE), avatar(title), member.isPinned());
+        return new ConversationDto(conversation.getId().toString(), title, last.map(ChatMessage::getContent).orElse(""), last.map(message -> label(message.getCreatedAt())).orElse(""), (int) Math.min(unread, Integer.MAX_VALUE), avatar(title), conversationAvatar(conversation, viewer), member.isPinned());
     }
     private DirectProfileDto toDirectProfile(ConversationMember member) { User user = users.findById(member.getUserId()).orElseThrow(() -> new BusinessException(404, "用户不存在")); return new DirectProfileDto(user.getId().toString(), user.getNickname(), user.getAvatarUrl(), user.getSignature(), false); }
     private MemberDto toMemberDto(ConversationMember member) { User user = users.findById(member.getUserId()).orElseThrow(() -> new BusinessException(404, "用户不存在")); String name = member.getMemberNickname().isBlank() ? user.getNickname() : member.getMemberNickname(); return new MemberDto(user.getId().toString(), name, avatar(user.getNickname())); }
@@ -223,8 +225,21 @@ public class ChatService {
     }
     private static String label(Instant time) { return DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault()).format(time); }
     private static String avatar(String text) { return text == null || text.isBlank() ? "?" : text.substring(0, 1); }
-    public record ConversationDto(String id, String title, String lastMessage, String timeLabel, int unreadCount, String avatarText, boolean isPinned) {}
-    public record ChatMessageDto(String id, String conversationId, String content, String timeLabel, boolean isMine, String avatarText, long timeStamp, String messageType, String senderId, String senderName, List<ChatAttachmentDto> attachments, ChatMessageReplyDto replyTo, String readStatus) {}
+    /** 历史数据的头像字段可能为 NULL，统一归一为空串；空串由客户端回落到默认头像。 */
+    private static String avatarUrl(User user) { return user.getAvatarUrl() == null ? "" : user.getAvatarUrl(); }
+    /**
+     * 会话头像只对单聊有意义：取对方的头像，与标题同样按查看者视角解析。
+     * 群聊没有群头像字段，统一输出空串，客户端回落默认头像。
+     */
+    private String conversationAvatar(Conversation conversation, UUID viewer) {
+        if (conversation.getType() != Conversation.Type.DIRECT) return "";
+        return members.findByConversationId(conversation.getId()).stream()
+            .map(ConversationMember::getUserId).filter(id -> !id.equals(viewer)).findFirst()
+            .flatMap(users::findById).map(ChatService::avatarUrl).orElse("");
+    }
+    /** avatarUrl 为单聊对方头像；群聊与空值均为空串，客户端统一回落默认头像。 */
+    public record ConversationDto(String id, String title, String lastMessage, String timeLabel, int unreadCount, String avatarText, String avatarUrl, boolean isPinned) {}
+    public record ChatMessageDto(String id, String conversationId, String content, String timeLabel, boolean isMine, String avatarText, String senderAvatarUrl, long timeStamp, String messageType, String senderId, String senderName, List<ChatAttachmentDto> attachments, ChatMessageReplyDto replyTo, String readStatus) {}
     public record ChatAttachmentDto(String id, String type, String url, String name, Long sizeBytes, String thumbnailUrl) {}
     public record ChatMessageReplyDto(String messageId, String senderName, String preview) {}
     public record DirectProfileDto(String userId, String nickname, String avatarUrl, String signature, boolean isOnline) {}

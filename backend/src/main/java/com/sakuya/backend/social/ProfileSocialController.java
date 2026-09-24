@@ -151,15 +151,17 @@ public class ProfileSocialController {
 
     /**
      * 关系列表项字段说明：
-     * userId 为跳转用户主页的标识；name、initial、description、avatarColor 用于列表渲染；
+     * userId 为跳转用户主页的标识；name、initial、avatarUrl、description、avatarColor 用于列表渲染；
      * isFollowing 表示当前登录用户对该列表项用户的关注状态。
      */
-    public record RelationshipUserDto(String userId, String name, String initial, String description, long avatarColor, boolean isFollowing,boolean hasUnseenPosts) {
+    public record RelationshipUserDto(String userId, String name, String initial, String avatarUrl, String description, long avatarColor, boolean isFollowing,boolean hasUnseenPosts) {
         static RelationshipUserDto from(User user, boolean isFollowing) {return from(user,isFollowing,false);}
         static RelationshipUserDto from(User user, boolean isFollowing,boolean hasUnseenPosts) {
             String name = user.getNickname();
             String initial = name == null || name.isBlank() ? "?" : name.substring(0, 1).toUpperCase();
-            return new RelationshipUserDto(user.getId().toString(), name, initial, user.getSignature(), 0L, isFollowing,hasUnseenPosts);
+            // 历史数据的头像字段可能为 NULL，统一归一为空串；空串由客户端回落到默认头像。
+            String avatarUrl = user.getAvatarUrl() == null ? "" : user.getAvatarUrl();
+            return new RelationshipUserDto(user.getId().toString(), name, initial, avatarUrl, user.getSignature(), 0L, isFollowing,hasUnseenPosts);
         }
     }
 

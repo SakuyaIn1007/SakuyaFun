@@ -10,4 +10,11 @@ public interface FeedCommentRepository extends JpaRepository<FeedComment, UUID> 
     Page<FeedComment> findByPostIdOrderByCreatedAtAsc(UUID postId, Pageable pageable);
 
     long countByPostId(UUID postId);
+
+    /**
+     * 演示种子数据专用的自然键判断，使重复启动不会重复插入评论。
+     * 注意：这是弱自然键，同一作者对同一条动态发表内容完全相同的两条真实评论会被误判为已存在，
+     * 因此只能用于种子导入，不得用于业务去重。
+     */
+    boolean existsByPostIdAndAuthorIdAndContent(UUID postId, UUID authorId, String content);
 }

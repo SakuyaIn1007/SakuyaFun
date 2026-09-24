@@ -33,5 +33,12 @@ public interface FeedPostRepository extends JpaRepository<FeedPost, UUID> {
     /** 统计作者已发布动态数，用于主页数据面板。 */
     long countByUserId(UUID userId);
 
+    /**
+     * 演示种子数据专用的自然键查询：既用于判断动态是否已存在，也用于取回既有动态以便补齐互动与评论。
+     * 注意：这是弱自然键，同一作者写出标题完全相同的两条真实动态会被误判为同一条，
+     * 因此只能用于种子导入，不得用于业务去重。
+     */
+    java.util.Optional<FeedPost> findFirstByUserIdAndTitle(UUID userId, String title);
+
     long countByUserIdAndCreatedAtAfter(UUID userId, Instant createdAt);
 }

@@ -73,6 +73,16 @@ class SearchApiIntegrationTest {
             .andExpect(content().string(org.hamcrest.Matchers.containsString("\"type\":\"novel\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("\"type\":\"dynamic\"")))
             .andExpect(content().string(org.hamcrest.Matchers.containsString("\"type\":\"user\"")));
+        // 热词按「频次降序 + 关键词升序」在书籍标签与最近动态标签中全局取前 10，
+        // 因此单个标签在真实数据量下不保证入榜。这里补发若干条同标签动态，
+        // 使该标签成为频次最高的词，从而稳定命中前 10，而不是依赖演示数据刚好很少。
+        for (int index = 0; index < 10; index++) {
+            mvc.perform(post("/feed").header("Authorization", "Bearer " + author.token())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"title\":\"" + keyword + "热词动态" + index + "\",\"content\":\"热词频次补足内容" + index
+                        + "\",\"topics\":[\"" + tagKeyword + "\"]}"))
+                .andExpect(status().isOk());
+        }
         mvc.perform(get("/search/hot-keywords").header("Authorization", "Bearer " + viewer.token()))
             .andExpect(status().isOk()).andExpect(content().string(org.hamcrest.Matchers.containsString(tagKeyword)));
 

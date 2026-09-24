@@ -41,12 +41,20 @@ public class FeedComment {
     protected FeedComment() {}
 
     public FeedComment(UUID postId, UUID authorId, String content, UUID replyToCommentId) {
+        this(postId, authorId, content, replyToCommentId, Instant.now());
+    }
+
+    /**
+     * 演示种子数据需要让评论时间落在动态发布之后，而 createdAt 是 updatable=false，
+     * 只能在构造时写入，因此提供带创建时间的重载。
+     */
+    public FeedComment(UUID postId, UUID authorId, String content, UUID replyToCommentId, Instant createdAt) {
         this.id = UUID.randomUUID();
         this.postId = postId;
         this.authorId = authorId;
         this.content = content;
         this.replyToCommentId = replyToCommentId;
-        this.createdAt = Instant.now();
+        this.createdAt = createdAt;
     }
 
     public UUID getId() { return id; }
