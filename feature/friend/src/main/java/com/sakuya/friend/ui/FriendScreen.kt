@@ -47,6 +47,7 @@ import com.sakuya.ui.component.AppSecondaryTopBar
 import com.sakuya.ui.component.AvatarImage
 import com.sakuya.ui.component.Outline
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun FriendScreen(
@@ -78,6 +79,7 @@ internal fun AddFriendContent(
     val isLoading by viewModel.isLoading.collectAsState()
     var keyword by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("你好，我想添加你为好友") }
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Column(
         modifier = modifier
@@ -88,7 +90,7 @@ internal fun AddFriendContent(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(dimensions.spaceLg)
         ) {
             OutlinedTextField(
                 value = keyword,
@@ -100,7 +102,7 @@ internal fun AddFriendContent(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.size(12.dp))
+            Spacer(modifier = Modifier.size(dimensions.spaceMd))
             OutlinedTextField(
                 value = message,
                 onValueChange = { message = it },
@@ -167,6 +169,7 @@ internal fun GroupContent(
     onGroupClick: (GroupConversation) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -184,7 +187,7 @@ internal fun GroupContent(
                         text = "群聊 ${groups.size}",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        modifier = Modifier.padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceMd)
                     )
                 }
                 items(groups, key = { it.group.id }) { group ->
@@ -206,16 +209,17 @@ internal fun GroupChatRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         FriendAvatar(online = false)
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = group.group.name,
@@ -258,6 +262,7 @@ fun FriendContent(
     onAction: (FriendAction) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -290,7 +295,7 @@ fun FriendContent(
                         text = "好友 ${friends.size}",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                        modifier = Modifier.padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceMd)
                     )
                 }
                 items(friends, key = { it.id }) { friend ->
@@ -311,16 +316,17 @@ private fun FriendRow(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         FriendAvatar(online = friend.isOnline, avatarUrl = friend.avatarUrl)
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = friend.name,
@@ -346,15 +352,16 @@ internal fun FriendSearchRow(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         FriendAvatar(online = friend.isOnline, avatarUrl = friend.avatarUrl)
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = friend.name,
@@ -383,15 +390,16 @@ internal fun FriendRequestRow(
     onReject: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = dimensions.spaceLg, vertical = dimensions.spaceMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
         FriendAvatar(online = false, avatarUrl = request.avatarUrl)
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceMd))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = request.name,
@@ -415,7 +423,7 @@ internal fun FriendRequestRow(
         OutlinedButton(onClick = onReject) {
             Text("拒绝")
         }
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(dimensions.spaceSm))
         Button(onClick = onAccept) {
             Text("接受")
         }

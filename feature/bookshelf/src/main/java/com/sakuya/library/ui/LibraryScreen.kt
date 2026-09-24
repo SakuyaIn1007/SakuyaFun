@@ -82,6 +82,7 @@ import com.sakuya.ui.motion.MotionSpec
 import com.sakuya.ui.motion.MotionVisibility
 import com.sakuya.ui.motion.rememberMotionPreferences
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -221,6 +222,7 @@ private fun LibraryTabBar(
 ) {
     val tabs = listOf("喜欢", "历史")
     var importMenuExpanded by remember { mutableStateOf(false) }
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Surface(
         modifier = Modifier
@@ -232,7 +234,7 @@ private fun LibraryTabBar(
             modifier = Modifier
                 .fillMaxWidth()
                 // 与下方书籍网格统一为更紧凑的左右留白，避免工具栏显得比内容区域更宽松。
-                .padding(start = 8.dp, top = 2.dp, end = 4.dp, bottom = 6.dp)
+                .padding(start = dimensions.spaceSm, top = 2.dp, end = dimensions.spaceXs, bottom = 6.dp)
         ) {
             Row(Modifier.fillMaxWidth()) {
                 tabs.forEachIndexed { index, title ->
@@ -242,12 +244,12 @@ private fun LibraryTabBar(
                             .padding(horizontal = 2.dp)
                             .background(
                                 if (isSelected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.background,
-                                RoundedCornerShape(10.dp)
+                                RoundedCornerShape(dimensions.radiusSmall)
                             )
                             .border(
                                 width = 1.dp,
                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                                shape = RoundedCornerShape(10.dp)
+                                shape = RoundedCornerShape(dimensions.radiusSmall)
                             )
                             .clickable { onAction(LibraryAction.SelectTab(index)) }
                             .padding(vertical = 6.dp),
@@ -268,7 +270,7 @@ private fun LibraryTabBar(
                 }
             }
             Row(
-                Modifier.fillMaxWidth().padding(top = 16.dp),
+                Modifier.fillMaxWidth().padding(top = dimensions.spaceLg),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 LibrarySearchField(
@@ -276,7 +278,7 @@ private fun LibraryTabBar(
                     onQueryChanged = onSearchQueryChanged,
                     modifier = Modifier
                         .fillMaxWidth(0.4f)
-                        .padding(start = 4.dp, end = 2.dp)
+                        .padding(start = dimensions.spaceXs, end = 2.dp)
                 )
                 Spacer(Modifier.weight(1f))
                 MotionVisibility(visible = isEditing) {
@@ -336,6 +338,7 @@ private fun LibrarySearchField(
     onQueryChanged: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dimensions = SakuyaTheme.tokens.dimensions
     BasicTextField(
         value = query,
         onValueChange = onQueryChanged,
@@ -346,7 +349,12 @@ private fun LibrarySearchField(
             .height(40.dp)
             .background(MaterialTheme.colorScheme.background, RoundedCornerShape(8.dp))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-            .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 4.dp)
+            .padding(
+                start = dimensions.spaceMd,
+                end = dimensions.spaceMd,
+                top = dimensions.spaceXs,
+                bottom = dimensions.spaceXs,
+            )
     ) { innerTextField ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -375,6 +383,7 @@ private fun LibraryContentList(
     onAction: (LibraryAction) -> Unit
 ) {
     val motionPreferences = rememberMotionPreferences()
+    val dimensions = SakuyaTheme.tokens.dimensions
     if (items.isEmpty()) {
         Box(
             modifier = Modifier
@@ -394,12 +403,12 @@ private fun LibraryContentList(
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm),
+        verticalArrangement = Arrangement.spacedBy(dimensions.spaceMd),
         contentPadding = PaddingValues(
-            start = 12.dp,
-            top = 12.dp,
-            end = 12.dp,
+            start = dimensions.spaceMd,
+            top = dimensions.spaceMd,
+            end = dimensions.spaceMd,
             bottom = 20.dp
         )
     ) {

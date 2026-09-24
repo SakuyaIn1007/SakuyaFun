@@ -39,6 +39,7 @@ import com.sakuya.bookdetail.viewmodel.BookDetailViewModel
 import com.sakuya.model.library.LibraryItem
 import com.sakuya.model.library.LibraryItemType
 import com.sakuya.ui.theme.SakuyaInAndroidTheme
+import com.sakuya.ui.theme.SakuyaTheme
 
 @Composable
 fun BookDetailScreen(
@@ -70,13 +71,14 @@ fun BookDetailContent(
     val subtitle = book?.subtitle ?: catalogBook?.subtitle ?: "未找到书籍信息"
     val tags = book?.tags ?: catalogBook?.tags.orEmpty()
     val canRead = book?.isValid() == true
+    val dimensions = SakuyaTheme.tokens.dimensions
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("书籍详情") },
                 navigationIcon = {
-                    IconButton(onClick = onBack, modifier = Modifier.padding(start = 8.dp)) {
+                    IconButton(onClick = onBack, modifier = Modifier.padding(start = dimensions.spaceSm)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
@@ -91,8 +93,8 @@ fun BookDetailContent(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(dimensions.spaceLg),
+            verticalArrangement = Arrangement.spacedBy(dimensions.spaceLg)
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -101,8 +103,8 @@ fun BookDetailContent(
                 tonalElevation = 2.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(dimensions.spaceLg),
+                    verticalArrangement = Arrangement.spacedBy(dimensions.spaceMd)
                 ) {
                     Text(
                         text = title,
@@ -115,7 +117,7 @@ fun BookDetailContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm)) {
                         tags.ifEmpty { listOf("暂无分类") }.forEach { tag ->
                             AssistChip(
                                 onClick = {},
@@ -138,7 +140,7 @@ fun BookDetailContent(
                         catalogBook != null -> catalogBook.description
                         else -> "无法找到 ID 为 ${uiState.bookId} 的书籍信息。"
                     },
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(dimensions.spaceLg),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -156,7 +158,7 @@ fun BookDetailContent(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(dimensions.spaceMd)
             ) {
                 OutlinedButton(
                     onClick = onAddToLibrary,
