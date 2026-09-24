@@ -79,6 +79,11 @@ wenku8:
       startup-enabled: ${WENKU8_CATALOG_STARTUP_SYNC_ENABLED:true}
       cron: ${WENKU8_CATALOG_SYNC_CRON:0 30 3 * * *}
       zone: ${WENKU8_CATALOG_SYNC_ZONE:Asia/Shanghai}
+      # 按需详情补抓与目录同步共用适配器 5 秒/次的节流额度，故参数同处一个前缀。
+      # 在途上限：同时在排队的补抓任务数，超过则直接放弃排队（不堆积）。
+      detail-backfill-max-inflight: ${WENKU8_DETAIL_BACKFILL_MAX_INFLIGHT:64}
+      # 失败冷却：被拦截后这段时间内不再为同一本书排队，防止连续切页吃光节流额度。
+      detail-backfill-cooldown-seconds: ${WENKU8_DETAIL_BACKFILL_COOLDOWN_SECONDS:60}
 
 management:
   endpoints:

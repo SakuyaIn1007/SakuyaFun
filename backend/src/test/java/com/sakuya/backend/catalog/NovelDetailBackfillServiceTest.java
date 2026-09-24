@@ -37,7 +37,9 @@ class NovelDetailBackfillServiceTest {
     void setUp() {
         gateway = mock(Wenku8GatewayService.class);
         books = mock(BookRepository.class);
-        service = new NovelDetailBackfillService(gateway, books);
+        // 补抓参数来自配置；测试用默认值（在途上限 64、冷却 60 秒），紧凑构造器负责归一。
+        Wenku8CatalogSyncProperties properties = new Wenku8CatalogSyncProperties(false, false, "", "", 0, 0);
+        service = new NovelDetailBackfillService(gateway, books, properties);
         store.clear();
         when(books.findById(anyString())).thenAnswer(invocation -> Optional.ofNullable(store.get(invocation.getArgument(0))));
         when(books.save(any(Book.class))).thenAnswer(invocation -> {
@@ -170,6 +172,40 @@ class NovelDetailBackfillServiceTest {
         store.put(book.getId(), book);
         service.schedule("wenku8-abc");
         verify(gateway, never()).novel(anyString());
+    }
+
+    /**
+     * 冷却时长必须来自配置而非写死：把它提为可配置就是为了让部署方能按上游风控强度调整，
+     * 若仍用常量，改配置将毫无效果而无人察觉。
+     */
+    @Test
+    void 冷却时长由配置决定() throws Exception {
+        BookRepository repo = mock(BookRepository.class);
+        Wenku8GatewayService gw = mock(Wenku8GatewayService.class);
+        // 冷却 1 秒，便于在测试内等它自然过期。
+        Wenku8CatalogSyncProperties properties = new Wenku8CatalogSyncProperties(false, false, "", "", 64, 1);
+        NovelDetailBackfillService shortCooldown = new NovelDetailBackfillService(gw, repo, properties);
+        when(repo.findById(anyString())).thenAnswer(invocation -> Optional.ofNullable(store.get(invocation.getArgument(0))));
+        when(gw.novel("101")).thenThrow(new com.sakuya.backend.common.BusinessException(503, "上游不可用"));
+        wenku8Book("101");
+        shortCooldown.schedule("wenku8-101");
+        verify(gw, timeout(5000).times(1)).novel("101");
+        // 冷却期内不重排
+        shortCooldown.schedule("wenku8-101");
+        Thread.sleep(150);
+        verify(gw, times(1)).novel("101");
+        // 冷却结束后应允许重试
+        Thread.sleep(1100);
+        shortCooldown.schedule("wenku8-101");
+        verify(gw, timeout(5000).times(2)).novel("101");
+    }
+
+    /** 在途上限同样来自配置；这里只验证紧凑构造器对非法值做了归一，避免队列容量为 0 时永久拒收。 */
+    @Test
+    void 配置非法值被归一为默认值() {
+        Wenku8CatalogSyncProperties properties = new Wenku8CatalogSyncProperties(false, false, "", "", 0, 0);
+        assertThat(properties.detailBackfillMaxInflight()).isEqualTo(64);
+        assertThat(properties.detailBackfillCooldownSeconds()).isEqualTo(60);
     }
 
     private void waitUntilIdle() throws Exception {

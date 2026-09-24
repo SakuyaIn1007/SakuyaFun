@@ -30,13 +30,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class NovelDetailBackfillService {
     private static final Logger log = LoggerFactory.getLogger(NovelDetailBackfillService.class);
-    /** 在途上限；超过则直接放弃本次排队（不堆积），避免用户连续操作排出一串注定过期的请求。 */
-    private static final int MAX_INFLIGHT = 64;
-    /** 失败冷却：上游被持续拦截时，用户来回切页会把 5 秒/次的节流额度全部吃光。 */
-    private static final Duration FAILURE_COOLDOWN = Duration.ofSeconds(60);
 
     private final Wenku8GatewayService gateway;
     private final BookRepository books;
+    /** 在途上限与失败冷却来自配置：两者都与部署规模及上游风控强度相关，不宜写死在业务类里。 */
+    private final Wenku8CatalogSyncProperties properties;
     /** 元素为 aid（上游标识），不是 bookId——两个 ID 空间不同，去重必须按上游标识。 */
     private final Set<String> inflight = ConcurrentHashMap.newKeySet();
     private final Map<String, Instant> failedAt = new ConcurrentHashMap<>();
@@ -49,16 +47,19 @@ public class NovelDetailBackfillService {
      * whenComplete 因此永不执行，在该途标记永久泄漏——该书从此再也不会被补抓，且没有任何报错。
      * CallerRunsPolicy 同样不可用：它会在用户的请求线程上同步跑那次 5 秒节流的网络调用。
      */
-    private final ExecutorService executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-        new ArrayBlockingQueue<>(MAX_INFLIGHT), runnable -> {
-            Thread thread = new Thread(runnable, "wenku8-detail-backfill");
-            thread.setDaemon(true);
-            return thread;
-        }, new ThreadPoolExecutor.AbortPolicy());
+    private final ExecutorService executor;
 
-    public NovelDetailBackfillService(Wenku8GatewayService gateway, BookRepository books) {
+    public NovelDetailBackfillService(Wenku8GatewayService gateway, BookRepository books,
+            Wenku8CatalogSyncProperties properties) {
         this.gateway = gateway;
         this.books = books;
+        this.properties = properties;
+        this.executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(properties.detailBackfillMaxInflight()), runnable -> {
+                Thread thread = new Thread(runnable, "wenku8-detail-backfill");
+                thread.setDaemon(true);
+                return thread;
+            }, new ThreadPoolExecutor.AbortPolicy());
     }
 
     /**
@@ -78,8 +79,8 @@ public class NovelDetailBackfillService {
             String aid = book.getSourceNovelId();
             if (aid == null || !aid.matches("\\d{1,12}")) return;
             if (inCooldown(aid)) return;
-            if (inflight.size() >= MAX_INFLIGHT) {
-                log.debug("详情补抓在途已达上限 {}，跳过 {}", MAX_INFLIGHT, aid);
+            if (inflight.size() >= properties.detailBackfillMaxInflight()) {
+                log.debug("详情补抓在途已达上限 {}，跳过 {}", properties.detailBackfillMaxInflight(), aid);
                 return;
             }
             // 原子占位：add 的返回值即「我是不是第一个」，且此处到提交之间不得有阻塞调用。
@@ -121,7 +122,8 @@ public class NovelDetailBackfillService {
             log.info("Wenku8 小说 {} 详情补抓完成", aid);
         } catch (Exception error) {
             failedAt.put(aid, Instant.now());
-            log.info("Wenku8 小说 {} 详情补抓失败，{} 秒后可重试：{}", aid, FAILURE_COOLDOWN.toSeconds(), error.getMessage());
+            log.info("Wenku8 小说 {} 详情补抓失败，{} 秒后可重试：{}",
+                aid, properties.detailBackfillCooldownSeconds(), error.getMessage());
         }
     }
 
@@ -129,7 +131,7 @@ public class NovelDetailBackfillService {
     private boolean inCooldown(String aid) {
         Instant failed = failedAt.get(aid);
         if (failed == null) return false;
-        if (Instant.now().isBefore(failed.plus(FAILURE_COOLDOWN))) return true;
+        if (Instant.now().isBefore(failed.plus(Duration.ofSeconds(properties.detailBackfillCooldownSeconds())))) return true;
         failedAt.remove(aid);
         return false;
     }
