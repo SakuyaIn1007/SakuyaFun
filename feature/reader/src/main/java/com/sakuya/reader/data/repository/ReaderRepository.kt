@@ -13,6 +13,7 @@ import com.sakuya.data.reading.OnlineReadingPosition
 import com.sakuya.data.reading.OnlineReadingStateRepository
 import com.sakuya.data.offline.OfflineDownloadState
 import com.sakuya.data.offline.OfflineReadingRepository
+import com.sakuya.reader.data.DownloadTooLargeException
 import com.sakuya.reader.data.EpubLoader
 import com.sakuya.reader.data.FileDownloader
 import com.sakuya.reader.data.TxtLoader
@@ -131,11 +132,17 @@ class ReaderRepository @Inject constructor(
     /** 将文件下载、格式识别和解析失败细分为领域错误，避免阅读页只能显示模糊的空结果。 */
     suspend fun openDocument(uri: Uri): ReaderOpenResult = withContext(Dispatchers.IO) {
         val localUri = if (uri.scheme == "http" || uri.scheme == "https") {
-            runCatching { Uri.fromFile(fileDownloader.downloadToCache(uri.toString())) }.getOrNull()
-                ?: return@withContext ReaderOpenResult.Failure(ReaderParseError.DownloadFailed)
+            runCatching { Uri.fromFile(fileDownloader.downloadToCache(uri.toString(), MAX_DOCUMENT_BYTES)) }
+                .getOrElse { error ->
+                    // 预检超限与网络失败要给用户不同提示，不能都归为下载失败。
+                    return@withContext ReaderOpenResult.Failure(
+                        if (error is DownloadTooLargeException) ReaderParseError.FileTooLarge else ReaderParseError.DownloadFailed
+                    )
+                }
         } else {
             uri
         }
+        // 兜底：源未声明长度时分块传输会让预检失效，落盘后仍需再校验一次。
         if (documentSizeBytes(localUri)?.let { it > MAX_DOCUMENT_BYTES } == true) {
             return@withContext ReaderOpenResult.Failure(ReaderParseError.FileTooLarge)
         }
@@ -296,12 +303,16 @@ class ReaderRepository @Inject constructor(
     fun resumeTts() = context.startService(Intent(context, ReaderTtsService::class.java).setAction(ReaderTtsService.ACTION_RESUME))
     fun stopTts() = context.startService(Intent(context, ReaderTtsService::class.java).setAction(ReaderTtsService.ACTION_STOP))
 
+
+    //txt格式阅读
     private fun openTxt(uri: Uri): ReaderDocument.Txt? {
+        //初始化inputStream工具类
         val inputStream = openInputStream(uri) ?: return null
+        //通过txtLoader获取text文本
         val text = runCatching {
             inputStream.use { txtLoader.load(it) }
         }.getOrNull() ?: return null
-
+        //返回txt格式的标题和文本
         return ReaderDocument.Txt(
             title = resolveTitle(uri, fallback = "TXT"),
             text = text

@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
@@ -48,7 +50,14 @@ class OfflineReadingRepository @Inject constructor(
     private val sessionManager: SessionManager,
     private val contentApi: ContentApiService,
     private val signals: OfflineDownloadSignals,
+    private val evictions: OfflineEvictionEvents,
 ) {
+    /**
+     * 淘汰与下载都会改写同一本书的文件，必须串行化，否则可能删掉正在写入的章节。
+     * 单实例 Mutex 即可覆盖：本仓库是应用级单例。
+     */
+    private val evictionMutex = Mutex()
+
     suspend fun observe(bookId: String): Flow<OfflineDownloadState?> {
         val owner = sessionManager.currentUserId() ?: return flowOf(null)
         return dao.observe(owner, canonical(bookId)).map { it?.toModel() }
@@ -84,8 +93,62 @@ class OfflineReadingRepository @Inject constructor(
 
     suspend fun readChapters(bookId: String): List<OfflineChapter> = withContext(Dispatchers.IO) {
         val owner = sessionManager.currentUserId() ?: return@withContext emptyList()
-        dao.chapters(owner, canonical(bookId)).mapNotNull { row ->
+        val rawId = canonical(bookId)
+        val chapters = dao.chapters(owner, rawId).mapNotNull { row ->
             runCatching { OfflineChapter(row.chapterId, row.title, row.volumeTitle, row.chapterOrder, File(row.filePath).readText()) }.getOrNull()
+        }
+        // 这是 LRU 的数据来源：只有真正读过书才刷新访问时间，避免「下载即算访问」。
+        if (chapters.isNotEmpty()) dao.updateLastAccessed(owner, rawId, System.currentTimeMillis())
+        chapters
+    }
+
+    /** 用户显式钉住的离线内容不参与自动淘汰。 */
+    suspend fun setPinned(bookId: String, pinned: Boolean) {
+        val owner = requireOwner()
+        dao.updatePinned(owner, canonical(bookId), pinned)
+    }
+
+    /**
+     * 清空当前账号的全部离线内容，返回移除的书目数量。
+     * 这是设置页的显式动作：离线内容是用户主动下载的资产，只能由用户手动触发清空。
+     */
+    suspend fun clearAllOfflineContent(): Int = withContext(Dispatchers.IO) {
+        val owner = requireOwner()
+        val bookIds = dao.all(owner).map { it.bookId }
+        evictionMutex.withLock { bookIds.forEach { id -> delete(id) } }
+        bookIds.size
+    }
+
+    /**
+     * 把离线目录压回预算之内，返回被移除的书目。
+     *
+     * 在下载完成之后调用：此时新增占用才算真正落定。
+     * 正在阅读的书通过 excludeBookId 排除，避免淘汰中断阅读。
+     */
+    suspend fun enforceBudget(
+        budgetBytes: Long = DEFAULT_OFFLINE_BUDGET_BYTES,
+        excludeBookId: String? = null,
+    ): List<String> = withContext(Dispatchers.IO) {
+        val owner = sessionManager.currentUserId() ?: return@withContext emptyList()
+        evictionMutex.withLock {
+            val entries = dao.all(owner).map { row ->
+                OfflineCacheEntry(
+                    bookId = row.bookId,
+                    lastAccessedAt = row.lastAccessedAt,
+                    sizeBytes = row.downloadedBytes,
+                    pinned = row.pinned,
+                    status = runCatching { OfflineDownloadStatus.valueOf(row.status) }.getOrDefault(OfflineDownloadStatus.FAILED),
+                )
+            }
+            val targets = selectEvictions(entries, budgetBytes, excludeBookId)
+            // 先取标题：删除后记录已不存在，通知里需要可读的书名。
+            val titles = targets.associateWith { id -> dao.get(owner, id)?.title.orEmpty() }
+            // 复用既有 delete：它已正确处理「先删文件再清索引」并清空书籍目录。
+            targets.forEach { id -> delete(id) }
+            val removed = targets.map { id -> titles[id].orEmpty().ifBlank { id } }
+            // 通知而非静默删除：用户需要知道离线内容为何消失。
+            if (removed.isNotEmpty()) evictions.emit(removed)
+            removed
         }
     }
 
@@ -127,6 +190,8 @@ class OfflineReadingRepository @Inject constructor(
             }
             val latest = dao.get(task.ownerId, task.bookId) ?: return@withContext
             if (latest.status != OfflineDownloadStatus.PAUSED.name) dao.upsertDownload(latest.copy(status = OfflineDownloadStatus.COMPLETED.name, completedChapters = items.size, errorMessage = null, updatedAt = System.currentTimeMillis()))
+            // 新增占用已落定，此时才把目录压回预算；本书正在被阅读，予以排除。
+            enforceBudget(excludeBookId = task.bookId)
         } catch (error: Exception) {
             val latest = dao.get(task.ownerId, task.bookId) ?: current
             if (latest.status != OfflineDownloadStatus.PAUSED.name) dao.upsertDownload(latest.copy(status = OfflineDownloadStatus.FAILED.name, errorMessage = error.message ?: "离线下载失败", updatedAt = System.currentTimeMillis()))
