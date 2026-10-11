@@ -31,6 +31,8 @@ data class OfflineDownloadState(
     val totalChapters: Int,
     val downloadedBytes: Long,
     val errorMessage: String?,
+    /** 用户显式钉住的离线内容不参与自动淘汰；界面据此展示并切换钉住状态。 */
+    val pinned: Boolean = false,
 ) {
     val progress: Float get() = if (totalChapters == 0) 0f else completedChapters.toFloat() / totalChapters
 }
@@ -209,5 +211,5 @@ class OfflineReadingRepository @Inject constructor(
     private fun canonical(value: String) = value.removePrefix("content:")
     private fun safe(value: String) = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
     private fun bookDirectory(owner: String, bookId: String) = File(context.filesDir, "offline-reading/${safe(owner)}/${safe(bookId)}")
-    private fun OfflineDownloadEntity.toModel() = OfflineDownloadState(bookId, title, OfflineDownloadStatus.valueOf(status), completedChapters, totalChapters, downloadedBytes, errorMessage)
+    private fun OfflineDownloadEntity.toModel() = OfflineDownloadState(bookId, title, OfflineDownloadStatus.valueOf(status), completedChapters, totalChapters, downloadedBytes, errorMessage, pinned)
 }

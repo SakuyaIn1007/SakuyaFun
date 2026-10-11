@@ -17,6 +17,7 @@ import com.sakuya.reader.data.DownloadTooLargeException
 import com.sakuya.reader.data.EpubLoader
 import com.sakuya.reader.data.FileDownloader
 import com.sakuya.reader.data.TxtLoader
+import com.sakuya.reader.data.buildOfflineFullDocument
 import com.sakuya.reader.data.mapReadableAnchors
 import com.sakuya.reader.model.ReaderChapter
 import com.sakuya.reader.model.ReaderDocument
@@ -99,17 +100,12 @@ class ReaderRepository @Inject constructor(
                 )
             )
         }.getOrElse { fullError ->
+            // 离线降级：用已落盘章节拼出全文与锚点。单章与整本两条路由都汇入本方法，
+            // 因此离线回落对「打开单章」同样生效，而非只覆盖连续阅读。
             val offline = offlineReading.readChapters(novelId)
             if (offline.isNotEmpty()) {
-                val builder = StringBuilder()
-                val anchors = offline.map { chapter ->
-                    if (builder.isNotEmpty()) builder.append("\n\n")
-                    val anchor = com.sakuya.reader.model.Wenku8ChapterAnchor(chapter.chapterId, chapter.title, chapter.volumeTitle, builder.length)
-                    builder.append(chapter.title).append("\n\n").append(chapter.content)
-                    anchor
-                }
                 return@withContext Wenku8NovelOpenResult.Full(
-                    ReaderDocument.Wenku8Full(fallbackTitle, builder.toString(), anchors)
+                    buildOfflineFullDocument(fallbackTitle, offline)
                 )
             }
             // 整本阅读没有目标章可降级；全文不可用时只能如实报告失败。
@@ -286,6 +282,7 @@ class ReaderRepository @Inject constructor(
     suspend fun resumeOfflineDownload(bookId: String) = offlineReading.resume(bookId)
     suspend fun retryOfflineDownload(bookId: String) = offlineReading.retry(bookId)
     suspend fun deleteOfflineDownload(bookId: String) = offlineReading.delete(bookId)
+    suspend fun setPinnedOfflineDownload(bookId: String, pinned: Boolean) = offlineReading.setPinned(bookId, pinned)
     suspend fun offlineStorageBytes(): Long = offlineReading.totalBytes()
 
     /** 正文先写应用缓存文件，避免把大文本放进 Intent 触发 Binder 大小限制。 */

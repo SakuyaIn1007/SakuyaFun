@@ -120,6 +120,7 @@ class ReaderViewModel @Inject constructor(
             ReaderAction.ResumeOfflineDownload -> updateOffline { readerRepository.resumeOfflineDownload(it) }
             ReaderAction.RetryOfflineDownload -> updateOffline { readerRepository.retryOfflineDownload(it) }
             ReaderAction.DeleteOfflineDownload -> updateOffline { readerRepository.deleteOfflineDownload(it) }
+            ReaderAction.TogglePinnedOffline -> togglePinnedOffline()
             ReaderAction.ToggleTts -> toggleTts()
             ReaderAction.StopTts -> readerRepository.stopTts()
             is ReaderAction.ChangeTtsRate -> _uiState.update { it.copy(ttsRate = action.rate.coerceIn(0.5f, 2f)) }
@@ -127,6 +128,9 @@ class ReaderViewModel @Inject constructor(
             ReaderAction.CloseEpubSearch -> _uiState.update { it.copy(isEpubSearchVisible = false) }
             is ReaderAction.SearchEpub -> searchEpub(action.query)
             is ReaderAction.JumpToEpubSearchResult -> jumpToEpubSearchResult(action.result)
+            ReaderAction.OpenChapterList -> _uiState.update { it.copy(isChapterListVisible = true) }
+            ReaderAction.CloseChapterList -> _uiState.update { it.copy(isChapterListVisible = false) }
+            is ReaderAction.JumpToChapter -> jumpToChapter(action.chapterId, action.chapterIndex)
         }
     }
 
@@ -150,6 +154,7 @@ class ReaderViewModel @Inject constructor(
                     sessionState = ReaderSessionState.Loading,
                     isSettingsPanelVisible = false,
                     isBookmarkPanelVisible = false,
+                    isChapterListVisible = false,
                 )
             }
             val openResult = readerRepository.openDocument(uri)
@@ -214,6 +219,7 @@ class ReaderViewModel @Inject constructor(
                     targetChapterId = chapterId,
                     persistProgress = false,
                     sessionState = ReaderSessionState.Loading,
+                    isChapterListVisible = false,
                 )
             }
             // 正文请求与云状态同步并行；同步最多占用 8 秒，失败后仍使用本地缓存继续阅读。
@@ -346,6 +352,22 @@ class ReaderViewModel @Inject constructor(
         viewModelScope.launch { runCatching { block(bookKey) }.onFailure { _effect.emit(ReaderEffect.ShowMessage(it.message ?: "离线下载操作失败")) } }
     }
 
+    /**
+     * 钉住/取消钉住离线内容。
+     * 仅对 COMPLETED 生效：其余状态本就受淘汰规则保护（selectEvictions 只淘汰已完成的书），
+     * 钉住它们没有意义，因此界面只在已完成时才提供该动作，此处再做一次兜底。
+     */
+    private fun togglePinnedOffline() {
+        val state = _uiState.value
+        val bookKey = state.bookKey ?: return
+        val download = state.offlineDownload ?: return
+        if (download.status != OfflineDownloadStatus.COMPLETED) return
+        viewModelScope.launch {
+            runCatching { readerRepository.setPinnedOfflineDownload(bookKey, !download.pinned) }
+                .onFailure { _effect.emit(ReaderEffect.ShowMessage(it.message ?: "钉住操作失败")) }
+        }
+    }
+
     private fun toggleTts() {
         when (_uiState.value.ttsPlayback.status) {
             TtsPlaybackStatus.PLAYING, TtsPlaybackStatus.PREPARING -> readerRepository.pauseTts()
@@ -442,6 +464,38 @@ class ReaderViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 目录跳章：位置换算交给纯函数 resolveChapterJump，未命中或越界时静默关闭面板，
+     * 避免定位到错误章节。Wenku8 复用 targetChapterId 驱动正文锚点定位，EPUB 复用 chapterIndex。
+     */
+    private fun jumpToChapter(chapterId: String?, chapterIndex: Int) {
+        val state = _uiState.value
+        val document = state.document
+        val position = document?.let { resolveChapterJump(it, chapterId, chapterIndex) }
+        _uiState.update {
+            if (position == null) {
+                it.copy(isChapterListVisible = false)
+            } else {
+                it.copy(
+                    readingPosition = position,
+                    progress = position.progress,
+                    targetChapterId = position.chapterId,
+                    currentChapterTitle = chapterTitleFor(document, position).ifBlank { state.currentChapterTitle },
+                    isChapterListVisible = false,
+                    // 与书签跳转一致：正文组件靠该标记触发一次重定位，否则点选目录不会滚动。
+                    positionRestoreRequest = it.positionRestoreRequest + 1,
+                )
+            }
+        }
+    }
+
+    /** 目录标题回退：优先取目标章节标题，缺失时保留调用方的当前标题，避免出现空串。 */
+    private fun chapterTitleFor(document: ReaderDocument, position: ReaderReadingPosition): String = when (document) {
+        is ReaderDocument.Wenku8Full -> document.chapters.firstOrNull { it.chapterId == position.chapterId }?.title
+        is ReaderDocument.Epub -> document.chapters.getOrNull(position.chapterIndex)?.title
+        is ReaderDocument.Txt -> null
+    }.orEmpty()
+
     private fun toggleUI() {
         _uiState.update {
             it.copy(showUI = !it.showUI)
@@ -508,6 +562,8 @@ data class ReaderUiState(
     val isEpubSearchVisible: Boolean = false,
     val epubSearchQuery: String = "",
     val epubSearchResults: List<EpubSearchResult> = emptyList(),
+    /** 目录面板显隐；打开新会话时与会话面板一同重置，避免换书后残留。 */
+    val isChapterListVisible: Boolean = false,
 )
 
 sealed interface ReaderEffect {
@@ -543,6 +599,8 @@ sealed interface ReaderAction {
     data object ResumeOfflineDownload : ReaderAction
     data object RetryOfflineDownload : ReaderAction
     data object DeleteOfflineDownload : ReaderAction
+    /** 钉住/取消钉住：方向由当前状态决定，界面无需回传目标值。 */
+    data object TogglePinnedOffline : ReaderAction
     data object ToggleTts : ReaderAction
     data object StopTts : ReaderAction
     data class ChangeTtsRate(val rate: Float) : ReaderAction
@@ -550,6 +608,42 @@ sealed interface ReaderAction {
     data object CloseEpubSearch : ReaderAction
     data class SearchEpub(val query: String) : ReaderAction
     data class JumpToEpubSearchResult(val result: EpubSearchResult) : ReaderAction
+    data object OpenChapterList : ReaderAction
+    data object CloseChapterList : ReaderAction
+    /** 目录跳章：Wenku8 传 chapterId，EPUB 传 chapterIndex，另一项留空/默认。 */
+    data class JumpToChapter(val chapterId: String? = null, val chapterIndex: Int = -1) : ReaderAction
+}
+
+/**
+ * 目录跳章的纯位置换算：Wenku8 用章节锚点 offset 精确换算全局比例，EPUB 用章节索引换算。
+ * 目标缺失、锚点不可靠（offset < 0）或索引越界时返回 null，由调用方静默忽略。
+ */
+internal fun resolveChapterJump(
+    document: ReaderDocument,
+    chapterId: String?,
+    chapterIndex: Int,
+): ReaderReadingPosition? = when (document) {
+    is ReaderDocument.Wenku8Full -> document.chapters
+        .firstOrNull { it.chapterId == chapterId && it.offset >= 0 }
+        ?.let { anchor ->
+            val total = document.text.length.coerceAtLeast(1)
+            ReaderReadingPosition(
+                type = ReaderType.WENKU8,
+                progress = (anchor.offset.toFloat() / total).coerceIn(0f, 1f),
+                chapterId = anchor.chapterId,
+                chapterIndex = document.chapters.indexOf(anchor),
+            )
+        }
+    is ReaderDocument.Epub -> chapterIndex
+        .takeIf { it in document.chapters.indices }
+        ?.let { index ->
+            ReaderReadingPosition(
+                type = ReaderType.EPUB,
+                progress = index.toFloat() / document.chapters.size.coerceAtLeast(1),
+                chapterIndex = index,
+            )
+        }
+    is ReaderDocument.Txt -> null
 }
 
 /** 保存一次可重试的远端目录选择；不包含正文、Cookie 或任何上游登录信息。 */

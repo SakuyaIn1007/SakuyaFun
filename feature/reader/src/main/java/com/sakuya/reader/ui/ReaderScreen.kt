@@ -10,14 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -27,7 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,8 +42,12 @@ import com.sakuya.reader.model.ReaderDocument
 import com.sakuya.reader.model.ReaderSessionState
 import com.sakuya.reader.model.ReaderTheme
 import com.sakuya.reader.model.ReaderType
+import com.sakuya.reader.model.buildTocEntries
 import com.sakuya.reader.ui.components.ReaderBottomBar
 import com.sakuya.reader.ui.components.ReaderBookmarkSheet
+import com.sakuya.reader.ui.components.ReaderChapterListSheet
+import com.sakuya.reader.ui.components.ReaderMenuItem
+import com.sakuya.reader.ui.components.ReaderOverflowMenu
 import com.sakuya.reader.ui.components.ReaderTopBar
 import com.sakuya.reader.ui.components.EpubSearchSheet
 import com.sakuya.reader.ui.subpages.EpubReaderContent
@@ -79,13 +76,10 @@ fun ReaderScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var currentFileLabel by remember { mutableStateOf(if (filePath.isNotEmpty()) File(filePath).name else "") }
-
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            currentFileLabel = uri.lastPathSegment ?: ""
             viewModel.onAction(
                 ReaderAction.OpenFile(
                     uri = uri,
@@ -116,7 +110,6 @@ fun ReaderScreen(
 
     LaunchedEffect(filePath) {
         if (filePath.isNotEmpty()) {
-            currentFileLabel = File(filePath).name
             val fileUri = if (filePath.startsWith("content://")) {
                 Uri.parse(filePath)
             } else {
@@ -151,8 +144,6 @@ fun ReaderScreen(
 
     ReaderContent(
         state = state,
-        // 远端正文加载失败时 document 为空，仍保留目录传入的标题，让返回栏和错误页可辨识。
-        bookTitle = state.document?.title ?: remoteChapter?.third ?: currentFileLabel,
         onBack = onBack,
         onAction = viewModel::onAction,
         snackbarHostState = snackbarHostState,
@@ -162,12 +153,30 @@ fun ReaderScreen(
 @Composable
 fun ReaderContent(
     state: ReaderUiState,
-    bookTitle: String = "",
     onBack: () -> Unit = {},
     onAction: (ReaderAction) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val readerColors = readerScaffoldColors(state.theme)
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
+    /**
+     * 次要操作全部收进「更多」菜单，顶栏只保留返回与菜单入口；
+     * 目录条目在此处按文档类型构建，目录与书内搜索分别只对带章节/EPUB 的会话出现。
+     */
+    val tocEntries = remember(
+        state.document,
+        state.readingPosition.chapterId,
+        state.readingPosition.chapterIndex,
+    ) {
+        buildTocEntries(
+            document = state.document,
+            currentChapterId = state.readingPosition.chapterId,
+            currentChapterIndex = state.readingPosition.chapterIndex,
+        )
+    }
+    val isRemoteSession = state.bookKey?.startsWith("content:") == true
+    val document = state.document
 
     Scaffold(
         containerColor = readerColors.background,
@@ -175,96 +184,30 @@ fun ReaderContent(
         topBar = {
             AnimatedVisibility(state.showUI && state.sessionState !is ReaderSessionState.Loading) {
                 ReaderTopBar(
-                    title = bookTitle,
                     onBack = onBack,
                     containerColor = readerColors.background,
                     contentColor = readerColors.content,
                     actions = {
-                        if (state.bookKey?.startsWith("content:") == true) {
-                            TextButton(
-                                onClick = { onAction(ReaderAction.RetrySync) },
-                                enabled = state.syncStatus != ReadingSyncStatus.SYNCING,
-                            ) {
-                                Text(
-                                    text = when (state.syncStatus) {
-                                        ReadingSyncStatus.SYNCED -> "已同步"
-                                        ReadingSyncStatus.PENDING -> "待同步"
-                                        ReadingSyncStatus.SYNCING -> "同步中"
-                                        ReadingSyncStatus.FAILED -> "同步失败"
-                                    },
-                                    color = if (state.syncStatus == ReadingSyncStatus.FAILED) MaterialTheme.colorScheme.error else readerColors.content,
-                                )
-                            }
-                            val download = state.offlineDownload
-                            IconButton(
-                                onClick = {
-                                    onAction(
-                                        when (download?.status) {
-                                            OfflineDownloadStatus.DOWNLOADING -> ReaderAction.PauseOfflineDownload
-                                            OfflineDownloadStatus.PAUSED -> ReaderAction.ResumeOfflineDownload
-                                            OfflineDownloadStatus.FAILED -> ReaderAction.RetryOfflineDownload
-                                            else -> ReaderAction.DownloadOffline
-                                        }
-                                    )
-                                },
-                                enabled = download?.status != OfflineDownloadStatus.COMPLETED,
-                            ) {
-                                Icon(
-                                    imageVector = when (download?.status) {
-                                        OfflineDownloadStatus.DOWNLOADING -> Icons.Default.Close
-                                        OfflineDownloadStatus.PAUSED, OfflineDownloadStatus.FAILED -> Icons.Default.Refresh
-                                        else -> Icons.Default.Add
-                                    },
-                                    contentDescription = when (download?.status) {
-                                        OfflineDownloadStatus.DOWNLOADING -> "暂停离线下载"
-                                        OfflineDownloadStatus.PAUSED -> "继续离线下载"
-                                        OfflineDownloadStatus.FAILED -> "重试离线下载"
-                                        OfflineDownloadStatus.COMPLETED -> "离线内容已完成"
-                                        else -> "下载离线内容"
-                                    },
-                                    tint = if (download?.status == OfflineDownloadStatus.FAILED) MaterialTheme.colorScheme.error else readerColors.content,
-                                )
-                            }
-                            if (download != null) {
-                                Text(
-                                    text = if (download.status == OfflineDownloadStatus.COMPLETED) "离线 ${"%.1f".format(state.offlineStorageBytes / 1024f / 1024f)}M" else "${(download.progress * 100).toInt()}%",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = readerColors.content,
-                                )
-                                IconButton(onClick = { onAction(ReaderAction.DeleteOfflineDownload) }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "删除离线内容", tint = readerColors.content)
-                                }
-                            }
-                        }
-                        IconButton(onClick = { onAction(ReaderAction.AddBookmark) }) {
+                        IconButton(onClick = { isMenuExpanded = true }) {
                             Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "添加书签",
-                                modifier = Modifier.size(24.dp),
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "更多",
                                 tint = readerColors.content,
                             )
                         }
-                        IconButton(onClick = { onAction(ReaderAction.OpenBookmarksPanel) }) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "查看书签",
-                                modifier = Modifier.size(24.dp),
-                                tint = readerColors.content,
-                            )
-                        }
-                        IconButton(onClick = { onAction(ReaderAction.OpenFilePickerClick) }) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = "选择文件",
-                                modifier = Modifier.size(24.dp),
-                                tint = readerColors.content,
-                            )
-                        }
-                        if (state.document is ReaderDocument.Epub) {
-                            IconButton(onClick = { onAction(ReaderAction.OpenEpubSearch) }) {
-                                Icon(Icons.Default.Search, contentDescription = "书内搜索", tint = readerColors.content)
-                            }
-                        }
+                        ReaderOverflowMenu(
+                            expanded = isMenuExpanded,
+                            onDismiss = { isMenuExpanded = false },
+                            containerColor = readerColors.background,
+                            contentColor = readerColors.content,
+                            items = readerMenuItems(
+                                state = state,
+                                document = document,
+                                hasToc = tocEntries.isNotEmpty(),
+                                isRemoteSession = isRemoteSession,
+                                onAction = onAction,
+                            ),
+                        )
                     }
                 )
             }
@@ -332,6 +275,87 @@ fun ReaderContent(
             onResult = { onAction(ReaderAction.JumpToEpubSearchResult(it)) },
             onDismiss = { onAction(ReaderAction.CloseEpubSearch) },
         )
+    }
+    if (state.isChapterListVisible) {
+        ReaderChapterListSheet(
+            entries = tocEntries,
+            onDismiss = { onAction(ReaderAction.CloseChapterList) },
+            onJump = { entry -> onAction(ReaderAction.JumpToChapter(entry.chapterId, entry.chapterIndex)) },
+        )
+    }
+}
+
+/**
+ * 组装「更多」菜单项：正文操作恒显，同步与离线下载整簇仅在远端 content: 会话出现，
+ * 状态文案与可点性直接映射 UiState，组件本身不做判断。
+ */
+private fun readerMenuItems(
+    state: ReaderUiState,
+    document: ReaderDocument?,
+    hasToc: Boolean,
+    isRemoteSession: Boolean,
+    onAction: (ReaderAction) -> Unit,
+): List<ReaderMenuItem> = buildList {
+    add(ReaderMenuItem("切换本地文件", { onAction(ReaderAction.OpenFilePickerClick) }))
+    add(ReaderMenuItem("添加书签", { onAction(ReaderAction.AddBookmark) }))
+    add(ReaderMenuItem("查看书签", { onAction(ReaderAction.OpenBookmarksPanel) }))
+    if (document is ReaderDocument.Epub) {
+        add(ReaderMenuItem("书内搜索", { onAction(ReaderAction.OpenEpubSearch) }))
+    }
+    if (hasToc) {
+        add(ReaderMenuItem("目录", { onAction(ReaderAction.OpenChapterList) }))
+    }
+    if (isRemoteSession) {
+        add(
+            ReaderMenuItem(
+                text = "同步：" + when (state.syncStatus) {
+                    ReadingSyncStatus.SYNCED -> "已同步"
+                    ReadingSyncStatus.PENDING -> "待同步"
+                    ReadingSyncStatus.SYNCING -> "同步中"
+                    ReadingSyncStatus.FAILED -> "同步失败"
+                },
+                onClick = { onAction(ReaderAction.RetrySync) },
+                enabled = state.syncStatus != ReadingSyncStatus.SYNCING,
+                isError = state.syncStatus == ReadingSyncStatus.FAILED,
+                showDividerAbove = true,
+            )
+        )
+        val download = state.offlineDownload
+        add(
+            ReaderMenuItem(
+                text = when (download?.status) {
+                    OfflineDownloadStatus.DOWNLOADING -> "暂停下载 ${(download.progress * 100).toInt()}%"
+                    OfflineDownloadStatus.PAUSED -> "继续下载 ${(download.progress * 100).toInt()}%"
+                    OfflineDownloadStatus.FAILED -> "重试下载"
+                    OfflineDownloadStatus.COMPLETED -> "离线内容 ${"%.1f".format(state.offlineStorageBytes / 1024f / 1024f)}M"
+                    else -> "下载离线内容"
+                },
+                onClick = {
+                    onAction(
+                        when (download?.status) {
+                            OfflineDownloadStatus.DOWNLOADING -> ReaderAction.PauseOfflineDownload
+                            OfflineDownloadStatus.PAUSED -> ReaderAction.ResumeOfflineDownload
+                            OfflineDownloadStatus.FAILED -> ReaderAction.RetryOfflineDownload
+                            else -> ReaderAction.DownloadOffline
+                        }
+                    )
+                },
+                enabled = download?.status != OfflineDownloadStatus.COMPLETED,
+                isError = download?.status == OfflineDownloadStatus.FAILED,
+            )
+        )
+        // 钉住只对已完成的离线内容有意义：其余状态本就受淘汰规则保护，无钉住价值。
+        if (download?.status == OfflineDownloadStatus.COMPLETED) {
+            add(
+                ReaderMenuItem(
+                    text = if (download.pinned) "取消钉住" else "钉住（不自动清理）",
+                    onClick = { onAction(ReaderAction.TogglePinnedOffline) },
+                )
+            )
+        }
+        if (download != null) {
+            add(ReaderMenuItem("删除离线内容", { onAction(ReaderAction.DeleteOfflineDownload) }))
+        }
     }
 }
 
@@ -469,7 +493,6 @@ fun TxtReaderPreview() {
     SakuyaInAndroidTheme(true) {
         ReaderContent(
             state = fakeState,
-            bookTitle = "测试书籍",
             onAction = {}
         )
     }
@@ -503,7 +526,6 @@ fun EpubReaderPreview() {
     SakuyaInAndroidTheme(true) {
         ReaderContent(
             state = fakeState,
-            bookTitle = "测试 EPUB",
             onAction = {}
         )
     }
